@@ -6,7 +6,7 @@ const db = require("./db");
 
 const app = express();
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use(express.static("public"));
+app.use(express.static("frontend"));
 app.use(
   session({
     secret: "secretkey",
