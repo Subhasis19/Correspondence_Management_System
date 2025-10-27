@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Register</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Font Awesome for professional eye icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+
+<body>
+    <h2>Registration Form</h2>
+    <form id="registerForm" action="/register" method="POST">
+        <input type="text" name="name" placeholder="Name" required><br>
+        <input type="email" name="email" placeholder="Email" required><br>
+        <input type="text" name="mobile" placeholder="Mobile Number" required><br>
+
+        <!-- Password field -->
+        <div class="password-container">
+            <input type="password" name="password" id="password" placeholder="Password" required>
+            <i class="fa-solid fa-eye toggle-password" onclick="togglePassword('password', this)"></i>
+        </div><br>
+
+        <!-- Confirm Password field -->
+        <div class="password-container">
+            <input type="password" name="confirmPassword" id="confirmPassword" placeholder="Confirm Password" required>
+            <i class="fa-solid fa-eye toggle-password" onclick="togglePassword('confirmPassword', this)"></i>
+        </div><br>
+
+        <select name="role">
+            <option value="user">User</option>
+            <option value="admin">Admin</option>
+        </select><br>
+
+        <button type="submit">Register</button>
+    </form>
+
+    <p>Already have an account? <a href="/">Login</a></p>
+
+    <script>
+
+
+
+
+        //Show/hide password
+        function togglePassword(id, icon) {
+            const input = document.getElementById(id);
+            if (input.type === "password") {
+                input.type = "text";
+                icon.classList.remove("fa-eye");
+                icon.classList.add("fa-eye-slash");
+            } else {
+                input.type = "password";
+                icon.classList.remove("fa-eye-slash");
+                icon.classList.add("fa-eye");
+            }
+        }
+
+        //  Password confirmation check
+        document.getElementById("registerForm").addEventListener("submit", function (e) {
+            const pass = document.getElementById("password").value;
+            const confirm = document.getElementById("confirmPassword").value;
+            if (pass !== confirm) {
+                e.preventDefault();
+                alert("Passwords do not match!");
+            }
+        });
+    </script>
+</body>
+
+</html>
