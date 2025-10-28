@@ -1,95 +1,97 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
+
 <head>
-  <meta charset="UTF-8">
-  <title>User Registration</title>
-  <link rel="stylesheet" href="style.css">
-  <link
-    rel="stylesheet"
-    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-  />
+    <title>Register</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Font Awesome for professional eye icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
+
 <body>
-  <form id="registerForm" method="POST" action="/register">
-    <h2>Register</h2>
+    <h2>Registration Form</h2>
+    <form id="registerForm" action="/register" method="POST">
+        <input type="text" name="name" id="name" placeholder="Name" required><br>
+        <input type="email" name="email" id="email" placeholder="Email" required><br>
+        <input type="text" name="mobile" id="mobile" placeholder="Mobile Number" required><br>
 
-    <input type="text" id="name" name="name" placeholder="Full Name" required>
+        <!-- Password field -->
+        <div class="password-container">
+            <input type="password" name="password" id="password" placeholder="Password" required>
+            <i class="fa-solid fa-eye toggle-password" onclick="togglePassword('password', this)"></i>
+        </div><br>
 
-    <input type="text" id="mobile" name="mobile" placeholder="Mobile Number" required>
+        <!-- Confirm Password field -->
+        <div class="password-container">
+            <input type="password" name="confirmPassword" id="confirmPassword" placeholder="Confirm Password" required>
+            <i class="fa-solid fa-eye toggle-password" onclick="togglePassword('confirmPassword', this)"></i>
+        </div><br>
 
-    <input type="email" id="email" name="email" placeholder="Email" required>
+        <select name="role">
+            <option value="user">User</option>
+            <option value="admin">Admin</option>
+        </select><br>
 
-    <div class="password-container">
-      <input type="password" id="password" name="password" placeholder="Password" required>
-      <i class="fa fa-eye toggle-password" id="togglePassword"></i>
-    </div>
+        <button type="submit">Register</button>
+    </form>
 
-    <div class="password-container">
-      <input type="password" id="confirmPassword" name="confirmPassword" placeholder="Confirm Password" required>
-      <i class="fa fa-eye toggle-password" id="toggleConfirmPassword"></i>
-    </div>
+    <p>Already have an account? <a href="/">Login</a></p>
 
-    <button type="submit">Register</button>
-  </form>
+    <script>
+        // Show/hide password
+        function togglePassword(id, icon) {
+            const input = document.getElementById(id);
+            if (input.type === "password") {
+                input.type = "text";
+                icon.classList.remove("fa-eye");
+                icon.classList.add("fa-eye-slash");
+            } else {
+                input.type = "password";
+                icon.classList.remove("fa-eye-slash");
+                icon.classList.add("fa-eye");
+            }
+        }
 
-  <script>
-    // Password toggle functionality
-    const togglePassword = document.querySelector("#togglePassword");
-    const toggleConfirmPassword = document.querySelector("#toggleConfirmPassword");
-    const password = document.querySelector("#password");
-    const confirmPassword = document.querySelector("#confirmPassword");
+        // Validation and password confirmation
+        document.getElementById("registerForm").addEventListener("submit", function (e) {
+            const name = document.getElementById("name").value.trim();
+            const email = document.getElementById("email").value.trim();
+            const mobile = document.getElementById("mobile").value.trim();
+            const pass = document.getElementById("password").value;
+            const confirm = document.getElementById("confirmPassword").value;
 
-    togglePassword.addEventListener("click", () => {
-      const type = password.getAttribute("type") === "password" ? "text" : "password";
-      password.setAttribute("type", type);
-      togglePassword.classList.toggle("fa-eye-slash");
-    });
+            // Name validation (text only)
+            const namePattern = /^[A-Za-z\s]+$/;
+            if (!namePattern.test(name)) {
+                e.preventDefault();
+                alert("Name must contain letters only. Numbers are not allowed.");
+                return;
+            }
 
-    toggleConfirmPassword.addEventListener("click", () => {
-      const type = confirmPassword.getAttribute("type") === "password" ? "text" : "password";
-      confirmPassword.setAttribute("type", type);
-      toggleConfirmPassword.classList.toggle("fa-eye-slash");
-    });
+            // Mobile number validation (numbers only, exactly 10 digits)
+            const mobilePattern = /^[0-9]{10}$/;
+            if (!mobilePattern.test(mobile)) {
+                e.preventDefault();
+                alert("Mobile number must be exactly 10 digits and contain numbers only.");
+                return;
+            }
 
-    // Validation logic
-    document.getElementById("registerForm").addEventListener("submit", function (e) {
-      const name = document.getElementById("name").value.trim();
-      const mobile = document.getElementById("mobile").value.trim();
-      const email = document.getElementById("email").value.trim();
-      const password = document.getElementById("password").value;
-      const confirmPassword = document.getElementById("confirmPassword").value;
+            // Email validation (must contain '@' and a domain)
+            const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailPattern.test(email)) {
+                e.preventDefault();
+                alert("Please enter a valid email address (must contain '@' and a valid domain like '.com').");
+                return;
+            }
 
-      // Name validation: text only
-      const nameRegex = /^[A-Za-z\s]+$/;
-      if (!nameRegex.test(name)) {
-        alert("Name must contain text characters only. Numeric data is not allowed.");
-        e.preventDefault();
-        return;
-      }
-
-      // Mobile validation: numbers only and 10 digits
-      const mobileRegex = /^[0-9]{10}$/;
-      if (!mobileRegex.test(mobile)) {
-        alert("Mobile number must contain exactly 10 digits and numbers only.");
-        e.preventDefault();
-        return;
-      }
-
-      // Email validation: must contain '@' and a domain like '.com'
-      const emailRegex = /^[^@]+@[^@]+\.[a-zA-Z]{2,}$/;
-      if (!emailRegex.test(email)) {
-        alert("Please enter a valid email address with '@' and a proper domain (e.g., example@gmail.com).");
-        e.preventDefault();
-        return;
-      }
-
-      // Password confirmation
-      if (password !== confirmPassword) {
-        alert("Passwords do not match.");
-        e.preventDefault();
-        return;
-      }
-    });
-  </script>
+            // Password confirmation check
+            if (pass !== confirm) {
+                e.preventDefault();
+                alert("Passwords do not match!");
+                return;
+            }
+        });
+    </script>
 </body>
+
 </html>
