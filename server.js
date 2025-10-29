@@ -4,8 +4,12 @@ const bcrypt = require("bcryptjs");
 const session = require("express-session");
 const db = require("./db");
 
+require('dotenv').config();
+
+
 const app = express();
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(express.json());
 app.use(express.static("frontend"));
 app.use(
   session({
