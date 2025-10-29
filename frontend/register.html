@@ -4,7 +4,6 @@
 <head>
     <title>Register</title>
     <link rel="stylesheet" href="style.css">
-    <!-- Font Awesome for professional eye icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 
@@ -12,16 +11,27 @@
     <h2>Registration Form</h2>
     <form id="registerForm" action="/register" method="POST">
         <input type="text" name="name" id="name" placeholder="Name" required><br>
-        <input type="email" name="email" id="email" placeholder="Email" required><br>
+
+        <!-- Email + Send OTP -->
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <input type="email" name="email" id="email" placeholder="Email" required style="flex: 1;">
+            <button type="button" id="sendOtpBtn" style="padding: 5px 10px;">Send OTP</button>
+        </div>
+        <br>
+
+        <!-- OTP field (hidden initially) -->
+        <div id="otpSection" style="display: none;">
+            <input type="text" id="otp" placeholder="Enter OTP" style="width: 100%; margin-bottom: 10px;">
+            <button type="button" id="verifyOtpBtn">Verify OTP</button>
+        </div>
+
         <input type="text" name="mobile" id="mobile" placeholder="Mobile Number" required><br>
 
-        <!-- Password field -->
         <div class="password-container">
             <input type="password" name="password" id="password" placeholder="Password" required>
             <i class="fa-solid fa-eye toggle-password" onclick="togglePassword('password', this)"></i>
         </div><br>
 
-        <!-- Confirm Password field -->
         <div class="password-container">
             <input type="password" name="confirmPassword" id="confirmPassword" placeholder="Confirm Password" required>
             <i class="fa-solid fa-eye toggle-password" onclick="togglePassword('confirmPassword', this)"></i>
@@ -32,7 +42,7 @@
             <option value="admin">Admin</option>
         </select><br>
 
-        <button type="submit">Register</button>
+        <button type="submit" id="registerBtn" disabled>Register</button>
     </form>
 
     <p>Already have an account? <a href="/">Login</a></p>
@@ -52,6 +62,48 @@
             }
         }
 
+        // Send OTP
+        document.getElementById("sendOtpBtn").addEventListener("click", async () => {
+            const email = document.getElementById("email").value.trim();
+            if (!email) return alert("Please enter your email.");
+
+            const res = await fetch("http://localhost:5000/send-otp", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email })
+            });
+
+            const data = await res.json();
+            if (data.success) {
+                alert("OTP sent to your email!");
+                document.getElementById("otpSection").style.display = "block";
+            } else {
+                alert("Error sending OTP. Please try again.");
+            }
+        });
+
+        // Verify OTP
+        document.getElementById("verifyOtpBtn").addEventListener("click", async () => {
+            const email = document.getElementById("email").value.trim();
+            const otp = document.getElementById("otp").value.trim();
+            if (!otp) return alert("Please enter OTP.");
+
+            const res = await fetch("http://localhost:5000/verify-otp", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email, otp })
+            });
+
+            const data = await res.json();
+            if (data.verified) {
+                alert("OTP verified successfully! You can register now.");
+                document.getElementById("registerBtn").disabled = false;
+                document.getElementById("verifyOtpBtn").disabled = true;
+            } else {
+                alert("Invalid OTP. Please try again.");
+            }
+        });
+
         // Validation and password confirmation
         document.getElementById("registerForm").addEventListener("submit", function (e) {
             const name = document.getElementById("name").value.trim();
@@ -60,31 +112,27 @@
             const pass = document.getElementById("password").value;
             const confirm = document.getElementById("confirmPassword").value;
 
-            // Name validation (text only)
             const namePattern = /^[A-Za-z\s]+$/;
             if (!namePattern.test(name)) {
                 e.preventDefault();
-                alert("Name must contain letters only. Numbers are not allowed.");
+                alert("Name must contain letters only.");
                 return;
             }
 
-            // Mobile number validation (numbers only, exactly 10 digits)
             const mobilePattern = /^[0-9]{10}$/;
             if (!mobilePattern.test(mobile)) {
                 e.preventDefault();
-                alert("Mobile number must be exactly 10 digits and contain numbers only.");
+                alert("Mobile number must be exactly 10 digits.");
                 return;
             }
 
-            // Email validation (must contain '@' and a domain)
             const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             if (!emailPattern.test(email)) {
                 e.preventDefault();
-                alert("Please enter a valid email address (must contain '@' and a valid domain like '.com').");
+                alert("Please enter a valid email address.");
                 return;
             }
 
-            // Password confirmation check
             if (pass !== confirm) {
                 e.preventDefault();
                 alert("Passwords do not match!");
