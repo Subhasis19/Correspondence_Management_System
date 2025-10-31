@@ -67,11 +67,12 @@
             const email = document.getElementById("email").value.trim();
             if (!email) return alert("Please enter your email.");
 
-            const res = await fetch("http://localhost:5000/send-otp", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email })
-            });
+            
+const res = await fetch("/send-otp", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email })
+});
 
             const data = await res.json();
             if (data.success) {
@@ -88,11 +89,13 @@
             const otp = document.getElementById("otp").value.trim();
             if (!otp) return alert("Please enter OTP.");
 
-            const res = await fetch("http://localhost:5000/verify-otp", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email, otp })
-            });
+
+const res = await fetch("/verify-otp", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, otp })
+});
+
 
             const data = await res.json();
             if (data.verified) {
