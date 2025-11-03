@@ -4,12 +4,10 @@ const bcrypt = require("bcryptjs");
 const session = require("express-session");
 const db = require("./db");
 
-
 require('dotenv').config();
 
 const nodemailer = require('nodemailer');
 const crypto = require('crypto');
-
 
 const app = express();
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -22,8 +20,6 @@ app.use(
     saveUninitialized: true,
   })
 );
-
-
 
 const transporter = nodemailer.createTransport({
   host: process.env.EMAIL_HOST || 'smtp.gmail.com',
@@ -39,7 +35,6 @@ transporter.verify((err) => {
   if (err) console.warn('Email transporter verification failed:', err);
   else console.log('Email transporter ready');
 });
-
 
 // send OTP route
 app.post('/send-otp', (req, res) => {
@@ -74,9 +69,7 @@ app.post('/send-otp', (req, res) => {
   });
 });
 
-
-
-//verify OTP route
+// verify OTP route (keeps verifiedEmail so /register can check)
 app.post('/verify-otp', (req, res) => {
   const { email, otp } = req.body;
   if (!email || !otp) return res.status(400).send({ verified: false, message: 'Email and OTP required' });
@@ -98,31 +91,30 @@ app.post('/verify-otp', (req, res) => {
   }
 
   if (req.session.otp === otp.toString()) {
+    // mark session as verified and remember which email was verified
     req.session.otpVerified = true;
-    // clear stored otp details
+    req.session.verifiedEmail = email;
+
+    // clear the one-time OTP and expiry (keep verifiedEmail)
     delete req.session.otp;
     delete req.session.otpExpires;
-    delete req.session.otpEmail;
+
     return res.send({ verified: true, message: 'OTP verified' });
   } else {
     return res.status(400).send({ verified: false, message: 'Invalid OTP' });
   }
 });
 
-
-
 // Registration Route
 app.post("/register", (req, res) => {
   const { name, email, mobile, password, confirmPassword, role } = req.body;
 
-
-    // require OTP verified before registration
-  if (!req.session.otpVerified || req.session.otpEmail !== email) {
+  // require OTP verified before registration
+  if (!req.session.otpVerified || req.session.verifiedEmail !== email) {
     return res.send(
       'Please verify your email OTP before registering. <a href="register.html">Try again</a>'
     );
   }
-
 
   if (password !== confirmPassword) {
     return res.send(
@@ -138,6 +130,11 @@ app.post("/register", (req, res) => {
       [name, email, mobile, hash, role || "user"],
       (err) => {
         if (err) return res.send("Error: " + err.message);
+
+        // clear verification flags after successful registration
+        req.session.otpVerified = false;
+        delete req.session.verifiedEmail;
+
         res.send('Registration successful! <a href="/">Login</a>');
       }
     );
