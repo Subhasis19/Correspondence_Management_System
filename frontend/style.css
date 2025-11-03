@@ -31,7 +31,7 @@ h2 {
     color: #333;
     font-weight: 600;
     margin-bottom: 10px;
-    font-size: clamp(18px, 2.5vw, 22px); /* Scales with screen size */
+    font-size: clamp(18px, 2.5vw, 22px);
 }
 
 /* ---------- Inputs ---------- */
@@ -79,6 +79,64 @@ select:focus {
 
 .toggle-password:hover {
     color: #333;
+}
+
+/* ---------- Email + OTP Section ---------- */
+.email-otp-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    margin-bottom: 8px;
+}
+
+.email-otp-container input[type="email"] {
+    flex: 1;
+    height: 42px;
+}
+
+.email-otp-container button {
+    width: 110px;
+    height: 42px;
+    font-size: 14px;
+    padding: 0;
+    background: #4a90e2;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.1s ease;
+}
+
+.email-otp-container button:hover {
+    background: #357ABD;
+    transform: translateY(-2px);
+}
+
+/* ---------- OTP Section ---------- */
+#otpSection {
+    display: none;
+    margin-bottom: 10px;
+}
+
+#otpSection input {
+    margin-bottom: 8px;
+}
+
+#otpSection button {
+    width: 100%;
+    height: 40px;
+    background: #4a90e2;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.1s ease;
+}
+
+#otpSection button:hover {
+    background: #357ABD;
+    transform: translateY(-2px);
 }
 
 /* ---------- Button ---------- */
@@ -156,6 +214,16 @@ a:hover {
     button {
         font-size: 15px;
         height: 40px;
+    }
+
+    /* Stack Email + OTP vertically on small screens */
+    .email-otp-container {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .email-otp-container button {
+        width: 100%;
     }
 }
 
