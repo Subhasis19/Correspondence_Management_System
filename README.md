@@ -83,6 +83,48 @@ node server.js
 - Password encryption
 - Session management
 
+## Recent UI updates (responsive login page)
+
+I updated the frontend styling to make the login page fully responsive and improve the user experience across devices.
+
+Summary of changes:
+
+- Added a centered, bounded `.login-container` with padding, rounded corners, and a subtle shadow to contain the form.
+- Improved input and button styling: consistent padding, focus states, and sizing so the controls scale well on phones and tablets.
+- Added `.password-container` and `.toggle-password` rules to position the eye icon correctly and make it touch-friendly.
+- Implemented media queries for breakpoints at 600px and 400px so typography, spacing, and padding adapt on small screens.
+- Small UX polish: button hover states, color tweaks, and lightweight box shadow for better contrast on the gradient background.
+
+Files changed:
+
+- `frontend/style.css` — primary responsive improvements and new utility classes for the login UI.
+
+Suggested HTML wrapper (insert inside your existing `<body>` around the form):
+
+```html
+<div class="login-container">
+    <h2>Login</h2>
+    <form action="/login" method="POST">
+        <input type="email" name="email" placeholder="Email" required>
+        <div class="password-container">
+            <input type="password" name="password" id="loginPassword" placeholder="Password" required>
+            <i class="fa-solid fa-eye toggle-password" onclick="togglePassword('loginPassword', this)"></i>
+        </div>
+        <button type="submit">Login</button>
+    </form>
+    <p>Don't have an account? <a href="register.html">Register</a></p>
+</div>
+```
+
+Quick test steps:
+
+1. Start the server: `node server.js`.
+2. Open the login page: `http://localhost:3000/frontend/index.html`.
+3. Resize the browser window or use device emulation in devtools to verify the layout adapts at small widths.
+4. Confirm the password toggle icon still reveals/hides the password and remains tappable on mobile.
+
+If you'd like, I can apply the same responsive container and styles to `register.html` as a follow-up.
+
 ## Project Structure
 
 ```
