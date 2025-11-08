@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>New Inward Correspondence Entry</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="inward.css">
+</head>
+
+<body>
+  <div class="form-container">
+    <h2>New Inward Correspondence Entry</h2>
+
+    <form id="inwardForm" action="/inward/add" method="POST">
+      <!-- Left Column -->
+      <div class="form-left">
+        <label>* Inward Date:</label>
+        <input type="date" name="date_of_receipt" required>
+
+        <label>* Office:</label>
+        <select name="received_in" required>
+          <option value="">Select Office</option>
+          <option value="Guwahati">Guwahati</option>
+          <option value="Silchar">Silchar</option>
+        </select>
+
+        <label>* Received From (Name & Address):</label>
+        <input type="text" name="name_of_sender" placeholder="Name of Sender" required>
+        <input type="text" name="address_of_sender" placeholder="Address of Sender">
+
+        <label>* Sender Type:</label>
+        <select name="sender_org_type" required>
+          <option value="">Select Type</option>
+          <option value="Central">Central</option>
+          <option value="State">State</option>
+          <option value="Private">Private</option>
+          <option value="Individual">Individual</option>
+        </select>
+
+        <label>* State:</label>
+        <select name="sender_state" id="senderState" required>
+          <option value="">Select State</option>
+          <option>Assam</option>
+          <option>Manipur</option>
+          <option>Meghalaya</option>
+          <option>Mizoram</option>
+          <option>Nagaland</option>
+          <option>Tripura</option>
+        </select>
+
+        <label>* Region (Auto):</label>
+        <input type="text" name="sender_region" id="senderRegion" placeholder="Auto-fill based on State" readonly>
+      </div>
+
+      <!-- Right Column -->
+      <div class="form-right">
+        <label>* Document Type:</label>
+        <select name="type_of_document" required>
+          <option value="">Select Type</option>
+          <option>Letter</option>
+          <option>Email</option>
+          <option>Notification</option>
+          <option>Other Document</option>
+        </select>
+
+        <label>Language:</label>
+        <select name="language_of_document">
+          <option value="">Select Language</option>
+          <option>English</option>
+          <option>Hindi</option>
+          <option>Bilingual</option>
+        </select>
+
+        <label>* Action Required:</label>
+        <select name="remarks" required>
+          <option value="">Select Action</option>
+          <option value="Reply Required">Reply Required</option>
+          <option value="For Information Only">For Information Only</option>
+        </select>
+
+        <label>Inward No. (Auto):</label>
+        <input type="text" name="inward_no" id="inwardNo" placeholder="Auto Generated" readonly>
+      </div>
+
+      <!-- Button -->
+      <div class="form-footer">
+        <button type="submit">Save Inward Entry</button>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    // Auto-generate Inward No.
+    document.getElementById("inwardNo").value = "INW-" + Date.now();
+
+    // Auto-fill Region based on State
+    const stateToRegion = {
+      Assam: "A",
+      Manipur: "B",
+      Meghalaya: "B",
+      Mizoram: "C",
+      Nagaland: "C",
+      Tripura: "A"
+    };
+
+    document.getElementById("senderState").addEventListener("change", function () {
+      const selectedState = this.value;
+      document.getElementById("senderRegion").value = stateToRegion[selectedState] || "";
+    });
+  </script>
+</body>
+
+</html>
