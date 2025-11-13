@@ -12,7 +12,7 @@
     <form id="registerForm" action="/register" method="POST">
         <input type="text" name="name" id="name" placeholder="Name" required><br>
 
-        <!-- Email + Send OTP -->
+        
         <!-- Email + Send OTP -->
 <div class="email-otp-container">
     <input type="email" name="email" id="email" placeholder="Email" required>
@@ -39,10 +39,22 @@
             <i class="fa-solid fa-eye toggle-password" onclick="togglePassword('confirmPassword', this)"></i>
         </div><br>
 
-        <select name="role">
-            <option value="user">User</option>
-            <option value="admin">Admin</option>
-        </select><br>
+        <select name="group_name" id="group_name" required>
+  <option value="">Select Group</option>
+  <option value="Admin">Admin</option>
+  <option value="HR">HR</option>
+  <option value="Finance">Finance</option>
+  <option value="SWT">SWT</option>
+  <option value="HWT">HWT</option>
+  <option value="ISS">ISS</option>
+  <option value="CH Office">CH Office</option>
+  <option value="MIS">MIS</option>
+  <option value="PMU">PMU</option>
+  <option value="E&T">E&T</option>
+  <option value="NetOps">NetOps</option>
+  <option value="MMG">MMG</option>
+</select><br>
+
 
         <button type="submit" id="registerBtn" disabled>Register</button>
     </form>

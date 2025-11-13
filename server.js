@@ -107,7 +107,8 @@ app.post('/verify-otp', (req, res) => {
 
 // Registration Route
 app.post("/register", (req, res) => {
-  const { name, email, mobile, password, confirmPassword, role } = req.body;
+ const { name, email, mobile, password, confirmPassword, group_name } = req.body;
+
 
   // require OTP verified before registration
   if (!req.session.otpVerified || req.session.verifiedEmail !== email) {
@@ -126,18 +127,19 @@ app.post("/register", (req, res) => {
     if (err) throw err;
 
     db.query(
-      "INSERT INTO users (name, email, mobile, password, role) VALUES (?, ?, ?, ?, ?)",
-      [name, email, mobile, hash, role || "user"],
-      (err) => {
-        if (err) return res.send("Error: " + err.message);
+  "INSERT INTO users (name, email, mobile, password, role, group_name) VALUES (?, ?, ?, ?, ?, ?)",
+  [name, email, mobile, hash, "user", group_name],
+  (err) => {
+    if (err) return res.send("Error: " + err.message);
 
-        // clear verification flags after successful registration
-        req.session.otpVerified = false;
-        delete req.session.verifiedEmail;
+    // clear OTP session flags
+    req.session.otpVerified = false;
+    delete req.session.verifiedEmail;
 
-        res.send('Registration successful! <a href="/">Login</a>');
-      }
-    );
+    res.send('Registration successful! <a href="/">Login</a>');
+  }
+);
+
   });
 });
 
