@@ -49,15 +49,54 @@
         <input type="text" name="sender_city" placeholder="Enter City">
 
         <label>State:</label>
-        <select name="sender_state" id="senderState">
-          <option value="">Select State</option>
-          <option>Assam</option>
-          <option>Manipur</option>
-          <option>Meghalaya</option>
-          <option>Mizoram</option>
-          <option>Nagaland</option>
-          <option>Tripura</option>
-        </select>
+<select name="sender_state" id="senderState">
+  <option value="">Select State</option>
+
+  <!-- Region A -->
+  <option>Bihar</option>
+  <option>Haryana</option>
+  <option>Himachal Pradesh</option>
+  <option>Madhya Pradesh</option>
+  <option>Rajasthan</option>
+  <option>Uttar Pradesh</option>
+  <option>Jharkhand</option>
+  <option>Chhattisgarh</option>
+  <option>Uttarakhand</option>
+  <option>Delhi</option>
+  <option>Andaman & Nicobar Islands</option>
+
+  <!-- Region B -->
+  <option>Gujarat</option>
+  <option>Maharashtra</option>
+  <option>Punjab</option>
+  <option>Chandigarh</option>
+  <option>Daman & Diu</option>
+  <option>Dadra & Nagar Haveli</option>
+
+  <!-- Region C -->
+  <option>Andhra Pradesh</option>
+  <option>Arunachal Pradesh</option>
+  <option>Assam</option>
+  <option>Goa</option>
+  <option>Kerala</option>
+  <option>Tamil Nadu</option>
+  <option>West Bengal</option>
+  <option>Karnataka</option>
+  <option>Odisha</option>
+  <option>Telangana</option>
+  <option>Sikkim</option>
+  <option>Tripura</option>
+  <option>Meghalaya</option>
+  <option>Mizoram</option>
+  <option>Nagaland</option>
+  <option>Manipur</option>
+  <option>Puducherry</option>
+  <option>Lakshadweep</option>
+  <option>Ladakh</option>
+  <option>Jammu & Kashmir</option>
+
+</select>
+
 
         <label>Pin Code:</label>
         <input type="number" name="sender_pin" placeholder="Enter 6-digit Pin">
@@ -156,13 +195,50 @@
 
     // Auto-fill Region based on State
     const stateToRegion = {
-      Assam: "A",
-      Manipur: "B",
-      Meghalaya: "B",
-      Mizoram: "C",
-      Nagaland: "C",
-      Tripura: "A"
-    };
+  // Region A
+  "Bihar": "A",
+  "Haryana": "A",
+  "Himachal Pradesh": "A",
+  "Madhya Pradesh": "A",
+  "Rajasthan": "A",
+  "Uttar Pradesh": "A",
+  "Jharkhand": "A",
+  "Chhattisgarh": "A",
+  "Uttarakhand": "A", 
+  "Delhi": "A",
+  "Andaman & Nicobar Islands": "A",
+
+  // Region B
+  "Gujarat": "B",
+  "Maharashtra": "B",
+  "Punjab": "B",
+  "Chandigarh": "B",
+  "Daman & Diu": "B",
+  "Dadra & Nagar Haveli": "B",
+
+  // Region C (all others)
+  "Andhra Pradesh": "C",
+  "Arunachal Pradesh": "C",
+  "Assam": "C",
+  "Goa": "C",
+  "Kerala": "C",
+  "Tamil Nadu": "C",
+  "West Bengal": "C",
+  "Karnataka": "C",
+  "Odisha": "C",
+  "Telangana": "C",
+  "Sikkim": "C",
+  "Tripura": "C",
+  "Meghalaya": "C",
+  "Mizoram": "C",
+  "Nagaland": "C",
+  "Manipur": "C",
+  "Puducherry": "C",
+  "Lakshadweep": "C",
+  "Ladakh": "C",
+  "Jammu & Kashmir": "C"
+};
+
 
     document.getElementById("senderState").addEventListener("change", function () {
       const selectedState = this.value;
