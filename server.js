@@ -165,4 +165,70 @@ app.post("/login", (req, res) => {
   });
 });
 
+// ====================== INWARD ENTRY ROUTE ========================= //
+
+app.post("/inward/add", (req, res) => {
+  const {
+    date_of_receipt,
+    month,
+    year,
+    received_in,
+    name_of_sender,
+    address_of_sender,
+    sender_city,
+    sender_state,
+    sender_pin,
+    sender_region,
+    sender_org_type,
+    inward_no,
+    type_of_document,
+    language_of_document,
+    count,
+    remarks,
+    issued_to,
+    reply_required,
+    reply_sent_date,
+    reply_ref_no,
+    reply_sent_by,
+    reply_sent_in,
+    reply_count
+  } = req.body;
+
+  // SQL Insert Query
+  const sql = `
+    INSERT INTO inward_records (
+      date_of_receipt, month, year, received_in,
+      name_of_sender, address_of_sender, sender_city,
+      sender_state, sender_pin, sender_region, sender_org_type,
+      inward_no, type_of_document, language_of_document, count,
+      remarks, issued_to, reply_required, reply_sent_date,
+      reply_ref_no, reply_sent_by, reply_sent_in, reply_count
+    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+  `;
+
+  const values = [
+    date_of_receipt, month, year, received_in,
+    name_of_sender, address_of_sender, sender_city,
+    sender_state, sender_pin, sender_region, sender_org_type,
+    inward_no, type_of_document, language_of_document, count || 1,
+    remarks, issued_to, reply_required, reply_sent_date || null,
+    reply_ref_no, reply_sent_by, reply_sent_in, reply_count || 0
+  ];
+
+  db.query(sql, values, (err, result) => {
+    if (err) {
+      console.error("Error saving inward entry:", err);
+      return res.send("Error saving data: " + err.message);
+    }
+
+    res.send(`
+      <h3 style="font-family:Arial; text-align:center;">Inward Entry Saved Successfully!</h3>
+      <p style="text-align:center;"><a href="/inward.html">Add Another Entry</a></p>
+    `);
+  });
+});
+
+
+
+
 app.listen(3000, () => console.log("Server running on http://localhost:3000"));
