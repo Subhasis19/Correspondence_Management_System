@@ -143,6 +143,137 @@ app.post("/register", (req, res) => {
   });
 });
 
+
+// ---------- Forgot / Reset Password (separate OTP flow) ----------
+app.post('/forgot-password', (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ success: false, message: 'Email required' });
+
+  // Basic rate-limiting via session (max 5 sends per 30 mins)
+  req.session.resetOtpSends = (req.session.resetOtpSends || 0);
+  if (!req.session.resetOtpSendsResetAt || Date.now() > req.session.resetOtpSendsResetAt) {
+    // reset counter window
+    req.session.resetOtpSends = 0;
+    req.session.resetOtpSendsResetAt = Date.now() + 30 * 60 * 1000; // 30 minutes
+  }
+  if (req.session.resetOtpSends >= 5 && !req.body.resend) {
+    return res.status(429).json({ success: false, message: 'Too many OTP requests. Try later.' });
+  }
+
+  // Check that email exists in users table (prevent info leak a little)
+  db.query("SELECT id FROM users WHERE email = ?", [email], (err, results) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ success: false, message: 'DB error' });
+    }
+
+    if (results.length === 0) {
+      // For privacy, respond success but do not send an email. (Optional: send an email informing no account exists.)
+      return res.json({ success: true, message: 'If an account exists, an OTP was sent.' });
+    }
+
+    // generate 6-digit OTP
+    const otp = crypto.randomInt(100000, 999999).toString();
+    const expiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes
+
+    // store in session separate from registration OTP
+    req.session.resetOtp = otp;
+    req.session.resetOtpExpires = expiresAt;
+    req.session.resetOtpEmail = email;
+    req.session.resetOtpVerified = false;
+
+    // increment send counter
+    req.session.resetOtpSends++;
+
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: 'Password reset OTP',
+      text: `Your password reset OTP is ${otp}. It expires in 5 minutes.`,
+      html: `<p>Your password reset OTP is <strong>${otp}</strong>. It expires in 5 minutes.</p>`
+    };
+
+    transporter.sendMail(mailOptions, (err) => {
+      if (err) {
+        console.error('Forgot OTP send error:', err);
+        return res.status(500).json({ success: false, message: 'Failed to send OTP' });
+      }
+      console.log('Reset OTP sent to', email, otp);
+      return res.json({ success: true, message: 'OTP sent' });
+    });
+  });
+});
+
+app.post('/verify-reset-otp', (req, res) => {
+  const { email, otp } = req.body;
+  if (!email || !otp) return res.status(400).json({ verified: false, message: 'Email and OTP required' });
+
+  if (!req.session.resetOtp || !req.session.resetOtpExpires || !req.session.resetOtpEmail) {
+    return res.status(400).json({ verified: false, message: 'No reset OTP requested' });
+  }
+
+  if (Date.now() > req.session.resetOtpExpires) {
+    // clear
+    delete req.session.resetOtp;
+    delete req.session.resetOtpExpires;
+    delete req.session.resetOtpEmail;
+    req.session.resetOtpVerified = false;
+    return res.status(400).json({ verified: false, message: 'OTP expired' });
+  }
+
+  if (req.session.resetOtpEmail !== email) {
+    return res.status(400).json({ verified: false, message: 'Email mismatch' });
+  }
+
+  if (req.session.resetOtp === otp.toString()) {
+    req.session.resetOtpVerified = true;
+    // keep email but clear otp value to avoid reuse
+    delete req.session.resetOtp;
+    delete req.session.resetOtpExpires;
+    return res.json({ verified: true, message: 'OTP verified' });
+  } else {
+    return res.status(400).json({ verified: false, message: 'Invalid OTP' });
+  }
+});
+
+app.post('/reset-password', (req, res) => {
+  const { email, password } = req.body;
+  if (!email || !password) return res.status(400).json({ success: false, message: 'Email and new password required' });
+
+  // ensure OTP was verified
+  if (!req.session.resetOtpVerified || req.session.resetOtpEmail !== email) {
+    return res.status(403).json({ success: false, message: 'OTP not verified for this email' });
+  }
+
+  // Optional: Enforce password strength server-side
+  if (typeof password !== 'string' || password.length < 8) {
+    return res.status(400).json({ success: false, message: 'Password must be at least 8 characters' });
+  }
+
+  // Hash and update DB
+  bcrypt.hash(password, 10, (err, hash) => {
+    if (err) {
+      console.error('Hash error:', err);
+      return res.status(500).json({ success: false, message: 'Server error' });
+    }
+
+    db.query("UPDATE users SET password = ? WHERE email = ?", [hash, email], (err, result) => {
+      if (err) {
+        console.error('DB update error:', err);
+        return res.status(500).json({ success: false, message: 'DB error' });
+      }
+
+      // clear reset session flags
+      req.session.resetOtpVerified = false;
+      delete req.session.resetOtpEmail;
+      req.session.resetOtpSends = 0;
+
+      return res.json({ success: true, message: 'Password updated' });
+    });
+  });
+});
+
+
 // Login Route
 app.post("/login", (req, res) => {
   const { email, password } = req.body;

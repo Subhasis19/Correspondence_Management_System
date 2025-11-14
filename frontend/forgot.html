@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Forgot Password</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+
+<body>
+    <h2>Forgot Password</h2>
+
+    <form id="forgotForm">
+
+        <!-- STEP 1: Enter Email -->
+        <div id="step1">
+            <input type="email" id="fp_email" placeholder="Enter your registered email" required
+                style="margin-bottom: 12px;">
+            <br>
+            <button type="button" id="fp_send_otp" style="margin-top: 8px;">Send OTP</button>
+        </div>
+
+        <!-- STEP 2: Enter OTP -->
+        <div id="step2" style="display:none;">
+            <input type="text" id="fp_otp" placeholder="Enter OTP"
+                style="margin-bottom: 12px;">
+            <br>
+            <button type="button" id="fp_verify_otp" style="margin-top: 8px;">Verify OTP</button>
+            <br><br>
+            <button type="button" id="fp_resend_otp" style="margin-top: 8px; background:#6aa0ff;">Resend OTP</button>
+        </div>
+
+        <!-- STEP 3: Reset Password -->
+        <div id="step3" style="display:none;">
+
+            <div class="password-container" style="margin-bottom: 12px;">
+                <input type="password" id="fp_new_password" placeholder="New Password" required>
+                <i class="fa-solid fa-eye toggle-password"
+                    onclick="togglePassword('fp_new_password', this)"></i>
+            </div>
+
+            <div class="password-container" style="margin-bottom: 12px;">
+                <input type="password" id="fp_confirm_password" placeholder="Confirm New Password" required>
+                <i class="fa-solid fa-eye toggle-password"
+                    onclick="togglePassword('fp_confirm_password', this)"></i>
+            </div>
+
+            <button type="button" id="fp_reset_password" style="margin-top: 8px;">Reset Password</button>
+        </div>
+
+    </form>
+
+    <p><a href="index.html">Back to Login</a></p>
+
+    <script>
+        function togglePassword(id, icon) {
+            const input = document.getElementById(id);
+            if (input.type === "password") {
+                input.type = "text";
+                icon.classList.remove("fa-eye");
+                icon.classList.add("fa-eye-slash");
+            } else {
+                input.type = "password";
+                icon.classList.remove("fa-eye-slash");
+                icon.classList.add("fa-eye");
+            }
+        }
+
+        function show(id) { document.getElementById(id).style.display = "block"; }
+        function hide(id) { document.getElementById(id).style.display = "none"; }
+        function toast(msg) { alert(msg); }
+
+        // STEP 1 — Send OTP
+        document.getElementById("fp_send_otp").addEventListener("click", async () => {
+            const email = document.getElementById("fp_email").value.trim();
+            if (!email) return toast("Please enter your email.");
+
+            const res = await fetch("/forgot-password", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email })
+            });
+
+            const data = await res.json();
+            if (data.success) {
+                toast("OTP sent to your email.");
+                hide("step1"); show("step2");
+            } else {
+                toast(data.message || "Failed to send OTP.");
+            }
+        });
+
+        // Resend OTP
+        document.getElementById("fp_resend_otp").addEventListener("click", async () => {
+            const email = document.getElementById("fp_email").value.trim();
+            const res = await fetch("/forgot-password", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email, resend: true })
+            });
+
+            const data = await res.json();
+            toast(data.success ? "OTP resent." : "Failed to resend OTP.");
+        });
+
+        // STEP 2 — Verify OTP
+        document.getElementById("fp_verify_otp").addEventListener("click", async () => {
+            const email = document.getElementById("fp_email").value.trim();
+            const otp = document.getElementById("fp_otp").value.trim();
+            if (!otp) return toast("Please enter the OTP.");
+
+            const res = await fetch("/verify-reset-otp", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email, otp })
+            });
+
+            const data = await res.json();
+            if (data.verified) {
+                toast("OTP verified. Set your new password.");
+                hide("step2"); show("step3");
+            } else {
+                toast(data.message || "Invalid OTP.");
+            }
+        });
+
+        // STEP 3 — Reset Password
+        document.getElementById("fp_reset_password").addEventListener("click", async () => {
+            const email = document.getElementById("fp_email").value.trim();
+            const pass = document.getElementById("fp_new_password").value;
+            const confirm = document.getElementById("fp_confirm_password").value;
+
+            if (!pass || pass.length < 8)
+                return toast("Password must be at least 8 characters.");
+            if (pass !== confirm)
+                return toast("Passwords do not match.");
+
+            const res = await fetch("/reset-password", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email, password: pass })
+            });
+
+            const data = await res.json();
+            if (data.success) {
+                toast("Password reset successful!");
+                window.location.href = "/index.html";
+            } else {
+                toast(data.message || "Error resetting password.");
+            }
+        });
+
+    </script>
+</body>
+
+</html>
