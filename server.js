@@ -229,6 +229,18 @@ app.post("/inward/add", (req, res) => {
 });
 
 
+// ====================== FETCH ALL INWARD RECORDS ========================= //
+app.get("/inward/all", (req, res) => {
+  const sql = "SELECT * FROM inward_records ORDER BY id DESC";
+
+  db.query(sql, (err, results) => {
+    if (err) {
+      console.error("Error fetching inward records:", err);
+      return res.status(500).send("Database error");
+    }
+    res.json(results);
+  });
+});
 
 
 app.listen(3000, () => console.log("Server running on http://localhost:3000"));
