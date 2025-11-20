@@ -78,7 +78,7 @@ app.post('/verify-otp', (req, res) => {
     return res.status(400).send({ verified: false, message: 'No OTP requested' });
   }
 
-  if (Date.now() > req.session.otpExpires) {
+  if (Date.now() > req.session.otpExpires) { 
     delete req.session.otp;
     delete req.session.otpExpires;
     delete req.session.otpEmail;
@@ -324,6 +324,12 @@ app.post("/inward/add", (req, res) => {
     reply_sent_in,
     reply_count
   } = req.body;
+
+  // Backend PIN validation
+if (!/^\d{6}$/.test(sender_pin)) {
+  return res.send("Invalid PIN Code. Must be exactly 6 digits.");
+}
+
 
   // SQL Insert Query
   const sql = `

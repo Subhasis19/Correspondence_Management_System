@@ -1,268 +1,335 @@
 <!DOCTYPE html>
 <html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>New Inward Correspondence Entry</title>
+    <link rel="stylesheet" href="inward-style.css" />
+  </head>
 
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>New Inward Correspondence Entry</title>
-  <link rel="stylesheet" href="inward-style.css">
-</head>
+  <body>
+    <div class="inward-container">
+      <h2>New Inward Correspondence Entry</h2>
 
-<body>
+      <form id="inwardForm" action="/inward/add" method="POST">
+        <!-- Left Column -->
+        <div class="left-column">
+          <!-- Auto Date -->
+          <label>* Inward Date:</label>
+          <input type="date" name="date_of_receipt" id="inwardDate" required />
 
-  <div class="inward-container">
-    <h2>New Inward Correspondence Entry</h2>
+          <!-- Auto Month -->
+          <label>Month :</label>
+          <input
+            type="text"
+            name="month"
+            id="month"
+            placeholder="month"
+            readonly
+          />
 
-    <form id="inwardForm" action="/inward/add" method="POST">
-      <!-- Left Column -->
-      <div class="left-column">
+          <!-- Auto Year -->
+          <label>Year :</label>
+          <input
+            type="text"
+            name="year"
+            id="year"
+            placeholder="year"
+            readonly
+          />
 
-        <!-- Auto Date -->
-        <label>* Inward Date:</label>
-        <input type="date" name="date_of_receipt" id="inwardDate" required>
-        
+          <!-- Office -->
+          <label>* Office (Received In):</label>
+          <select name="received_in" required>
+            <option value="">Select Office</option>
+            <option value="Silchar">Silchar</option>
+            <option value="Guwahati">Guwahati</option>
+          </select>
 
-        <!-- Auto Month -->
-        <label>Month :</label>
-        <input type="text" name="month" id="month" placeholder="month" readonly>
+          <!-- Sender Info -->
+          <label>* Name of Sender:</label>
+          <input
+            type="text"
+            name="name_of_sender"
+            placeholder="Enter Sender Name"
+            required
+          />
 
-        <!-- Auto Year -->
-        <label>Year :</label>
-        <input type="text" name="year" id="year" placeholder="year" readonly>
+          <label>Address of Sender:</label>
+          <input
+            type="text"
+            name="address_of_sender"
+            placeholder="Enter Address"
+          />
 
-        <!-- Office -->
-        <label>* Office (Received In):</label>
-        <select name="received_in" required>
-          <option value="">Select Office</option>
-          <option value="Silchar">Silchar</option>
-          <option value="Guwahati">Guwahati</option>
-        </select>
+          <label>City:</label>
+          <input type="text" name="sender_city" placeholder="Enter City" />
 
-        <!-- Sender Info -->
-        <label>* Name of Sender:</label>
-        <input type="text" name="name_of_sender" placeholder="Enter Sender Name" required>
+          <label>State:</label>
+          <select name="sender_state" id="senderState">
+            <option value="">Select State</option>
 
-        <label>Address of Sender:</label>
-        <input type="text" name="address_of_sender" placeholder="Enter Address">
+            <!-- Region A -->
+            <option>Bihar</option>
+            <option>Haryana</option>
+            <option>Himachal Pradesh</option>
+            <option>Madhya Pradesh</option>
+            <option>Rajasthan</option>
+            <option>Uttar Pradesh</option>
+            <option>Jharkhand</option>
+            <option>Chhattisgarh</option>
+            <option>Uttarakhand</option>
+            <option>Delhi</option>
+            <option>Andaman & Nicobar Islands</option>
 
-        <label>City:</label>
-        <input type="text" name="sender_city" placeholder="Enter City">
+            <!-- Region B -->
+            <option>Gujarat</option>
+            <option>Maharashtra</option>
+            <option>Punjab</option>
+            <option>Chandigarh</option>
+            <option>Daman & Diu</option>
+            <option>Dadra & Nagar Haveli</option>
 
-        <label>State:</label>
-<select name="sender_state" id="senderState">
-  <option value="">Select State</option>
+            <!-- Region C -->
+            <option>Andhra Pradesh</option>
+            <option>Arunachal Pradesh</option>
+            <option>Assam</option>
+            <option>Goa</option>
+            <option>Kerala</option>
+            <option>Tamil Nadu</option>
+            <option>West Bengal</option>
+            <option>Karnataka</option>
+            <option>Odisha</option>
+            <option>Telangana</option>
+            <option>Sikkim</option>
+            <option>Tripura</option>
+            <option>Meghalaya</option>
+            <option>Mizoram</option>
+            <option>Nagaland</option>
+            <option>Manipur</option>
+            <option>Puducherry</option>
+            <option>Lakshadweep</option>
+            <option>Ladakh</option>
+            <option>Jammu & Kashmir</option>
+          </select>
 
-  <!-- Region A -->
-  <option>Bihar</option>
-  <option>Haryana</option>
-  <option>Himachal Pradesh</option>
-  <option>Madhya Pradesh</option>
-  <option>Rajasthan</option>
-  <option>Uttar Pradesh</option>
-  <option>Jharkhand</option>
-  <option>Chhattisgarh</option>
-  <option>Uttarakhand</option>
-  <option>Delhi</option>
-  <option>Andaman & Nicobar Islands</option>
+          <label>Pin Code:</label>
+          <input
+            type="text"
+            name="sender_pin"
+            id="sender_pin"
+            placeholder="Enter 6-digit Pin"
+            maxlength="6"
+            pattern="\d{6}"
+            required
+          />
+          <label>Region :</label>
+          <input
+            type="text"
+            name="sender_region"
+            id="senderRegion"
+            placeholder="(A/B/C)"
+            readonly
+          />
 
-  <!-- Region B -->
-  <option>Gujarat</option>
-  <option>Maharashtra</option>
-  <option>Punjab</option>
-  <option>Chandigarh</option>
-  <option>Daman & Diu</option>
-  <option>Dadra & Nagar Haveli</option>
+          <label>Sender Organization Type:</label>
+          <select name="sender_org_type">
+            <option value="">Select Type</option>
+            <option>Central</option>
+            <option>State</option>
+            <option>Private</option>
+            <option>Individual</option>
+          </select>
+        </div>
 
-  <!-- Region C -->
-  <option>Andhra Pradesh</option>
-  <option>Arunachal Pradesh</option>
-  <option>Assam</option>
-  <option>Goa</option>
-  <option>Kerala</option>
-  <option>Tamil Nadu</option>
-  <option>West Bengal</option>
-  <option>Karnataka</option>
-  <option>Odisha</option>
-  <option>Telangana</option>
-  <option>Sikkim</option>
-  <option>Tripura</option>
-  <option>Meghalaya</option>
-  <option>Mizoram</option>
-  <option>Nagaland</option>
-  <option>Manipur</option>
-  <option>Puducherry</option>
-  <option>Lakshadweep</option>
-  <option>Ladakh</option>
-  <option>Jammu & Kashmir</option>
+        <!-- Right Column -->
+        <div class="right-column">
+          <label>* Inward No. :</label>
+          <input
+            type="text"
+            name="inward_no"
+            id="inwardNo"
+            readonly
+            placeholder="Auto Generated"
+          />
 
-</select>
+          <label>* Type of Document:</label>
+          <select name="type_of_document" required>
+            <option value="">Select Document Type</option>
+            <option>Letter</option>
+            <option>Bill</option>
+            <option>Other Document</option>
+          </select>
+
+          <label>Language of Document:</label>
+          <select name="language_of_document">
+            <option value="">Select Language</option>
+            <option>English</option>
+            <option>Hindi</option>
+            <option>Bilingual</option>
+          </select>
+
+          <label>Count:</label>
+          <input type="number" name="count" placeholder="Number of Copies" />
+
+          <label>Remarks:</label>
+          <select name="remarks">
+            <option value="">Select Remark</option>
+            <option>Action</option>
+            <option>Information</option>
+          </select>
+
+          <label>Issued To (Employee Name):</label>
+          <input
+            type="text"
+            name="issued_to"
+            placeholder="Enter Employee Name"
+          />
+
+          <label>Reply Required:</label>
+          <select name="reply_required">
+            <option value="">Select Option</option>
+            <option>Yes</option>
+            <option>No</option>
+          </select>
+
+          <label>Reply Sent Date:</label>
+          <input type="date" name="reply_sent_date" />
+
+          <label>Reply Reference No.:</label>
+          <input
+            type="text"
+            name="reply_ref_no"
+            placeholder="Reference Number"
+          />
+
+          <label>Reply Sent By:</label>
+          <select name="reply_sent_by">
+            <option value="">Select Mode</option>
+            <option>Speed Post</option>
+            <option>Email</option>
+          </select>
+
+          <label>Reply Sent In:</label>
+          <select name="reply_sent_in">
+            <option value="">Select Language</option>
+            <option>English</option>
+            <option>Hindi</option>
+            <option>Bilingual</option>
+          </select>
+
+          <label>Reply Count:</label>
+          <input
+            type="number"
+            name="reply_count"
+            placeholder="Number of Replies"
+          />
+        </div>
+
+        <!-- Save Button -->
+        <div class="button-container">
+          <button type="submit">Save Inward Entry</button>
+        </div>
+      </form>
+    </div>
+
+    <script>
+      // Auto-generate Inward No.
+      document.getElementById("inwardNo").value = "INW-" + Date.now();
+
+      // Auto-fill Region based on State
+      const stateToRegion = {
+        // Region A
+        Bihar: "A",
+        Haryana: "A",
+        "Himachal Pradesh": "A",
+        "Madhya Pradesh": "A",
+        Rajasthan: "A",
+        "Uttar Pradesh": "A",
+        Jharkhand: "A",
+        Chhattisgarh: "A",
+        Uttarakhand: "A",
+        Delhi: "A",
+        "Andaman & Nicobar Islands": "A",
+
+        // Region B
+        Gujarat: "B",
+        Maharashtra: "B",
+        Punjab: "B",
+        Chandigarh: "B",
+        "Daman & Diu": "B",
+        "Dadra & Nagar Haveli": "B",
+
+        // Region C (all others)
+        "Andhra Pradesh": "C",
+        "Arunachal Pradesh": "C",
+        Assam: "C",
+        Goa: "C",
+        Kerala: "C",
+        "Tamil Nadu": "C",
+        "West Bengal": "C",
+        Karnataka: "C",
+        Odisha: "C",
+        Telangana: "C",
+        Sikkim: "C",
+        Tripura: "C",
+        Meghalaya: "C",
+        Mizoram: "C",
+        Nagaland: "C",
+        Manipur: "C",
+        Puducherry: "C",
+        Lakshadweep: "C",
+        Ladakh: "C",
+        "Jammu & Kashmir": "C",
+      };
+
+      document
+        .getElementById("senderState")
+        .addEventListener("change", function () {
+          const selectedState = this.value;
+          const region = stateToRegion[selectedState] || "";
+          document.getElementById("senderRegion").value = region;
+        });
+
+      // Auto-fill Month and Year based on Inward Date
+      const inwardDateInput = document.getElementById("inwardDate");
+      const monthInput = document.getElementById("month");
+      const yearInput = document.getElementById("year");
+
+      inwardDateInput.addEventListener("change", function () {
+        const date = new Date(this.value);
+        if (!isNaN(date)) {
+          const monthNames = [
+            "January",
+            "February",
+            "March",
+            "April",
+            "May",
+            "June",
+            "July",
+            "August",
+            "September",
+            "October",
+            "November",
+            "December",
+          ];
+          monthInput.value = monthNames[date.getMonth()];
+          yearInput.value = date.getFullYear();
+        }
+      });
 
 
-        <label>Pin Code:</label>
-        <input type="number" name="sender_pin" placeholder="Enter 6-digit Pin">
+      // Pin code validation: only digits + max 6
+const pinInput = document.getElementById("sender_pin");
 
-        <label>Region :</label>
-        <input type="text" name="sender_region" id="senderRegion" placeholder="(A/B/C)" readonly>
-
-        <label>Sender Organization Type:</label>
-        <select name="sender_org_type">
-          <option value="">Select Type</option>
-          <option>Central</option>
-          <option>State</option>
-          <option>Private</option>
-          <option>Individual</option>
-        </select>
-      </div>
-
-      <!-- Right Column -->
-      <div class="right-column">
-
-        <label>* Inward No. :</label>
-        <input type="text" name="inward_no" id="inwardNo" readonly placeholder="Auto Generated">
-
-        <label>* Type of Document:</label>
-        <select name="type_of_document" required>
-          <option value="">Select Document Type</option>
-          <option>Letter</option>
-          <option>Bill</option>
-          <option>Other Document</option>
-        </select>
-
-        <label>Language of Document:</label>
-        <select name="language_of_document">
-          <option value="">Select Language</option>
-          <option>English</option>
-          <option>Hindi</option>
-          <option>Bilingual</option>
-        </select>
-
-        <label>Count:</label>
-        <input type="number" name="count" placeholder="Number of Copies">
-
-        <label>Remarks:</label>
-        <select name="remarks">
-          <option value="">Select Remark</option>
-          <option>Action</option>
-          <option>Information</option>
-        </select>
-
-        <label>Issued To (Employee Name):</label>
-        <input type="text" name="issued_to" placeholder="Enter Employee Name">
-
-        <label>Reply Required:</label>
-        <select name="reply_required">
-          <option value="">Select Option</option>
-          <option>Yes</option>
-          <option>No</option>
-        </select>
-
-        <label>Reply Sent Date:</label>
-        <input type="date" name="reply_sent_date">
-
-        <label>Reply Reference No.:</label>
-        <input type="text" name="reply_ref_no" placeholder="Reference Number">
-
-        <label>Reply Sent By:</label>
-        <select name="reply_sent_by">
-          <option value="">Select Mode</option>
-          <option>Speed Post</option>
-          <option>Email</option>
-        </select>
-
-        <label>Reply Sent In:</label>
-        <select name="reply_sent_in">
-          <option value="">Select Language</option>
-          <option>English</option>
-          <option>Hindi</option>
-          <option>Bilingual</option>
-        </select>
-
-        <label>Reply Count:</label>
-        <input type="number" name="reply_count" placeholder="Number of Replies">
-      </div>
-
-      <!-- Save Button -->
-      <div class="button-container">
-        <button type="submit">Save Inward Entry</button>
-      </div>
-
-    </form>
-  </div>
-
-  <script>
-    // Auto-generate Inward No.
-    document.getElementById("inwardNo").value = "INW-" + Date.now();
-
-    // Auto-fill Region based on State
-    const stateToRegion = {
-  // Region A
-  "Bihar": "A",
-  "Haryana": "A",
-  "Himachal Pradesh": "A",
-  "Madhya Pradesh": "A",
-  "Rajasthan": "A",
-  "Uttar Pradesh": "A",
-  "Jharkhand": "A",
-  "Chhattisgarh": "A",
-  "Uttarakhand": "A", 
-  "Delhi": "A",
-  "Andaman & Nicobar Islands": "A",
-
-  // Region B
-  "Gujarat": "B",
-  "Maharashtra": "B",
-  "Punjab": "B",
-  "Chandigarh": "B",
-  "Daman & Diu": "B",
-  "Dadra & Nagar Haveli": "B",
-
-  // Region C (all others)
-  "Andhra Pradesh": "C",
-  "Arunachal Pradesh": "C",
-  "Assam": "C",
-  "Goa": "C",
-  "Kerala": "C",
-  "Tamil Nadu": "C",
-  "West Bengal": "C",
-  "Karnataka": "C",
-  "Odisha": "C",
-  "Telangana": "C",
-  "Sikkim": "C",
-  "Tripura": "C",
-  "Meghalaya": "C",
-  "Mizoram": "C",
-  "Nagaland": "C",
-  "Manipur": "C",
-  "Puducherry": "C",
-  "Lakshadweep": "C",
-  "Ladakh": "C",
-  "Jammu & Kashmir": "C"
-};
+pinInput.addEventListener("input", function () {
+  this.value = this.value.replace(/\D/g, ""); // remove non-digit
+  if (this.value.length > 6) {
+    this.value = this.value.slice(0, 6); // limit to 6 digits
+  }
+});
 
 
-    document.getElementById("senderState").addEventListener("change", function () {
-      const selectedState = this.value;
-      const region = stateToRegion[selectedState] || "";
-      document.getElementById("senderRegion").value = region;
-    });
-
-    // Auto-fill Month and Year based on Inward Date
-    const inwardDateInput = document.getElementById("inwardDate");
-    const monthInput = document.getElementById("month");
-    const yearInput = document.getElementById("year");
-
-    inwardDateInput.addEventListener("change", function () {
-      const date = new Date(this.value);
-      if (!isNaN(date)) {
-        const monthNames = [
-          "January", "February", "March", "April", "May", "June",
-          "July", "August", "September", "October", "November", "December"
-        ];
-        monthInput.value = monthNames[date.getMonth()];
-        yearInput.value = date.getFullYear();
-      }
-    });
-  </script>
-</body>
-
+    </script>
+  </body>
 </html>
