@@ -296,79 +296,130 @@ app.post("/login", (req, res) => {
   });
 });
 
-// ====================== INWARD ENTRY ROUTE ========================= //
 
-app.post("/inward/add", (req, res) => {
-  const {
-    date_of_receipt,
-    month,
-    year,
-    received_in,
-    name_of_sender,
-    address_of_sender,
-    sender_city,
-    sender_state,
-    sender_pin,
-    sender_region,
-    sender_org_type,
-    inward_no,
-    type_of_document,
-    language_of_document,
-    count,
-    remarks,
-    issued_to,
-    reply_required,
-    reply_sent_date,
-    reply_ref_no,
-    reply_sent_by,
-    reply_sent_in,
-    reply_count
-  } = req.body;
 
-  // Backend PIN validation
-if (!/^\d{6}$/.test(sender_pin)) {
-  return res.send("Invalid PIN Code. Must be exactly 6 digits.");
+
+// ====================== INWARD NUMBER GENERATOR ========================= //
+
+function generateInwardNumber() {
+  return new Promise((resolve) => {
+    const year = new Date().getFullYear();
+
+    // Generate random 6-digit number (000000 - 999999)
+    const randomNum = Math.floor(Math.random() * 1000000)
+      .toString()
+      .padStart(6, "0");
+
+    const inwardNo = `INW/${year}/${randomNum}`;
+    resolve(inwardNo);
+  });
 }
 
 
-  // SQL Insert Query
-  const sql = `
-    INSERT INTO inward_records (
-      date_of_receipt, month, year, received_in,
-      name_of_sender, address_of_sender, sender_city,
-      sender_state, sender_pin, sender_region, sender_org_type,
-      inward_no, type_of_document, language_of_document, count,
-      remarks, issued_to, reply_required, reply_sent_date,
-      reply_ref_no, reply_sent_by, reply_sent_in, reply_count
-    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-  `;
+// ====================== INWARD ENTRY ROUTE ========================= //
 
-  const values = [
-    date_of_receipt, month, year, received_in,
-    name_of_sender, address_of_sender, sender_city,
-    sender_state, sender_pin, sender_region, sender_org_type,
-    inward_no, type_of_document, language_of_document, count || 1,
-    remarks, issued_to, reply_required, reply_sent_date || null,
-    reply_ref_no, reply_sent_by, reply_sent_in, reply_count || 0
-  ];
+app.post("/inward/add", async (req, res) => {
+  try {
+    const {
+      date_of_receipt,
+      month,
+      year,
+      received_in,
+      name_of_sender,
+      address_of_sender,
+      sender_city,
+      sender_state,
+      sender_pin,
+      sender_region,
+      sender_org_type,
+      type_of_document,
+      language_of_document,
+      count,
+      remarks,
+      issued_to,
+      reply_required,
+      reply_sent_date,
+      reply_ref_no,
+      reply_sent_by,
+      reply_sent_in,
+      reply_count
+    } = req.body;
 
-  db.query(sql, values, (err, result) => {
-    if (err) {
-      console.error("Error saving inward entry:", err);
-      return res.send("Error saving data: " + err.message);
+    //  PIN code check
+    if (!/^\d{6}$/.test(sender_pin)) {
+      return res.status(400).send("Invalid PIN Code. Must be exactly 6 digits.");
+    }
+
+    let inward_no;
+    let inserted = false;
+    let attempts = 0;
+
+    while (!inserted && attempts < 5) {
+      attempts++;
+
+      inward_no = await generateInwardNumber();
+
+      const sql = `
+        INSERT INTO inward_records (
+          date_of_receipt, month, year, received_in,
+          name_of_sender, address_of_sender, sender_city,
+          sender_state, sender_pin, sender_region, sender_org_type,
+          inward_no, type_of_document, language_of_document, count,
+          remarks, issued_to, reply_required, reply_sent_date,
+          reply_ref_no, reply_sent_by, reply_sent_in, reply_count
+        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      `;
+
+      const values = [
+        date_of_receipt, month, year, received_in,
+        name_of_sender, address_of_sender, sender_city,
+        sender_state, sender_pin, sender_region, sender_org_type,
+        inward_no, type_of_document, language_of_document, count ?? 1,
+        remarks, issued_to, reply_required, reply_sent_date || null,
+        reply_ref_no, reply_sent_by, reply_sent_in, reply_count ?? 0
+      ];
+
+      try {
+        await new Promise((resolve, reject) =>
+          db.query(sql, values, (err, result) => {
+            if (err) return reject(err);
+            resolve(result);
+          })
+        );
+
+        inserted = true;
+
+      } catch (err) {
+        // Duplicate inward number → retry
+        if (err.code === "ER_DUP_ENTRY") {
+          console.log("Duplicate inward_no detected, retrying...");
+          continue;
+        }
+        throw err; // other errors
+      }
+    }
+
+    if (!inserted) {
+      return res.status(500).send("Failed to generate unique Inward Number. Try again.");
     }
 
     res.send(`
       <h3 style="font-family:Arial; text-align:center;">Inward Entry Saved Successfully!</h3>
+      <p style="text-align:center;">Generated Inward No: <strong>${inward_no}</strong></p>
       <p style="text-align:center;"><a href="/inward.html">Add Another Entry</a></p>
     `);
-  });
+
+  } catch (error) {
+    console.error("Inward insert error:", error);
+    res.status(500).send("Server Error");
+  }
 });
+
 
 
 // ====================== FETCH ALL INWARD RECORDS ========================= //
 app.get("/inward/all", (req, res) => {
-  const sql = "SELECT * FROM inward_records ORDER BY id DESC";
+  const sql = "SELECT * FROM inward_records ORDER BY s_no DESC";
 
   db.query(sql, (err, results) => {
     if (err) {
