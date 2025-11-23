@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - CMS</title>
+    <link rel="stylesheet" href="admin-style.css">
+    <!-- Using Google Fonts for a premium look -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+            <div class="sidebar">
+        <div class="sidebar-header">
+            <h3>CMS</h3>
+            <p>Correspondence System</p>
+        </div>
+        <div class="sidebar-menu">
+            <a href="admin-dashboard.html" class="active"><i class="fa-solid fa-th-large"></i> Dashboard</a>
+            <a href="inward.html"><i class="fa-solid fa-file-import"></i> Inward Entry</a>
+            <a href="outward.html"><i class="fa-solid fa-file-export"></i> Outward Entry</a>
+            <a href="admin-records.html"><i class="fa-solid fa-shield-alt"></i> Admin Panel</a>
+        </div>
+        <div class="sidebar-footer">
+            <div class="user-profile">
+                <div class="avatar">A</div>
+                <div class="user-info">
+                    <span class="username">admin</span>
+                    <span class="role">ADMIN</span>
+                </div>
+            </div>
+            <a href="/logout" class="logout-link"><i class="fa-solid fa-sign-out-alt"></i> Logout</a>
+        </div>
+    </div>
+
+
+
+       <div class="content">
+        <div class="header-welcome">
+            <h1>Welcome, admin</h1>
+        </div>
+
+        <div class="dashboard-cards">
+            <!-- Recent Inwards Card -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>Recent Inwards</h3>
+                </div>
+                <div class="card-body">
+                    <table class="recent-table" id="recentInwardsTable">
+                        <thead>
+                            <tr>
+                                <th>Inward No</th>
+                                <th>Date</th>
+                                <th>From</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Recent Outwards Card -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>Recent Outwards</h3>
+                </div>
+                <div class="card-body">
+                    <div id="recentOutwardsContent">
+                        <p class="no-records">No recent records.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+    
+</body>
+</html>
