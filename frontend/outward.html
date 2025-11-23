@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New Outward Correspondence Entry</title>
+    <link rel="stylesheet" href="inward-style.css">
+</head>
+
+<body>
+
+    <div class="inward-container">
+        <h2>New Outward Correspondence Entry</h2>
+
+        <form id="outwardForm" action="/outward/add" method="POST">
+
+            <!-- Left Column -->
+            <div class="left-column">
+
+                <label>* Date of Despatch:</label>
+                <input type="date" name="date_of_despatch" id="outwardDate" required>
+
+                <label>Month:</label>
+                <input type="text" name="month" id="month" placeholder="Month" readonly>
+
+                <label>Year:</label>
+                <input type="text" name="year" id="year" placeholder="Year" readonly>
+
+                <label>* Reply From:</label>
+                <select name="reply_from" required>
+                    <option value="">Select Office</option>
+                    <option value="Silchar">Silchar</option>
+                    <option value="Guwahati">Guwahati</option>
+                </select>
+
+                <label>* Name of Receiver:</label>
+                <input type="text" name="name_of_receiver" placeholder="Enter Receiver Name" required>
+
+                <label>Address of Receiver:</label>
+                <input type="text" name="address_of_receiver" placeholder="Enter Address">
+
+                <label>Receiver City:</label>
+                <input type="text" name="receiver_city" placeholder="Enter City">
+
+                <label>Receiver State:</label>
+                <select name="receiver_state" id="receiverState">
+                    <option value="">Select State</option>
+                    <option>Assam</option>
+                    <option>Manipur</option>
+                    <option>Meghalaya</option>
+                    <option>Mizoram</option>
+                    <option>Nagaland</option>
+                    <option>Tripura</option>
+                </select>
+
+                <label>Receiver Pin:</label>
+                <input type="number" name="receiver_pin" placeholder="Enter 6-digit Pin">
+
+                <label>Receiver Region:</label>
+                <input type="text" name="receiver_region" id="receiverRegion" placeholder="(A/B/C)" readonly>
+
+                <label>Receiver Organization Type:</label>
+                <select name="receiver_org_type">
+                    <option value="">Select Type</option>
+                    <option>Central</option>
+                    <option>State</option>
+                    <option>Private</option>
+                    <option>Individual</option>
+                </select>
+            </div>
+
+            <!-- Right Column -->
+            <div class="right-column">
+
+                <label>* Outward No.:</label>
+                <input type="text" name="outward_no" id="outwardNo" readonly placeholder="Auto Generated">
+
+                <label>* Type of Document:</label>
+                <select name="type_of_document" required>
+                    <option value="">Select Document Type</option>
+                    <option>Letter</option>
+                    <option>Bill</option>
+                    <option>Other Document</option>
+                </select>
+
+                <label>Language of Document:</label>
+                <select name="language_of_document">
+                    <option value="">Select Language</option>
+                    <option>English</option>
+                    <option>Hindi</option>
+                    <option>Bilingual</option>
+                </select>
+
+                <label>Count:</label>
+                <input type="number" name="count" placeholder="Number of Copies">
+
+                <label>Inward No:</label>
+                <input type="text" name="inward_no" placeholder="Enter Related Inward No">
+
+                <label>Reply Required:</label>
+                <select name="reply_required">
+                    <option value="">Select Option</option>
+                    <option>Yes</option>
+                    <option>No</option>
+                </select>
+
+                <label>Reply Issued By:</label>
+                <input type="text" name="reply_issued_by" placeholder="Name of Person Signing the Letter">
+
+                <label>Reply Sent Date:</label>
+                <input type="date" name="reply_sent_date">
+
+                <label>Reply Reference No.:</label>
+                <input type="text" name="reply_ref_no" placeholder="Reference Number of Letter">
+
+                <label>Reply Sent By:</label>
+                <select name="reply_sent_by">
+                    <option value="">Select Mode</option>
+                    <option>Speed Post</option>
+                    <option>Email</option>
+                </select>
+
+                <label>Reply Sent In:</label>
+                <select name="reply_sent_in">
+                    <option value="">Select Language</option>
+                    <option>English</option>
+                    <option>Hindi</option>
+                    <option>Bilingual</option>
+                </select>
+
+                <label>Reply Count:</label>
+                <input type="number" name="reply_count" placeholder="Number of Replies">
+            </div>
+
+            <!-- Save Button -->
+            <div class="button-container">
+                <button type="submit">Save Outward Entry</button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        // Auto-generate Outward No.
+        document.getElementById("outwardNo").value = "OUT-" + Date.now();
+
+        // Auto-fill Region based on State
+        const stateToRegion = {
+            Assam: "A",
+            Manipur: "B",
+            Meghalaya: "B",
+            Mizoram: "C",
+            Nagaland: "C",
+            Tripura: "A"
+        };
+
+        document.getElementById("receiverState").addEventListener("change", function () {
+            const selectedState = this.value;
+            const region = stateToRegion[selectedState] || "";
+            document.getElementById("receiverRegion").value = region;
+        });
+
+        // Auto-fill Month and Year based on Date of Despatch
+        const outwardDateInput = document.getElementById("outwardDate");
+        const monthInput = document.getElementById("month");
+        const yearInput = document.getElementById("year");
+
+        outwardDateInput.addEventListener("change", function () {
+            const date = new Date(this.value);
+            if (!isNaN(date)) {
+                const monthNames = [
+                    "January", "February", "March", "April", "May", "June",
+                    "July", "August", "September", "October", "November", "December"
+                ];
+                monthInput.value = monthNames[date.getMonth()];
+                yearInput.value = date.getFullYear();
+            }
+        });
+    </script>
+
+</body>
+
+</html>
