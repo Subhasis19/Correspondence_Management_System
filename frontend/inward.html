@@ -165,7 +165,7 @@
           </select>
 
           <label>Count:</label>
-          <input type="number" name="count" placeholder="Number of Copies" />
+          <input type="number" name="count" placeholder="Number of Copies"  min="0" />
 
           <label>Remarks:</label>
           <select name="remarks">
@@ -218,6 +218,7 @@
             type="number"
             name="reply_count"
             placeholder="Number of Replies"
+            min="0"
           />
         </div>
 
@@ -323,6 +324,16 @@ pinInput.addEventListener("input", function () {
     this.value = this.value.slice(0, 6); // limit to 6 digits
   }
 });
+
+// Prevent negative values for count and reply_count
+document.querySelector("[name='count']").addEventListener("input", function () {
+  if (this.value < 0) this.value = 0;
+});
+
+document.querySelector("[name='reply_count']").addEventListener("input", function () {
+  if (this.value < 0) this.value = 0;
+});
+
 
 
     </script>

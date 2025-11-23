@@ -350,6 +350,11 @@ app.post("/inward/add", async (req, res) => {
       return res.status(400).send("Invalid PIN Code. Must be exactly 6 digits.");
     }
 
+    // Prevent negative count and reply_count
+    const safeCount = Math.max(0, Number(count) || 0);
+    const safeReplyCount = Math.max(0, Number(reply_count) || 0);
+
+
     let inward_no;
     let inserted = false;
     let attempts = 0;
@@ -374,9 +379,9 @@ app.post("/inward/add", async (req, res) => {
         date_of_receipt, month, year, received_in,
         name_of_sender, address_of_sender, sender_city,
         sender_state, sender_pin, sender_region, sender_org_type,
-        inward_no, type_of_document, language_of_document, count ?? 1,
+        inward_no, type_of_document, language_of_document, safeCount,
         remarks, issued_to, reply_required, reply_sent_date || null,
-        reply_ref_no, reply_sent_by, reply_sent_in, reply_count ?? 0
+        reply_ref_no, reply_sent_by, reply_sent_in, safeReplyCount
       ];
 
       try {
