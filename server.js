@@ -350,6 +350,12 @@ app.post("/inward/add", async (req, res) => {
       return res.status(400).send("Invalid PIN Code. Must be exactly 6 digits.");
     }
 
+    // Validate sender name (letters + spaces only)
+    if (!/^[A-Za-z ]+$/.test(name_of_sender)) {
+      return res.status(400).send("Invalid Sender Name. Only alphabets and spaces allowed.");
+    }
+
+
     // Prevent negative count and reply_count
     const safeCount = Math.max(0, Number(count) || 0);
     const safeReplyCount = Math.max(0, Number(reply_count) || 0);

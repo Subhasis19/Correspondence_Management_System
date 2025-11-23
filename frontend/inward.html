@@ -53,6 +53,9 @@
             name="name_of_sender"
             placeholder="Enter Sender Name"
             required
+            maxlength="100"
+            pattern="[A-Za-z ]+"
+            title="Only alphabets and spaces allowed"
           />
 
           <label>Address of Sender:</label>
@@ -60,10 +63,11 @@
             type="text"
             name="address_of_sender"
             placeholder="Enter Address"
+            maxlength="255"
           />
 
           <label>City:</label>
-          <input type="text" name="sender_city" placeholder="Enter City" />
+          <input type="text" name="sender_city" placeholder="Enter City" maxlength="100" />
 
           <label>State:</label>
           <select name="sender_state" id="senderState">
@@ -165,7 +169,7 @@
           </select>
 
           <label>Count:</label>
-          <input type="number" name="count" placeholder="Number of Copies"  min="0" />
+          <input type="number" name="count" placeholder="Number of Copies"  min="0" max="9999" />
 
           <label>Remarks:</label>
           <select name="remarks">
@@ -179,6 +183,7 @@
             type="text"
             name="issued_to"
             placeholder="Enter Employee Name"
+            maxlength="100"
           />
 
           <label>Reply Required:</label>
@@ -196,6 +201,7 @@
             type="text"
             name="reply_ref_no"
             placeholder="Reference Number"
+            maxlength="100"
           />
 
           <label>Reply Sent By:</label>
@@ -219,6 +225,7 @@
             name="reply_count"
             placeholder="Number of Replies"
             min="0"
+            max="9999"
           />
         </div>
 
@@ -324,6 +331,14 @@ pinInput.addEventListener("input", function () {
     this.value = this.value.slice(0, 6); // limit to 6 digits
   }
 });
+
+// Sender name must contain only letters & spaces
+const senderNameInput = document.getElementById("name_of_sender");
+
+senderNameInput.addEventListener("input", function () {
+  this.value = this.value.replace(/[^A-Za-z ]/g, ""); // Remove numbers & symbols
+});
+
 
 // Prevent negative values for count and reply_count
 document.querySelector("[name='count']").addEventListener("input", function () {
