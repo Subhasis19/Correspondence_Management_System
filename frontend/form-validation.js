@@ -31,10 +31,20 @@ function clearErr(id) {
   el.style.display = "none";
 }
 
+/* ---------------- DOM HELPERS ---------------- */
+function getByIdAny(...ids) {
+  for (const id of ids) {
+    const el = document.getElementById(id);
+    if (el) return el;
+  }
+  return null;
+}
+
 /* ---------------- INIT: REGION AUTO-FILL ---------------- */
 function initRegion() {
-  const state = document.getElementById("senderState");
-  const region = document.getElementById("senderRegion");
+  // support both senderState/senderRegion and receiverState/receiverRegion
+  const state = getByIdAny("senderState", "receiverState");
+  const region = getByIdAny("senderRegion", "receiverRegion");
   if (!state || !region) return;
 
   state.addEventListener("change", () => {
@@ -44,7 +54,8 @@ function initRegion() {
 
 /* ---------------- INIT: MONTH + YEAR AUTO-FILL ---------------- */
 function initMonthYear() {
-  const date = document.getElementById("inwardDate");
+  // support both inwardDate and outwardDate
+  const date = getByIdAny("inwardDate", "outwardDate");
   const month = document.getElementById("month");
   const year = document.getElementById("year");
   if (!date || !month || !year) return;
@@ -65,7 +76,8 @@ function initMonthYear() {
 
 /* ---------------- INIT: PIN VALIDATION ---------------- */
 function initPin() {
-  const pin = document.getElementById("sender_pin");
+  // support sender_pin or receiver_pin
+  const pin = getByIdAny("sender_pin", "receiver_pin");
   if (!pin) return;
 
   pin.addEventListener("input", () => {
@@ -79,32 +91,36 @@ function initPin() {
 
 /* ---------------- INIT: TEXT FIELD VALIDATIONS ---------------- */
 function initFieldValidations() {
-  const name = document.getElementById("name_of_sender");
-  const city = document.querySelector("[name='sender_city']");
-  const issued = document.querySelector("[name='issued_to']");
+  // name can be name_of_sender (inward) or receiver_name (outward)
+  const name = getByIdAny("name_of_sender", "receiver_name");
+  const city = document.querySelector("[name='sender_city']") || document.querySelector("[name='receiver_city']");
+  // optional fields
+  const issued = document.querySelector("[name='issued_to']") || document.querySelector("[name='reply_issued_by']");
   const ref = document.querySelector("[name='reply_ref_no']");
 
   if (name) {
     name.addEventListener("input", () => {
       /^[A-Za-z ]+$/.test(name.value)
-        ? clearErr("err_name_of_sender")
-        : showErr("err_name_of_sender", "Only alphabets allowed");
+        ? clearErr(name.id === "name_of_sender" ? "err_name_of_sender" : "err_receiver_name")
+        : showErr(name.id === "name_of_sender" ? "err_name_of_sender" : "err_receiver_name", "Only alphabets allowed");
     });
   }
 
   if (city) {
     city.addEventListener("input", () => {
+      const errId = city.name === 'sender_city' ? 'err_sender_city' : 'err_receiver_city';
       /^[A-Za-z ]*$/.test(city.value)
-        ? clearErr("err_sender_city")
-        : showErr("err_sender_city", "City must contain only letters");
+        ? clearErr(errId)
+        : showErr(errId, "City must contain only letters");
     });
   }
 
   if (issued) {
     issued.addEventListener("input", () => {
+      const errId = issued.name === 'issued_to' ? 'err_issued_to' : 'err_reply_issued_by';
       /^[A-Za-z ]*$/.test(issued.value)
-        ? clearErr("err_issued_to")
-        : showErr("err_issued_to", "Only alphabets allowed");
+        ? clearErr(errId)
+        : showErr(errId, "Only alphabets allowed");
     });
   }
 
@@ -172,47 +188,50 @@ function initFormValidation() {
 
     /* ADDITIONAL CUSTOM VALIDATION BELOW (identical to your old JS) */
 
-    // Sender name
-    const name = document.getElementById("name_of_sender");
+    // Name (sender or receiver)
+    const name = getByIdAny("name_of_sender", "receiver_name");
     if (name && !/^[A-Za-z ]+$/.test(name.value)) {
-      showErr("err_name_of_sender", "Only alphabets allowed");
+      const errId = name.id === "name_of_sender" ? "err_name_of_sender" : "err_receiver_name";
+      showErr(errId, "Only alphabets allowed");
       valid = false;
       if (!firstErrorField) firstErrorField = name;
     }
 
-    // City
-    const city = document.querySelector("[name='sender_city']");
+    // City (sender or receiver)
+    const city = document.querySelector("[name='sender_city']") || document.querySelector("[name='receiver_city']");
     if (city && city.value && !/^[A-Za-z ]+$/.test(city.value)) {
-      showErr("err_sender_city", "City must contain only letters");
+      const errId = city.name === 'sender_city' ? 'err_sender_city' : 'err_receiver_city';
+      showErr(errId, "City must contain only letters");
       valid = false;
       if (!firstErrorField) firstErrorField = city;
     }
 
-    // Issued To
-    const issued = document.querySelector("[name='issued_to']");
+    // Issued To / Reply Issued By (optional)
+    const issued = document.querySelector("[name='issued_to']") || document.querySelector("[name='reply_issued_by']");
     if (issued && issued.value && !/^[A-Za-z ]+$/.test(issued.value)) {
-      showErr("err_issued_to", "Only alphabets allowed");
+      const errId = issued.name === 'issued_to' ? 'err_issued_to' : 'err_reply_issued_by';
+      showErr(errId, "Only alphabets allowed");
       valid = false;
       if (!firstErrorField) firstErrorField = issued;
     }
 
-    // PIN
-    const pin = document.getElementById("sender_pin");
+    // PIN (sender or receiver)
+    const pin = getByIdAny("sender_pin", "receiver_pin");
     if (pin && !/^\d{6}$/.test(pin.value)) {
       showErr("err_pin", "PIN must be exactly 6 digits");
       valid = false;
       if (!firstErrorField) firstErrorField = pin;
     }
 
-    // Document type
-    const docType = document.getElementById("type_of_document");
+    // Document type (supports both ids)
+    const docType = getByIdAny("type_of_document", "document_type");
     if (docType && docType.value === "") {
       showErr("err_doc_type", "Select a document type");
       valid = false;
       if (!firstErrorField) firstErrorField = docType;
     }
 
-    // Reply required
+    // Reply required (may exist only on inward)
     const reply = document.getElementById("reply_required");
     if (reply && reply.value === "") {
       showErr("err_reply_required", "Choose yes or no");
@@ -231,7 +250,7 @@ function initFormValidation() {
     // Reply Count 0–9999
     const rct = document.querySelector("[name='reply_count']");
     if (rct && rct.value && (rct.value < 0 || rct.value > 9999)) {
-      showErr("err_reply_count", "Reply count must be between 0–9999");
+      showErr("err_reply_count", "Reply count must be between 0 – 9999");
       valid = false;
       if (!firstErrorField) firstErrorField = rct;
     }
