@@ -1,0 +1,46 @@
+/* Responsive Admin Dashboard Styles */
+:root{
+  --bg:#0f1720;
+  --sidebar:#071023;
+  --card:#0b1a2a;
+  --accent:#4a90e2;
+  --muted:#9aa7b6;
+}
+*{box-sizing:border-box}
+body{font-family:Inter,Segoe UI,Arial,sans-serif;background:linear-gradient(180deg,#0b1220 0%, #08121a 100%);color:#e6eef8;margin:0;min-height:100vh;display:flex}
+.sidebar{width:250px;background:var(--sidebar);padding:20px 14px;display:flex;flex-direction:column;gap:18px}
+.sidebar .sidebar-header h3{margin:0;font-size:20px}
+.sidebar .sidebar-menu{display:flex;flex-direction:column;gap:6px}
+.sidebar a{color:#dbe9ff;text-decoration:none;padding:10px 12px;border-radius:6px;display:flex;align-items:center;gap:10px}
+.sidebar a.active, .sidebar a:hover{background:rgba(255,255,255,0.04)}
+.sidebar-footer{margin-top:auto}
+.content{flex:1;padding:22px 24px}
+.header-welcome h1{margin:0 0 18px 0;font-size:20px}
+.dashboard-cards{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}
+.card{background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));border:1px solid rgba(255,255,255,0.03);padding:14px;border-radius:8px}
+.card-header h3{margin:0;font-size:16px}
+.recent-table{width:100%;border-collapse:collapse;color:#cfe7ff}
+.recent-table th,.recent-table td{padding:8px 10px;text-align:left;border-bottom:1px solid rgba(255,255,255,0.03);font-size:14px}
+.no-records{color:var(--muted)}
+
+/* responsive rules */
+@media (max-width: 1000px){
+  .dashboard-cards{grid-template-columns:1fr}
+}
+
+@media (max-width: 800px){
+  body{flex-direction:column}
+  .sidebar{width:100%;display:flex;flex-direction:row;align-items:center;gap:12px;padding:10px}
+  .sidebar .sidebar-menu{flex:1;display:flex;gap:8px;overflow:auto}
+  .sidebar a{padding:8px 10px;font-size:14px;white-space:nowrap}
+  .content{padding:16px}
+}
+
+@media (max-width:420px){
+  .header-welcome h1{font-size:18px}
+  .card-header h3{font-size:14px}
+  .recent-table th,.recent-table td{font-size:12px;padding:6px}
+}
+
+/* utility to make tables horizontally scroll on small screens */
+.card-body{overflow-x:auto}

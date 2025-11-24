@@ -1,107 +1,96 @@
-/* ---------------- Universal Form Styling (Inward + Outward) ---------------- */
+/* ---------------- Government Portal Form Style (NIC / GOI UI) ---------------- */
 
+/* Body */
 body {
-  background: linear-gradient(135deg, #74ebd5, #acb6e5);
+  background: #f2f5f9;
+  font-family: "Segoe UI", Arial, sans-serif;
+  padding: 30px 10px;
   display: flex;
   justify-content: center;
-  align-items: flex-start;
-  padding: 40px 10px;
   min-height: 100vh;
-  font-family: "Poppins", Arial, sans-serif;
 }
 
 /* Main Container */
 .inward-container,
 .outward-container {
   background: #ffffff;
-  border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
-  border: 1px solid #d9e1f2;
-  padding: 40px 45px;
-  max-width: 950px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  padding: 25px 30px;
+  max-width: 1050px;
   width: 100%;
-  transition: box-shadow 0.3s ease;
-}
-
-.inward-container:hover,
-.outward-container:hover {
-  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.12);
 }
 
 /* Heading */
 h2 {
   text-align: center;
-  background-color: #eaf1ff;
-  border: 1px solid #c8d8ff;
+  background: #e9ecef;
   padding: 12px;
-  border-radius: 6px;
-  color: #333;
-  margin-bottom: 30px;
+  border: 1px solid #d3d9df;
   font-weight: 600;
-  font-size: 22px;
+  font-size: 20px;
+  color: #333;
+  margin-bottom: 25px;
 }
 
-/* Layout */
+/* Grid Layout */
 form {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 25px 40px;
+  gap: 18px 35px;
 }
 
 .left-column,
 .right-column {
   display: flex;
   flex-direction: column;
-  gap: 10px;
 }
 
-/* Labels */
+/* Label */
 label {
+  font-size: 14px;
   font-weight: 600;
-  color: #333;
-  margin-top: 10px;
+  margin-bottom: 4px;
+  color: #2f3542;
 }
 
-/* Input & Select */
+/* Input and Select Fields */
 input,
 select {
   width: 100%;
-  height: 42px;
-  padding: 10px 12px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  font-size: 15px;
-  background-color: #fafafa;
-  box-sizing: border-box;
-  transition: all 0.2s ease;
-  margin-bottom: 6px;
-}
-
-/* Read-only fields */
-input[readonly] {
-  background-color: #f5f5f5;
-  color: #555;
+  height: 38px;
+  border: 1px solid #bfc6ce;
+  border-radius: 4px;
+  padding: 8px 10px;
+  background: #ffffff;
+  font-size: 14px;
+  transition: border-color 0.2s ease;
 }
 
 /* Focus */
 input:focus,
 select:focus {
+  border-color: #0059b3;
+  box-shadow: 0 0 0 2px rgba(0, 90, 180, 0.15);
   outline: none;
-  border-color: #4a90e2;
-  box-shadow: 0 0 0 3px rgba(106, 160, 255, 0.15);
-  background-color: #fff;
 }
 
-/* Error Message */
+/* Read-only fields */
+input[readonly] {
+  background: #f4f4f4;
+  color: #555;
+}
+
+/* Error messages */
 .error {
-  color: red;
+  color: #b00020;
   font-size: 12px;
-  margin-top: -5px;
-  margin-bottom: 10px;
+  margin-top: -3px;
+  margin-bottom: 6px;
   display: none;
 }
 
-/* Buttons */
+/* Submit Button */
 .button-container {
   grid-column: span 2;
   display: flex;
@@ -110,37 +99,78 @@ select:focus {
 }
 
 button {
-  height: 44px;
-  background: #4a90e2;
+  background: #0059b3;
   color: #fff;
   border: none;
-  border-radius: 6px;
-  font-size: 16px;
-  font-weight: 500;
+  padding: 10px 22px;
+  font-size: 15px;
+  border-radius: 4px;
   cursor: pointer;
-  padding: 10px 26px;
-  transition: all 0.2s ease;
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
+  transition: 0.2s ease;
 }
 
 button:hover {
-  background: #357ABD;
-  transform: translateY(-2px);
-  box-shadow: 0 5px 14px rgba(0, 0, 0, 0.2);
+  background: #004a94;
+}
+
+/* -------------------- RESPONSIVE -------------------- */
+
+/* Tablet */
+@media (max-width: 992px) {
+  form {
+    grid-template-columns: 1fr 1fr;
+    gap: 15px 25px;
+  }
+
+  button {
+    width: auto;
+  }
 }
 
 /* Mobile */
 @media (max-width: 768px) {
   form {
     grid-template-columns: 1fr;
-    gap: 20px;
+    gap: 15px;
+  }
+
+  h2 {
+    font-size: 18px;
+    padding: 10px;
+  }
+
+  button {
+    width: 100%;
   }
 
   .button-container {
     justify-content: center;
   }
+}
+
+/* Extra Small Mobile */
+@media (max-width: 480px) {
+  body {
+    padding: 10px;
+  }
+
+  .inward-container,
+  .outward-container {
+    padding: 15px 18px;
+  }
+
+  label {
+    font-size: 13px;
+  }
+
+  input,
+  select {
+    height: 35px;
+    font-size: 13px;
+  }
 
   button {
-    width: 100%;
+    padding: 10px 16px;
+    font-size: 14px;
   }
 }
