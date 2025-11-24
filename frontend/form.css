@@ -1,4 +1,3 @@
-/* ---------------- Universal Form Styling (Inward + Outward) ---------------- */
 
 body {
   background: linear-gradient(135deg, #74ebd5, #acb6e5);
@@ -45,21 +44,21 @@ h2 {
 form {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 25px 40px;
+  gap: 14px 24px; 
 }
 
 .left-column,
 .right-column {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px; 
 }
 
 /* Labels */
 label {
   font-weight: 600;
   color: #333;
-  margin-top: 10px;
+  margin-top: 6px; 
 }
 
 /* Input & Select */
@@ -74,7 +73,7 @@ select {
   background-color: #fafafa;
   box-sizing: border-box;
   transition: all 0.2s ease;
-  margin-bottom: 6px;
+  margin-bottom: 4px; 
 }
 
 /* Read-only fields */
@@ -106,7 +105,7 @@ select:focus {
   grid-column: span 2;
   display: flex;
   justify-content: flex-end;
-  margin-top: 10px;
+  margin-top: 8px; 
 }
 
 button {
@@ -133,7 +132,7 @@ button:hover {
 @media (max-width: 768px) {
   form {
     grid-template-columns: 1fr;
-    gap: 20px;
+    gap: 12px; 
   }
 
   .button-container {
