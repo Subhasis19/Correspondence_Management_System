@@ -4,29 +4,41 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - CMS</title>
-    <link rel="stylesheet" href="admin-style.css">
+    <link rel="stylesheet" href="css/admin-style.css">
     <!-- Using Google Fonts for a premium look -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
-            <div class="sidebar">
+    <div class="sidebar">
         <div class="sidebar-header">
-            <h3>CMS</h3>
+            <h2>CMS</h2>
             <p>Correspondence System</p>
         </div>
         <div class="sidebar-menu">
-            <a href="admin-dashboard.html" class="active"><i class="fa-solid fa-th-large"></i> Dashboard</a>
-            <a href="inward.html"><i class="fa-solid fa-file-import"></i> Inward Entry</a>
-            <a href="outward.html"><i class="fa-solid fa-file-export"></i> Outward Entry</a>
-            <a href="admin-records.html"><i class="fa-solid fa-shield-alt"></i> Admin Panel</a>
+            <a href="admin-dashboard.html" class="menu-item active">
+                <i class="fa-solid fa-grid-2-plus"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="inward.html" class="menu-item">
+                <i class="fa-solid fa-file-import"></i>
+                <span>Inward Entry</span>
+            </a>
+            <a href="outward.html" class="menu-item">
+                <i class="fa-solid fa-file-export"></i>
+                <span>Outward Entry</span>
+            </a>
+            <a href="#admin-records" class="menu-item">
+                <i class="fa-solid fa-users-gear"></i>
+                <span>Admin Panel</span>
+            </a>
         </div>
         <div class="sidebar-footer">
             <div class="user-profile">
-                <div class="avatar">A</div>
+                <div class="avatar">👤</div>
                 <div class="user-info">
-                    <span class="username">admin</span>
+                    <span class="username" id="adminName">admin</span>
                     <span class="role">ADMIN</span>
                 </div>
             </div>
@@ -34,32 +46,59 @@
         </div>
     </div>
 
-
-
-       <div class="content">
-        <div class="header-welcome">
-            <h1>Welcome, admin</h1>
+    <div class="content">
+        <!-- Welcome Header -->
+        <div class="header-section">
+            <div class="welcome-header">
+                <h1>Welcome, <span id="welcomeName">admin</span></h1>
+                <p class="subtitle">Manage inward and outward correspondence</p>
+            </div>
+            <div class="quick-stats">
+                <div class="stat-card">
+                    <i class="fa-solid fa-file-import"></i>
+                    <div>
+                        <p class="stat-label">Total Inwards</p>
+                        <p class="stat-value" id="totalInwards">0</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <i class="fa-solid fa-file-export"></i>
+                    <div>
+                        <p class="stat-label">Total Outwards</p>
+                        <p class="stat-value" id="totalOutwards">0</p>
+                    </div>
+                </div>
+            </div>
         </div>
 
+        <!-- Main Cards Section -->
         <div class="dashboard-cards">
             <!-- Recent Inwards Card -->
             <div class="card">
                 <div class="card-header">
                     <h3>Recent Inwards</h3>
+                    <a href="inward.html" class="btn-small">+ Add New</a>
                 </div>
                 <div class="card-body">
-                    <table class="recent-table" id="recentInwardsTable">
-                        <thead>
-                            <tr>
-                                <th>Inward No</th>
-                                <th>Date</th>
-                                <th>From</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            
-                        </tbody>
-                    </table>
+                    <div id="inwardsContainer">
+                        <table class="records-table" id="inwardsTable">
+                            <thead>
+                                <tr>
+                                    <th>No</th>
+                                    <th>Date</th>
+                                    <th>From</th>
+                                    <th>Office</th>
+                                </tr>
+                            </thead>
+                            <tbody id="inwardsTbody">
+                                <tr class="empty-state">
+                                    <td colspan="4" style="text-align:center; padding:20px;">
+                                        <p style="color:#999;">No recent inward records.</p>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
@@ -67,18 +106,33 @@
             <div class="card">
                 <div class="card-header">
                     <h3>Recent Outwards</h3>
+                    <a href="outward.html" class="btn-small">+ Add New</a>
                 </div>
                 <div class="card-body">
-                    <div id="recentOutwardsContent">
-                        <p class="no-records">No recent records.</p>
+                    <div id="outwardsContainer">
+                        <table class="records-table" id="outwardsTable">
+                            <thead>
+                                <tr>
+                                    <th>No</th>
+                                    <th>Date</th>
+                                    <th>To</th>
+                                    <th>Office</th>
+                                </tr>
+                            </thead>
+                            <tbody id="outwardsTbody">
+                                <tr class="empty-state">
+                                    <td colspan="4" style="text-align:center; padding:20px;">
+                                        <p style="color:#999;">No recent outward records.</p>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-
-
-    
+    <script src="js/dashboard.js"></script>
 </body>
 </html>
