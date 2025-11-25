@@ -83,29 +83,86 @@ node server.js
 - Password encryption
 - Session management
 
-## Project Structure
 
-```
-login-registration/
-│   db.js            # Database configuration
-│   package.json     # Project dependencies
-│   README.md        # Project documentation
-│   server.js        # Express server setup
-│
-└───frontend/
-    │   index.html   # Login page
-    │   register.html # Registration page
-    │   style.css    # Styling for the pages
-```
 
 ## API Endpoints
 
 - POST `/register` - Register a new user
 - POST `/login` - Authenticate a user
 
-## Security Features
 
-- Passwords are securely hashed before storage
-- Input validation for registration and login
-- Protected routes using session management
+
+## Database: Inward Records Table
+
+If you added the Inward Correspondence form and need the corresponding database table, use the SQL definition below. This is the exact DDL for the `inward_records` table used by the application.
+
+1. Open your MySQL client (MySQL shell, Workbench, or phpMyAdmin) and select the application database (for example, `login_system`).
+
+2. Run the following statement to create the table:
+
+```sql
+CREATE TABLE inward_records (
+  s_no INT NOT NULL AUTO_INCREMENT,
+
+  date_of_receipt DATE NOT NULL,
+  inward_no VARCHAR(50) NOT NULL UNIQUE,
+
+  month VARCHAR(20),
+  year INT,
+
+  received_in ENUM('Silchar','Guwahati'),
+  name_of_sender VARCHAR(100),
+  address_of_sender VARCHAR(255),
+  sender_city VARCHAR(100),
+  sender_state VARCHAR(100),
+  sender_pin VARCHAR(6),
+  sender_region ENUM('A','B','C'),
+  sender_org_type ENUM('Central','State','Private','Individual'),
+
+  type_of_document ENUM('Letter','Bill','Other Document'),
+  language_of_document ENUM('English','Hindi','Bilingual'),
+  count INT DEFAULT 1,
+
+  remarks ENUM('Action','Information'),
+  issued_to VARCHAR(100),
+
+  reply_required ENUM('Yes','No'),
+  reply_sent_date DATE,
+  reply_ref_no VARCHAR(100),
+  reply_sent_by ENUM('Speed Post','Email'),
+  reply_sent_in ENUM('English','Hindi','Bilingual'),
+  reply_count INT DEFAULT 0,
+
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+  PRIMARY KEY (s_no)
+);
+```
+
+3. Verify the table was created:
+
+```sql
+USE login_system;
+SHOW TABLES;
+DESCRIBE inward_records;
+```
+
+4. Optional: import from a file. Save the `CREATE TABLE` block to `inward_records.sql` and run:
+
+```bash
+mysql -u <user> -p login_system < inward_records.sql
+```
+
+
+
+5. Configure the application to connect to the database. The application reads connection values from environment variables via `db.js`. Set these in a `.env` file at the project root (create it if missing):
+
+```
+DB_HOST=localhost
+DB_USER=appuser
+DB_PASSWORD=strong_password
+DB_NAME=login_system
+```
+
+7. Restart the Node server and test the form that writes to `inward_records`.
 
