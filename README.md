@@ -1,59 +1,92 @@
-# Login and Registration System
+# Correspondence Management System
 
-A simple web application with user authentication functionality built using Node.js, Express, and MySql.
+A lightweight correspondence management web app with user authentication, built with Node.js, Express and MySQL. The project provides simple forms for registering users and recording inward/outward correspondence entries.
 
-## Tech Stack
+This README explains how to set up the application locally, create the required database objects (including the `inward_records` table), and run the app for development.
 
-**Frontend:** HTML, CSS, JavaScript  
-**Backend:** Node.js, Express.js  
-**Database:** MySQL  
-**Security:** bcrypt (for password hashing)  
-**Environment Variables:** dotenv  
+Contents
+- Overview
+- Features
+- Tech stack
+- Prerequisites
+- Quick start (clone, install, run)
+- Database: schema & DDL (users + inward_records)
+- Configuration (.env)
+- Running the application
+- Project structure
+- API endpoints
+- Development notes & tips
+- Contributing
+- License
+
+---
+
+## Overview
+
+The application provides basic login/registration functionality and forms to capture inward and outward correspondence. It was built to be simple to run locally and easy to extend.
+
+## Features
+
+- User registration and login (passwords hashed using bcrypt)
+- Session-based authentication (express-session)
+- Inward and outward correspondence entry forms with client-side validation
+- Server endpoints to insert and fetch inward records
+
+## Tech stack
+
+- Frontend: HTML, CSS, JavaScript
+- Backend: Node.js, Express
+- Database: MySQL (mysql2 driver)
+- Environment: dotenv for configuration
 
 ## Prerequisites
 
-Before you begin, ensure you have installed:
-- [Node.js](https://nodejs.org/) (v14 or higher)
-- [MySQL](https://dev.mysql.com/downloads/) (v8.0 or higher)
+- Node.js (v14+)
+- MySQL (v8.0+)
+- Git (to clone the repo)
 
-## Installation
+## Quick start - Local (development)
 
-1. Clone the repository:
-```bash
-git clone https://github.com/Subhasis19/login-registration.git
-cd login-registration
+1. Clone the repository and enter the folder:
+
+```pwsh
+git clone https://github.com/Subhasis19/Correspondence_Management_System.git
+cd Correspondence_Management_System
 ```
 
 2. Install dependencies:
-```bash
+
+```pwsh
 npm install
 ```
 
-3. Create a MySQL database and ensure the MySQL service is running on your machine.
+3. Create a database (example name: `login_system`) and create a DB user (optional but recommended).
 
-## Configuration
+4. Create a `.env` file at the project root and provide DB connection values (see the Configuration section below).
 
-1. The application connects to MySQL using the configuration in `db.js`.
-2. Make sure your MySQL server is running on the default port (3306).
+5. Create the required tables (see Database section).
 
-## Set Up the MySQL Database
+6. Start the server:
 
-1. Start your MySQL server (via XAMPP, WAMP, or Workbench).
-
-2. Open MySQL shell or phpMyAdmin.
-
-3. Create a new database:
-```sql
-CREATE DATABASE login_system;
+```pwsh
+node server.js
 ```
 
-4. Select the database:
-```sql
-USE login_system;
-```
+7. Open the app in your browser:
 
-5. Create the users table:
-```CREATE TABLE users (
+- `http://localhost:3000/frontend/register.html` — Registration page
+- `http://localhost:3000/frontend/index.html` — Login page
+
+---
+
+## Database: schema & DDL
+
+The app uses a `users` table for authentication and an `inward_records` table for inward correspondence entries. Below are the DDL statements.
+
+Users table (already present in the README earlier):
+
+```sql
+CREATE TABLE IF NOT EXISTS users (
   id INT AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(100),
   email VARCHAR(100) UNIQUE,
@@ -64,41 +97,7 @@ USE login_system;
 );
 ```
 
-## Running the Application
-
-1. Start the server:
-```bash
-node server.js
-```
-
-2. Open your web browser and navigate to:
-- For registration: `http://localhost:3000/frontend/register.html`
-- For login: `http://localhost:3000/frontend/index.html`
-
-## Features
-
-- User Registration
-- User Login
-- Form validation
-- Password encryption
-- Session management
-
-
-
-## API Endpoints
-
-- POST `/register` - Register a new user
-- POST `/login` - Authenticate a user
-
-
-
-## Database: Inward Records Table
-
-If you added the Inward Correspondence form and need the corresponding database table, use the SQL definition below. This is the exact DDL for the `inward_records` table used by the application.
-
-1. Open your MySQL client (MySQL shell, Workbench, or phpMyAdmin) and select the application database (for example, `login_system`).
-
-2. Run the following statement to create the table:
+Inward records table (copy / run exactly as shown):
 
 ```sql
 CREATE TABLE inward_records (
@@ -139,7 +138,7 @@ CREATE TABLE inward_records (
 );
 ```
 
-3. Verify the table was created:
+Recommended verification commands in MySQL client:
 
 ```sql
 USE login_system;
@@ -147,15 +146,17 @@ SHOW TABLES;
 DESCRIBE inward_records;
 ```
 
-4. Optional: import from a file. Save the `CREATE TABLE` block to `inward_records.sql` and run:
+Optional: save the DDL to `inward_records.sql` and import with the MySQL client:
 
-```bash
+```pwsh
 mysql -u <user> -p login_system < inward_records.sql
 ```
 
+---
 
+## Configuration (.env)
 
-5. Configure the application to connect to the database. The application reads connection values from environment variables via `db.js`. Set these in a `.env` file at the project root (create it if missing):
+Create a `.env` file in the project root with the following variables (example):
 
 ```
 DB_HOST=localhost
@@ -164,5 +165,62 @@ DB_PASSWORD=strong_password
 DB_NAME=login_system
 ```
 
-7. Restart the Node server and test the form that writes to `inward_records`.
+The app reads these values in `db.js` and connects using the `mysql2` driver.
 
+---
+
+## Running the application
+
+Start the server with:
+
+```pwsh
+node server.js
+```
+
+By default the server listens on `http://localhost:3000` (see `server.js`). Open the frontend pages directly via the paths under `/frontend` or through the Express static server.
+
+---
+
+## Project structure (important files)
+
+```
+Correspondence_Management_System/
+├─ db.js             # Database connection (reads .env)
+├─ server.js         # Express routes and server
+├─ package.json
+├─ README.md
+└─ frontend/
+   ├─ index.html     # Login
+   ├─ register.html  # Registration
+   ├─ inward.html    # Inward form
+   ├─ outward.html   # Outward form
+   ├─ form.css       # Styles for forms
+   ├─ style.css
+   └─ form-validation.js  # Client-side validation (inward/outward)
+```
+
+---
+
+## API Endpoints (selected)
+
+- `POST /register` — Register a new user (form in `frontend/register.html`)
+- `POST /login` — Authenticate a user (form in `frontend/index.html`)
+- `POST /inward/add` — Server route that inserts an inward record (used by `inward.html`)
+- `GET /inward/all` — Returns a JSON list of inward records
+
+Check `server.js` for the full set of routes and implementation details.
+
+---
+
+## Development notes & recommendations
+
+- The project currently serves the `frontend/` folder as static assets (see `server.js`). Use `http://localhost:3000/frontend/<page>.html` to open pages through the server.
+- The `form-validation.js` file contains client-side validation for both inward and outward forms. If you add other forms, consider extracting shared helpers to a small `form-utils.js` module.
+- For production, use a process manager (PM2) and configure a reverse proxy (NGINX) if exposing the app publicly.
+
+Troubleshooting tips
+- If the server fails to connect to MySQL, verify `.env` values and confirm MySQL is running and accessible from the host.
+- If a form fails to submit, open DevTools → Console and Network to inspect requests and server responses.
+- For duplicate `inward_no` errors the code retries generation, but if you run into insert failures check server logs printed by `server.js`.
+
+---
