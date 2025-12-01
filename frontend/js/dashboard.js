@@ -1,9 +1,3 @@
-/* ===========================================================
-   ADMIN DASHBOARD JS
-   Fetches and displays recent inward/outward records
-   Handles form loading via AJAX
-   =========================================================== */
-
 // Load a page (dashboard, inward, outward, admin-panel)
 function loadPage(pageName) {
   const dashboardView = document.getElementById("dashboardView");
