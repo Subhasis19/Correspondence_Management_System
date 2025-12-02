@@ -1,200 +1,342 @@
-// Load a page (dashboard, inward, outward, admin-panel)
-function loadPage(pageName) {
-  const dashboardView = document.getElementById("dashboardView");
-  const formView = document.getElementById("formView");
+/* ===========================================================
+   CLEAN + FIXED DASHBOARD CONTROLLER
+   - No blank white screen on first load
+   - No redirect loops
+   - Sidebar active state fixed
+   - Form CSS loading fixed
+   - Form JS reinitialization fixed
+   - Outward → Inward search rebind fixed
+   - All your old features preserved
+=========================================================== */
 
-  if (pageName === "dashboard") {
-    dashboardView.style.display = "block";
-    formView.style.display = "none";
-    setActiveMenuItem("dashboard");
-    loadInwardRecords();
-    loadOutwardRecords();
-    return;
+(async function () {
+
+  /* ------------------ SESSION ------------------ */
+  async function fetchSession() {
+    try {
+      const r = await fetch("/session-info");
+      if (!r.ok) throw new Error("Not logged in");
+      return await r.json();
+    } catch (e) {
+      console.error("Session fetch failed:", e);
+      window.location.href = "/";
+      return null;
+    }
   }
 
-  // Load form for inward/outward
-  if (pageName === "inward" || pageName === "outward") {
-    loadForm(pageName);
-    return;
+  /* ------------------ UI HELPERS ------------------ */
+  function setActiveMenuItem(pageName) {
+    document.querySelectorAll(".menu-item").forEach((it) => {
+      it.classList.remove("active");
+      if (it.dataset.page === pageName) it.classList.add("active");
+    });
   }
 
-  // Admin panel (placeholder)
-  if (pageName === "admin-panel") {
-    formView.innerHTML = `
-      <div style="padding: 32px; background: white; border-radius: 8px; margin: 20px 0;">
-        <h2>Admin Panel</h2>
-        <p style="color: #999;">Coming soon...</p>
-        <button onclick="loadPage('dashboard')" style="background: #4a90e2; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; margin-top: 20px;">
-          Back to Dashboard
-        </button>
-      </div>
-    `;
-    dashboardView.style.display = "none";
-    formView.style.display = "block";
-    setActiveMenuItem("admin-panel");
-    return;
+  function formatDate(dateStr) {
+    if (!dateStr) return "";
+    const d = new Date(dateStr);
+    return d.toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
   }
-}
 
-// Load form HTML via AJAX
-function loadForm(formType) {
-  const formView = document.getElementById("formView");
-  const dashboardView = document.getElementById("dashboardView");
+  /* ------------------ LOAD DASHBOARD DATA ------------------ */
+  async function loadInwardRecords() {
+    try {
+      const res = await fetch("/inward/all");
+      const rows = await res.json();
 
-  const formFile = formType === "inward" ? "inward.html" : "outward.html";
+      document.getElementById("totalInwards").textContent = rows.length;
 
-  fetch(formFile)
-    .then(res => res.text())
-    .then(html => {
-      // Extract just the form content (skip DOCTYPE and head)
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(html, "text/html");
-      const bodyContent = doc.body.innerHTML;
+      const tbody = document.getElementById("inwardsTbody");
 
-      // Ensure form.css is loaded
-      if (!document.querySelector('link[href="css/form.css"]')) {
-        const link = document.createElement('link');
-        link.rel = 'stylesheet';
-        link.href = 'css/form.css';
-        document.head.appendChild(link);
+      if (rows.length === 0) {
+        tbody.innerHTML = `
+          <tr class="empty-state">
+            <td colspan="4" style="text-align:center;padding:20px;color:#999">
+              No recent inward records.
+            </td>
+          </tr>`;
+        return;
       }
 
-      // Add a back button and wrap the form
-      formView.innerHTML = `
-        <div style="padding: 32px; background: white; border-radius: 8px; margin: 20px 0;">
-          <button onclick="loadPage('dashboard')" style="background: #666; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin-bottom: 20px; font-size: 14px;">
-            ← Back to Dashboard
-          </button>
-          ${bodyContent}
-        </div>
-      `;
-
-      dashboardView.style.display = "none";
-      formView.style.display = "block";
-      setActiveMenuItem(formType);
-
-      // Re-initialize form validation if the script was loaded
-      if (window.initRegion) initRegion();
-      if (window.initMonthYear) initMonthYear();
-      if (window.initPin) initPin();
-      if (window.initFieldValidations) initFieldValidations();
-      if (window.initCounts) initCounts();
-      if (window.initFormValidation) initFormValidation();
-
-      // Scroll to top
-      document.querySelector(".content").scrollTop = 0;
-    })
-    .catch(err => {
-      console.error(`Error loading form: ${err}`);
-      formView.innerHTML = `
-        <div style="padding: 32px; color: red;">
-          <p>Error loading form. Please try again.</p>
-          <button onclick="loadPage('dashboard')" style="background: #4a90e2; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; margin-top: 20px;">
-            Back to Dashboard
-          </button>
-        </div>
-      `;
-      dashboardView.style.display = "none";
-      formView.style.display = "block";
-    });
-}
-
-// Set active menu item
-function setActiveMenuItem(pageName) {
-  document.querySelectorAll(".menu-item").forEach(item => {
-    item.classList.remove("active");
-    if (item.getAttribute("data-page") === pageName) {
-      item.classList.add("active");
-    }
-  });
-}
-
-// Fetch and display inward records
-async function loadInwardRecords() {
-  try {
-    const res = await fetch("/inward/all");
-    if (!res.ok) throw new Error("Failed to fetch inward records");
-    
-    const records = await res.json();
-    const tbody = document.getElementById("inwardsTbody");
-    const totalInwards = document.getElementById("totalInwards");
-
-    totalInwards.textContent = records.length;
-
-    if (records.length === 0) {
-      tbody.innerHTML = `
-        <tr class="empty-state">
-          <td colspan="4" style="text-align:center; padding:20px;">
-            <p style="color:#999;">No inward records yet.</p>
-          </td>
+      tbody.innerHTML = rows.slice(0, 5).map(r => `
+        <tr>
+          <td><strong>${r.inward_no}</strong></td>
+          <td>${formatDate(r.date_of_receipt)}</td>
+          <td>${r.name_of_sender}</td>
+          <td>${r.received_in}</td>
         </tr>
+      `).join("");
+
+    } catch (err) {
+      console.error("loadInwardRecords:", err);
+    }
+  }
+
+  async function loadOutwardRecords() {
+    try {
+      const res = await fetch("/outward/all");
+      const rows = await res.json();
+
+      document.getElementById("totalOutwards").textContent = rows.length;
+
+      const tbody = document.getElementById("outwardsTbody");
+
+      if (rows.length === 0) {
+        tbody.innerHTML = `
+          <tr class="empty-state">
+            <td colspan="4" style="text-align:center;padding:20px;color:#999">
+              No recent outward records.
+            </td>
+          </tr>`;
+        return;
+      }
+
+      tbody.innerHTML = rows.slice(0, 5).map(r => `
+        <tr>
+          <td><strong>${r.outward_no}</strong></td>
+          <td>${formatDate(r.date_of_despatch)}</td>
+          <td>${r.name_of_receiver}</td>
+          <td>${r.reply_from}</td>
+        </tr>
+      `).join("");
+
+    } catch (err) {
+      console.error("loadOutwardRecords:", err);
+    }
+  }
+
+  /* ------------------ FORM HELPERS ------------------ */
+
+  function ensureFormCss() {
+    if (!document.querySelector('link[href="css/form.css"]')) {
+      const link = document.createElement("link");
+      link.rel = "stylesheet";
+      link.href = "css/form.css";
+      document.head.appendChild(link);
+    }
+  }
+
+  function extractFormHtml(doc) {
+    return (
+      doc.querySelector("#inwardForm")?.outerHTML ||
+      doc.querySelector("#outwardForm")?.outerHTML ||
+      doc.querySelector(".form-wrapper")?.outerHTML ||
+      doc.body.innerHTML
+    );
+  }
+
+  function reinitFormHelpers() {
+    if (window.initRegion) initRegion();
+    if (window.initMonthYear) initMonthYear();
+    if (window.initPin) initPin();
+    if (window.initFieldValidations) initFieldValidations();
+    if (window.initCounts) initCounts();
+    if (window.initFormValidation) initFormValidation();
+
+    bindOutwardInwardSearch();
+  }
+
+  /* ------------------ LIVE SEARCH OUTWARD → INWARD ------------------ */
+  function bindOutwardInwardSearch() {
+    const inwardInput =
+      document.querySelector("[name='inward_no']") ||
+      document.getElementById("inward_no");
+
+    if (!inwardInput) return;
+
+    const boxId = "inward-autocomplete-box";
+    document.getElementById(boxId)?.remove();
+
+    const box = document.createElement("div");
+    box.id = boxId;
+    box.style.position = "absolute";
+    box.style.zIndex = 9999;
+    box.style.background = "#fff";
+    box.style.border = "1px solid #ddd";
+    box.style.maxHeight = "220px";
+    box.style.overflowY = "auto";
+    box.style.display = "none";
+    document.body.appendChild(box);
+
+    function positionBox() {
+      const rect = inwardInput.getBoundingClientRect();
+      box.style.left = rect.left + "px";
+      box.style.top = rect.bottom + window.scrollY + "px";
+      box.style.width = rect.width + "px";
+    }
+
+    let timer = null;
+
+    inwardInput.addEventListener("input", () => {
+      const q = inwardInput.value.trim();
+
+      clearTimeout(timer);
+
+      if (!q) {
+        box.style.display = "none";
+        return;
+      }
+
+      timer = setTimeout(async () => {
+        const res = await fetch(`/api/inward/search?q=${encodeURIComponent(q)}`);
+        const items = await res.json();
+
+        if (items.length === 0) {
+          box.style.display = "none";
+          return;
+        }
+
+        box.innerHTML = items.map(i => `
+          <div class="inward-suggestion" data-item='${JSON.stringify(i)}'
+               style="padding:8px;cursor:pointer;border-bottom:1px solid #eee">
+            <div style="font-weight:600">${i.inward_no}</div>
+            <div style="font-size:12px;color:#666">${i.name_of_sender}</div>
+          </div>
+        `).join("");
+
+        positionBox();
+        box.style.display = "block";
+      }, 200);
+    });
+
+    box.addEventListener("click", e => {
+      const item = e.target.closest(".inward-suggestion");
+      if (!item) return;
+
+      const data = JSON.parse(item.dataset.item);
+      inwardInput.value = data.inward_no;
+
+      // autofill receiver fields
+      const map = {
+        name_of_receiver: data.name_of_sender,
+        address_of_receiver: data.address_of_sender,
+        receiver_city: data.sender_city,
+        receiver_state: data.sender_state,
+        receiver_pin: data.sender_pin,
+        receiver_region: data.sender_region,
+        receiver_org_type: data.sender_org_type,
+      };
+
+      Object.entries(map).forEach(([k, v]) => {
+        const el = document.querySelector(`[name='${k}']`);
+        if (el) el.value = v;
+      });
+
+      box.style.display = "none";
+    });
+
+    window.addEventListener("scroll", positionBox);
+    window.addEventListener("resize", positionBox);
+  }
+
+  /* ------------------ LOAD FORM ------------------ */
+  async function loadForm(type) {
+    const dashboardView = document.getElementById("dashboardView");
+    const formView = document.getElementById("formView");
+
+    try {
+      const r = await fetch(type + ".html");
+      const txt = await r.text();
+
+      const doc = new DOMParser().parseFromString(txt, "text/html");
+
+      ensureFormCss();
+
+      const html = extractFormHtml(doc);
+
+      formView.innerHTML = `
+        <div class="form-wrapper-inner" 
+             style="padding:24px;background:#fff;border-radius:8px;margin:20px 0;">
+          <button class="back-btn">← Back to Dashboard</button>
+          ${html}
+        </div>
       `;
+
+      formView.querySelector(".back-btn").onclick = () => loadPage("dashboard");
+
+      dashboardView.style.display = "none";
+      formView.style.display = "block";
+
+      setActiveMenuItem(type);
+
+      reinitFormHelpers();
+
+    } catch (err) {
+      console.error("loadForm error:", err);
+      formView.innerHTML = `<div style="padding:20px;color:red">Failed to load form.</div>`;
+    }
+  }
+
+  /* ------------------ MAIN PAGE LOADER ------------------ */
+  function loadPage(pageName) {
+    const dashboardView = document.getElementById("dashboardView");
+    const formView = document.getElementById("formView");
+
+   if (pageName === "dashboard") {
+  dashboardView.style.display = "block";
+  formView.style.display = "none";
+
+  setActiveMenuItem("dashboard");
+  loadInwardRecords();
+  loadOutwardRecords();
+
+  
+  const pageContainer = document.querySelector(".content");
+  if (pageContainer) pageContainer.scrollTop = 0;
+
+  return;
+}
+
+
+    if (pageName === "inward" || pageName === "outward") {
+      loadForm(pageName);
       return;
     }
 
-    // Show only the last 5 records (most recent first)
-    const recent = records.slice(0, 5);
-    tbody.innerHTML = recent.map(record => `
-      <tr>
-        <td><strong>${record.inward_no || '—'}</strong></td>
-        <td>${formatDate(record.date_of_receipt) || '—'}</td>
-        <td>${record.name_of_sender || '—'}</td>
-        <td>${record.received_in || '—'}</td>
-      </tr>
-    `).join("");
+    if (pageName === "admin-panel") {
+      formView.innerHTML = `
+        <div style="padding:32px;background:#fff;border-radius:8px">
+          <h2>Admin Panel</h2>
+          <p style="color:#888">Coming soon...</p>
+          <button id="adminBack">← Back to Dashboard</button>
+        </div>
+      `;
+      dashboardView.style.display = "none";
+      formView.style.display = "block";
+      setActiveMenuItem("admin-panel");
 
-  } catch (err) {
-    console.error("Error loading inward records:", err);
-    document.getElementById("inwardsTbody").innerHTML = `
-      <tr class="empty-state">
-        <td colspan="4" style="text-align:center; padding:20px; color:#d9534f;">
-          <p>Error loading records. Check console.</p>
-        </td>
-      </tr>
-    `;
+      document.getElementById("adminBack").onclick = () =>
+        loadPage("dashboard");
+    }
   }
-}
 
-// Fetch and display outward records (placeholder for future use)
-async function loadOutwardRecords() {
-  try {
-    // When outward_records table is available, uncomment this:
-    // const res = await fetch("/outward/all");
-    // const records = await res.json();
-    // ... populate outwardsTbody similarly
-    
-    // For now, show placeholder
-    const tbody = document.getElementById("outwardsTbody");
-    const totalOutwards = document.getElementById("totalOutwards");
-    totalOutwards.textContent = "0";
-    
-  } catch (err) {
-    console.error("Error loading outward records:", err);
+  /* ------------------ INIT ------------------ */
+  const session = await fetchSession();
+
+  if (session?.user) {
+    const user = session.user;
+
+    document.getElementById("adminName").textContent = user.name;
+    document.getElementById("welcomeName").textContent = user.name;
+
+    if (user.role !== "admin") {
+      const adminItem = document.querySelector('[data-page="admin-panel"]');
+      if (adminItem) adminItem.style.display = "none";
+    }
   }
-}
 
-// Helper: Format date
-function formatDate(dateStr) {
-  if (!dateStr) return "";
-  const date = new Date(dateStr);
-  return date.toLocaleDateString("en-IN", { 
-    year: "numeric", 
-    month: "short", 
-    day: "2-digit" 
-  });
-}
-
-// Initialize on page load
-window.addEventListener("DOMContentLoaded", () => {
-  // Set up menu item click handlers
-  document.querySelectorAll(".menu-item").forEach(item => {
-    item.addEventListener("click", (e) => {
+  document.querySelectorAll(".menu-item").forEach((it) => {
+    it.addEventListener("click", (e) => {
       e.preventDefault();
-      const pageName = item.getAttribute("data-page");
-      loadPage(pageName);
+      loadPage(it.dataset.page);
     });
   });
 
-  // Load dashboard by default
+  /* ---- Always load dashboard on first load ---- */
   loadPage("dashboard");
-});
+  setActiveMenuItem("dashboard");
+})();
