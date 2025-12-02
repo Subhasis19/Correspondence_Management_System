@@ -3,28 +3,59 @@ const bodyParser = require("body-parser");
 const bcrypt = require("bcryptjs");
 const session = require("express-session");
 const db = require("./db");
+require("dotenv").config();
 
-require('dotenv').config();
-
-const nodemailer = require('nodemailer');
-const crypto = require('crypto');
+const nodemailer = require("nodemailer");
+const crypto = require("crypto");
 
 const app = express();
+
+  //  CORE MIDDLEWARE
+
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.json());
-app.use(express.static("frontend"));
+
+  //  SESSION CONFIG 
 app.use(
   session({
-    secret: "secretkey",
+    secret: process.env.SESSION_SECRET || "super-secret-session-key",
     resave: false,
-    saveUninitialized: true,
+    saveUninitialized: false,
+    cookie: {
+      httpOnly: true,
+      maxAge: 24 * 60 * 60 * 1000 // 1 day
+    }
   })
 );
 
+  //  AUTH MIDDLEWARES
+function requireLogin(req, res, next) {
+  if (!req.session.user) {
+    // if JSON request
+    if (req.xhr || req.headers.accept?.includes("application/json")) {
+      return res.status(401).json({ success: false, message: "Not logged in" });
+    }
+    return res.redirect("/");
+  }
+  next();
+}
+
+function requireAdmin(req, res, next) {
+  if (!req.session.user || req.session.user.role !== "admin") {
+    return res.status(403).json({ success: false, message: "Admins only" });
+  }
+  next();
+}
+
+  //  PROTECT DASHBOARD.HTML 
+app.get("/dashboard.html", requireLogin, (req, res, next) => next());
+app.use(express.static("frontend"));
+
+  //  EMAIL TRANSPORTER
 const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST || 'smtp.gmail.com',
-  port: process.env.EMAIL_PORT ? Number(process.env.EMAIL_PORT) : 587,
-  secure: process.env.EMAIL_SECURE === 'true',
+  host: process.env.EMAIL_HOST || "smtp.gmail.com",
+  port: Number(process.env.EMAIL_PORT) || 587,
+  secure: process.env.EMAIL_SECURE === "true",
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS
@@ -32,420 +63,215 @@ const transporter = nodemailer.createTransport({
 });
 
 transporter.verify((err) => {
-  if (err) console.warn('Email transporter verification failed:', err);
-  else console.log('Email transporter ready');
+  console.log(err ? "Email config error" : "Email transporter ready");
 });
 
-// send OTP route
-app.post('/send-otp', (req, res) => {
-  const email = req.body.email;
-  if (!email) return res.status(400).send({ success: false, message: 'Email required' });
+  //  OTP SYSTEM
+  app.post("/send-otp", (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).send({ success: false, message: "Email required" });
 
-  // generate 6-digit OTP
   const otp = crypto.randomInt(100000, 999999).toString();
-  const expiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes
+  const expiresAt = Date.now() + 5 * 60 * 1000;
 
-  // store in session for this client
   req.session.otp = otp;
-  req.session.otpExpires = expiresAt;
   req.session.otpEmail = email;
-  req.session.otpVerified = false;
+  req.session.otpExpires = expiresAt;
 
-  const mailOptions = {
-    from: process.env.EMAIL_USER,
-    to: email,
-    subject: 'Your registration OTP',
-    text: `Your OTP is ${otp}. It expires in 5 minutes.`,
-    html: `<p>Your OTP is <strong>${otp}</strong>. It expires in 5 minutes.</p>`
-  };
-
-  transporter.sendMail(mailOptions, (err) => {
-    if (err) {
-      console.error('Error sending OTP:', err);
-      return res.status(500).send({ success: false, message: 'Failed to send OTP' });
+  transporter.sendMail(
+    {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: "Your OTP",
+      text: `Your OTP is ${otp}. Valid for 5 minutes.`
+    },
+    (err) => {
+      if (err) return res.status(500).send({ success: false, message: "Mail error" });
+      console.log("OTP sent:", otp);
+      res.send({ success: true });
     }
-    console.log('OTP sent to', email, otp);
-    return res.send({ success: true, message: 'OTP sent' });
-  });
+  );
 });
 
-// verify OTP route (keeps verifiedEmail so /register can check)
-app.post('/verify-otp', (req, res) => {
+app.post("/verify-otp", (req, res) => {
   const { email, otp } = req.body;
-  if (!email || !otp) return res.status(400).send({ verified: false, message: 'Email and OTP required' });
 
-  if (!req.session.otp || !req.session.otpExpires || !req.session.otpEmail) {
-    return res.status(400).send({ verified: false, message: 'No OTP requested' });
-  }
+  if (!req.session.otp || req.session.otpEmail !== email)
+    return res.status(400).send({ verified: false, message: "OTP not requested" });
 
-  if (Date.now() > req.session.otpExpires) { 
-    delete req.session.otp;
-    delete req.session.otpExpires;
-    delete req.session.otpEmail;
-    req.session.otpVerified = false;
-    return res.status(400).send({ verified: false, message: 'OTP expired' });
-  }
+  if (Date.now() > req.session.otpExpires)
+    return res.status(400).send({ verified: false, message: "OTP expired" });
 
-  if (req.session.otpEmail !== email) {
-    return res.status(400).send({ verified: false, message: 'Email mismatch' });
-  }
+  if (req.session.otp !== otp)
+    return res.status(400).send({ verified: false, message: "Invalid OTP" });
 
-  if (req.session.otp === otp.toString()) {
-    // mark session as verified and remember which email was verified
-    req.session.otpVerified = true;
-    req.session.verifiedEmail = email;
+  req.session.otpVerified = true;
+  req.session.verifiedEmail = email;
 
-    // clear the one-time OTP and expiry (keep verifiedEmail)
-    delete req.session.otp;
-    delete req.session.otpExpires;
+  delete req.session.otp;
+  delete req.session.otpExpires;
 
-    return res.send({ verified: true, message: 'OTP verified' });
-  } else {
-    return res.status(400).send({ verified: false, message: 'Invalid OTP' });
-  }
+  res.send({ verified: true });
 });
 
-// Registration Route
+  //  USER REGISTRATION
+
 app.post("/register", (req, res) => {
- const { name, email, mobile, password, confirmPassword, group_name } = req.body;
+  const { name, email, mobile, password, confirmPassword, group_name } = req.body;
 
-
-  // require OTP verified before registration
   if (!req.session.otpVerified || req.session.verifiedEmail !== email) {
-    return res.send(
-      'Please verify your email OTP before registering. <a href="register.html">Try again</a>'
-    );
+    return res.send('Verify OTP first <a href="register.html">Try again</a>');
   }
 
   if (password !== confirmPassword) {
-    return res.send(
-      'Passwords do not match! <a href="register.html">Try again</a>'
-    );
+    return res.send('Passwords do not match <a href="register.html">Try again</a>');
   }
 
   bcrypt.hash(password, 10, (err, hash) => {
     if (err) throw err;
 
     db.query(
-  "INSERT INTO users (name, email, mobile, password, role, group_name) VALUES (?, ?, ?, ?, ?, ?)",
-  [name, email, mobile, hash, "user", group_name],
-  (err) => {
-    if (err) return res.send("Error: " + err.message);
+      "INSERT INTO users (name, email, mobile, password, role, group_name) VALUES (?, ?, ?, ?, ?, ?)",
+      [name, email, mobile, hash, "user", group_name],
+      (err) => {
+        if (err) return res.send("Error: " + err.message);
 
-    // clear OTP session flags
-    req.session.otpVerified = false;
-    delete req.session.verifiedEmail;
+        req.session.otpVerified = false;
+        delete req.session.verifiedEmail;
 
-    res.send('Registration successful! <a href="/">Login</a>');
-  }
-);
-
-  });
-});
-
-
-// ---------- Forgot / Reset Password (separate OTP flow) ----------
-app.post('/forgot-password', (req, res) => {
-  const { email } = req.body;
-  if (!email) return res.status(400).json({ success: false, message: 'Email required' });
-
-  // Basic rate-limiting via session (max 5 sends per 30 mins)
-  req.session.resetOtpSends = (req.session.resetOtpSends || 0);
-  if (!req.session.resetOtpSendsResetAt || Date.now() > req.session.resetOtpSendsResetAt) {
-    // reset counter window
-    req.session.resetOtpSends = 0;
-    req.session.resetOtpSendsResetAt = Date.now() + 30 * 60 * 1000; // 30 minutes
-  }
-  if (req.session.resetOtpSends >= 5 && !req.body.resend) {
-    return res.status(429).json({ success: false, message: 'Too many OTP requests. Try later.' });
-  }
-
-  // Check that email exists in users table (prevent info leak a little)
-  db.query("SELECT id FROM users WHERE email = ?", [email], (err, results) => {
-    if (err) {
-      console.error(err);
-      return res.status(500).json({ success: false, message: 'DB error' });
-    }
-
-    if (results.length === 0) {
-      // For privacy, respond success but do not send an email. (Optional: send an email informing no account exists.)
-      return res.json({ success: true, message: 'If an account exists, an OTP was sent.' });
-    }
-
-    // generate 6-digit OTP
-    const otp = crypto.randomInt(100000, 999999).toString();
-    const expiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes
-
-    // store in session separate from registration OTP
-    req.session.resetOtp = otp;
-    req.session.resetOtpExpires = expiresAt;
-    req.session.resetOtpEmail = email;
-    req.session.resetOtpVerified = false;
-
-    // increment send counter
-    req.session.resetOtpSends++;
-
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
-      to: email,
-      subject: 'Password reset OTP',
-      text: `Your password reset OTP is ${otp}. It expires in 5 minutes.`,
-      html: `<p>Your password reset OTP is <strong>${otp}</strong>. It expires in 5 minutes.</p>`
-    };
-
-    transporter.sendMail(mailOptions, (err) => {
-      if (err) {
-        console.error('Forgot OTP send error:', err);
-        return res.status(500).json({ success: false, message: 'Failed to send OTP' });
+        res.send('Registration complete <a href="/">Login</a>');
       }
-      console.log('Reset OTP sent to', email, otp);
-      return res.json({ success: true, message: 'OTP sent' });
-    });
+    );
   });
 });
 
-app.post('/verify-reset-otp', (req, res) => {
-  const { email, otp } = req.body;
-  if (!email || !otp) return res.status(400).json({ verified: false, message: 'Email and OTP required' });
+  //  LOGIN
 
-  if (!req.session.resetOtp || !req.session.resetOtpExpires || !req.session.resetOtpEmail) {
-    return res.status(400).json({ verified: false, message: 'No reset OTP requested' });
-  }
-
-  if (Date.now() > req.session.resetOtpExpires) {
-    // clear
-    delete req.session.resetOtp;
-    delete req.session.resetOtpExpires;
-    delete req.session.resetOtpEmail;
-    req.session.resetOtpVerified = false;
-    return res.status(400).json({ verified: false, message: 'OTP expired' });
-  }
-
-  if (req.session.resetOtpEmail !== email) {
-    return res.status(400).json({ verified: false, message: 'Email mismatch' });
-  }
-
-  if (req.session.resetOtp === otp.toString()) {
-    req.session.resetOtpVerified = true;
-    // keep email but clear otp value to avoid reuse
-    delete req.session.resetOtp;
-    delete req.session.resetOtpExpires;
-    return res.json({ verified: true, message: 'OTP verified' });
-  } else {
-    return res.status(400).json({ verified: false, message: 'Invalid OTP' });
-  }
-});
-
-app.post('/reset-password', (req, res) => {
-  const { email, password } = req.body;
-  if (!email || !password) return res.status(400).json({ success: false, message: 'Email and new password required' });
-
-  // ensure OTP was verified
-  if (!req.session.resetOtpVerified || req.session.resetOtpEmail !== email) {
-    return res.status(403).json({ success: false, message: 'OTP not verified for this email' });
-  }
-
-  // Optional: Enforce password strength server-side
-  if (typeof password !== 'string' || password.length < 8) {
-    return res.status(400).json({ success: false, message: 'Password must be at least 8 characters' });
-  }
-
-  // Hash and update DB
-  bcrypt.hash(password, 10, (err, hash) => {
-    if (err) {
-      console.error('Hash error:', err);
-      return res.status(500).json({ success: false, message: 'Server error' });
-    }
-
-    db.query("UPDATE users SET password = ? WHERE email = ?", [hash, email], (err, result) => {
-      if (err) {
-        console.error('DB update error:', err);
-        return res.status(500).json({ success: false, message: 'DB error' });
-      }
-
-      // clear reset session flags
-      req.session.resetOtpVerified = false;
-      delete req.session.resetOtpEmail;
-      req.session.resetOtpSends = 0;
-
-      return res.json({ success: true, message: 'Password updated' });
-    });
-  });
-});
-
-
-// Login Route
 app.post("/login", (req, res) => {
   const { email, password } = req.body;
 
-  db.query("SELECT * FROM users WHERE email = ?", [email], (err, results) => {
+  db.query("SELECT * FROM users WHERE email = ?", [email], (err, rows) => {
     if (err) throw err;
+    if (rows.length === 0) return res.send("User not found");
 
-    if (results.length === 0) return res.send("User not found");
+    const user = rows[0];
 
-    const user = results[0];
     bcrypt.compare(password, user.password, (err, match) => {
-      if (match) {
-        req.session.user = user;
-        if (user.role === "admin") res.send("Welcome Admin " + user.name);
-        else res.send("Welcome User " + user.name);
-      } else {
-        res.send("Invalid password");
-      }
+      if (!match) return res.send("Invalid password");
+
+      // save session
+      req.session.user = {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        group: user.group_name
+      };
+
+      res.redirect("/dashboard.html");
     });
   });
 });
 
+  //  SESSION INFO
 
+app.get("/session-info", requireLogin, (req, res) => {
+  res.json({ loggedIn: true, user: req.session.user });
+});
 
+  //  LOGOUT
 
-// ====================== INWARD NUMBER GENERATOR ========================= //
+app.get("/logout", (req, res) => {
+  req.session.destroy(() => res.redirect("/"));
+});
+
+  //  RANDOM NUMBER GENERATORS
 
 function generateInwardNumber() {
-  return new Promise((resolve) => {
-    const year = new Date().getFullYear();
-
-    // Generate random 6-digit number (000000 - 999999)
-    const randomNum = Math.floor(Math.random() * 1000000)
-      .toString()
-      .padStart(6, "0");
-
-    const inwardNo = `INW/${year}/${randomNum}`;
-    resolve(inwardNo);
-  });
+  const year = new Date().getFullYear();
+  const rand = Math.floor(Math.random() * 1_000_000).toString().padStart(6, "0");
+  return `INW/${year}/${rand}`;
 }
 
-// ====================== OUTWARD NUMBER GENERATOR ========================= //
-
-function generateOutwardNumber(reply_from) {
-  return new Promise((resolve) => {
-    const year = new Date().getFullYear();
-
-    const randomNum = Math.floor(Math.random() * 1000000)
-      .toString()
-      .padStart(6, "0");
-
-    const outwardNo = `OUTW/${year}/${randomNum}`;
-    resolve(outwardNo);
-  });
+function generateOutwardNumber() {
+  const year = new Date().getFullYear();
+  const rand = Math.floor(Math.random() * 1_000_000).toString().padStart(6, "0");
+  return `OUTW/${year}/${rand}`;
 }
 
+  //  INWARD ENTRY
 
-
-// ====================== INWARD ENTRY ROUTE ========================= //
-
-app.post("/inward/add", async (req, res) => {
+app.post("/inward/add", requireLogin, async (req, res) => {
   try {
-    const {
-      date_of_receipt,
-      month,
-      year,
-      received_in,
-      name_of_sender,
-      address_of_sender,
-      sender_city,
-      sender_state,
-      sender_pin,
-      sender_region,
-      sender_org_type,
-      type_of_document,
-      language_of_document,
-      count,
-      remarks,
-      issued_to,
-      reply_required,
-      reply_sent_date,
-      reply_ref_no,
-      reply_sent_by,
-      reply_sent_in,
-      reply_count
-    } = req.body;
+    const data = req.body;
 
-    //  PIN code check
-    if (!/^\d{6}$/.test(sender_pin)) {
-      return res.status(400).send("Invalid PIN Code. Must be exactly 6 digits.");
-    }
+    if (!/^\d{6}$/.test(data.sender_pin))
+      return res.status(400).send("Invalid PIN");
 
-    // Validate sender name (letters + spaces only)
-    if (!/^[A-Za-z ]+$/.test(name_of_sender)) {
-      return res.status(400).send("Invalid Sender Name. Only alphabets and spaces allowed.");
-    }
+    if (!/^[A-Za-z ]+$/.test(data.name_of_sender))
+      return res.status(400).send("Invalid sender name");
 
-
-    // Prevent negative count and reply_count
-    const safeCount = Math.max(0, Number(count) || 0);
-    const safeReplyCount = Math.max(0, Number(reply_count) || 0);
-
+    const safeCount = Math.max(0, Number(data.count) || 0);
+    const safeReplyCount = Math.max(0, Number(data.reply_count) || 0);
 
     let inward_no;
-    let inserted = false;
-    let attempts = 0;
+    let success = false;
 
-    while (!inserted && attempts < 5) {
-      attempts++;
-
-      inward_no = await generateInwardNumber();
-
-      const sql = `
-        INSERT INTO inward_records (
-          date_of_receipt, month, year, received_in,
-          name_of_sender, address_of_sender, sender_city,
-          sender_state, sender_pin, sender_region, sender_org_type,
-          inward_no, type_of_document, language_of_document, count,
-          remarks, issued_to, reply_required, reply_sent_date,
-          reply_ref_no, reply_sent_by, reply_sent_in, reply_count
-        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-      `;
-
-      const values = [
-        date_of_receipt, month, year, received_in,
-        name_of_sender, address_of_sender, sender_city,
-        sender_state, sender_pin, sender_region, sender_org_type,
-        inward_no, type_of_document, language_of_document, safeCount,
-        remarks, issued_to, reply_required, reply_sent_date || null,
-        reply_ref_no, reply_sent_by, reply_sent_in, safeReplyCount
-      ];
+    for (let i = 0; i < 5; i++) {
+      inward_no = generateInwardNumber();
 
       try {
         await new Promise((resolve, reject) =>
-          db.query(sql, values, (err, result) => {
-            if (err) return reject(err);
-            resolve(result);
-          })
+          db.query(
+            `INSERT INTO inward_records (
+              date_of_receipt, month, year, received_in,
+              name_of_sender, address_of_sender, sender_city,
+              sender_state, sender_pin, sender_region, sender_org_type,
+              inward_no, type_of_document, language_of_document, count,
+              remarks, issued_to, reply_required, reply_sent_date,
+              reply_ref_no, reply_sent_by, reply_sent_in, reply_count
+            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+            [
+              data.date_of_receipt, data.month, data.year, data.received_in,
+              data.name_of_sender, data.address_of_sender, data.sender_city,
+              data.sender_state, data.sender_pin, data.sender_region, data.sender_org_type,
+              inward_no, data.type_of_document, data.language_of_document, safeCount,
+              data.remarks, data.issued_to, data.reply_required, data.reply_sent_date || null,
+              data.reply_ref_no, data.reply_sent_by, data.reply_sent_in, safeReplyCount
+            ],
+            (err) => (err ? reject(err) : resolve())
+          )
         );
-
-        inserted = true;
-
+        success = true;
+        break;
       } catch (err) {
-        // Duplicate inward number → retry
-        if (err.code === "ER_DUP_ENTRY") {
-          console.log("Duplicate inward_no detected, retrying...");
-          continue;
-        }
-        throw err; // other errors
+        if (err.code !== "ER_DUP_ENTRY") throw err;
       }
     }
 
-    if (!inserted) {
-      return res.status(500).send("Failed to generate unique Inward Number. Try again.");
-    }
+    if (!success) return res.status(500).send("Failed to generate inward number");
 
     res.send(`
-      <h3 style="font-family:Arial; text-align:center;">Inward Entry Saved Successfully!</h3>
-      <p style="text-align:center;">Generated Inward No: <strong>${inward_no}</strong></p>
-      <p style="text-align:center;"><a href="/inward.html">Add Another Entry</a></p>
+      <h3 style="text-align:center;">Inward Entry Saved</h3>
+      <p style="text-align:center;">Inward No: <strong>${inward_no}</strong></p>
+      <p style="text-align:center;"><a href="/inward.html">Add another</a></p>
     `);
-
-  } catch (error) {
-    console.error("Inward insert error:", error);
-    res.status(500).send("Server Error");
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server error");
   }
 });
 
+  //  INWARD LIST
 
-// ====================== INWARD SEARCH BY inward_no ========================= //
-
-app.get("/api/inward/search", (req, res) => {
+app.get("/inward/all", requireLogin, (req, res) => {
+  db.query("SELECT * FROM inward_records ORDER BY s_no DESC", (err, rows) => {
+    if (err) return res.status(500).send("Error");
+    res.json(rows);
+  });
+});
+// OUTWARD: LIVE SEARCH BY inward_no + AUTO-FILL
+app.get("/api/inward/search", requireLogin, (req, res) => {
   const q = (req.query.q || "").trim();
   if (!q) return res.json([]);
 
@@ -466,155 +292,97 @@ app.get("/api/inward/search", (req, res) => {
       console.error("Search error:", err);
       return res.status(500).json([]);
     }
-    return res.json(results);
-  });
-});
-
-
-
-
-// ====================== FETCH ALL INWARD RECORDS ========================= //
-app.get("/inward/all", (req, res) => {
-  const sql = "SELECT * FROM inward_records ORDER BY s_no DESC";
-
-  db.query(sql, (err, results) => {
-    if (err) {
-      console.error("Error fetching inward records:", err);
-      return res.status(500).send("Database error");
-    }
     res.json(results);
   });
 });
+  //  OUTWARD ENTRY
 
-
-// ====================== OUTWARD ENTRY ROUTE ========================= //
-
-app.post("/outward/add", async (req, res) => {
+app.post("/outward/add", requireLogin, async (req, res) => {
   try {
-    const {
-      date_of_despatch,
-      month,
-      year,
-      reply_from,
-      name_of_receiver,
-      address_of_receiver,
-      receiver_city,
-      receiver_state,
-      receiver_pin,
-      receiver_region,
-      receiver_org_type,
-      type_of_document,
-      language_of_document,
-      count,
-      inward_no,
-      reply_issued_by,
-      reply_sent_date,
-      reply_ref_no,
-      reply_sent_by,
-      reply_sent_in,
-      reply_count
-    } = req.body;
+    const data = req.body;
 
-    // REQUIRED FIELDS
-    if (!date_of_despatch || !reply_from || !name_of_receiver || !type_of_document) {
-      return res.status(400).send("Missing required fields.");
-    }
+    if (!/^\d{6}$/.test(data.receiver_pin))
+      return res.status(400).send("Invalid PIN");
 
-    // Validate receiver PIN
-    if (!/^\d{6}$/.test(receiver_pin)) {
-      return res.status(400).send("Invalid PIN Code. Must be 6 digits.");
-    }
+    if (!/^[A-Za-z ]+$/.test(data.name_of_receiver))
+      return res.status(400).send("Invalid receiver name");
 
-    // Validate receiver name
-    if (!/^[A-Za-z ]+$/.test(name_of_receiver)) {
-      return res.status(400).send("Invalid Receiver Name.");
-    }
+    const safeCount = Math.max(0, Number(data.count) || 0);
+    const safeReplyCount = Math.max(0, Number(data.reply_count) || 0);
 
-    // Lookup inward_s_no if inward_no provided
     let inward_s_no = null;
-    if (inward_no && inward_no.trim() !== "") {
-      const lookupSQL = "SELECT s_no FROM inward_records WHERE inward_no = ? LIMIT 1";
-      const lookupResult = await new Promise((resolve, reject) =>
-        db.query(lookupSQL, [inward_no.trim()], (err, result) => {
-          if (err) return reject(err);
-          resolve(result);
-        })
-      );
 
-      if (lookupResult.length > 0) {
-        inward_s_no = lookupResult[0].s_no;
-      }
+    if (data.inward_no) {
+      const result = await new Promise((resolve) =>
+        db.query(
+          "SELECT s_no FROM inward_records WHERE inward_no = ? LIMIT 1",
+          [data.inward_no],
+          (err, rows) => resolve(rows)
+        )
+      );
+      if (result.length > 0) inward_s_no = result[0].s_no;
     }
 
-    // Prevent negatives
-    const safeCount = Math.max(0, Number(count) || 0);
-    const safeReplyCount = Math.max(0, Number(reply_count) || 0);
+    let outward_no;
+    let success = false;
 
-    // Generate unique outward_no
-    let outward_no_value;
-    let inserted = false;
-    let attempts = 0;
-
-    while (!inserted && attempts < 5) {
-      attempts++;
-
-      outward_no_value = await generateOutwardNumber(reply_from);
-
-      const sql = `
-        INSERT INTO outward_records (
-          date_of_despatch, month, year, reply_from,
-          name_of_receiver, address_of_receiver, receiver_city,
-          receiver_state, receiver_pin, receiver_region, receiver_org_type,
-          outward_no, type_of_document, language_of_document, count,
-          inward_no, inward_s_no, 
-          reply_issued_by, reply_sent_date, reply_ref_no,
-          reply_sent_by, reply_sent_in, reply_count
-        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-      `;
-
-      const values = [
-        date_of_despatch, month, year, reply_from,
-        name_of_receiver, address_of_receiver, receiver_city,
-        receiver_state, receiver_pin, receiver_region, receiver_org_type,
-        outward_no_value, type_of_document, language_of_document, safeCount,
-        inward_no || null, inward_s_no,
-        reply_issued_by, reply_sent_date || null, reply_ref_no,
-        reply_sent_by, reply_sent_in, safeReplyCount
-      ];
+    for (let i = 0; i < 5; i++) {
+      outward_no = generateOutwardNumber();
 
       try {
         await new Promise((resolve, reject) =>
-          db.query(sql, values, (err, result) => {
-            if (err) return reject(err);
-            resolve(result);
-          })
+          db.query(
+            `INSERT INTO outward_records (
+              date_of_despatch, month, year, reply_from,
+              name_of_receiver, address_of_receiver, receiver_city,
+              receiver_state, receiver_pin, receiver_region, receiver_org_type,
+              outward_no, type_of_document, language_of_document, count,
+              inward_no, inward_s_no, reply_issued_by, reply_sent_date,
+              reply_ref_no, reply_sent_by, reply_sent_in, reply_count
+            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+            [
+              data.date_of_despatch, data.month, data.year, data.reply_from,
+              data.name_of_receiver, data.address_of_receiver, data.receiver_city,
+              data.receiver_state, data.receiver_pin, data.receiver_region, data.receiver_org_type,
+              outward_no, data.type_of_document, data.language_of_document, safeCount,
+              data.inward_no || null, inward_s_no, data.reply_issued_by,
+              data.reply_sent_date || null, data.reply_ref_no, data.reply_sent_by,
+              data.reply_sent_in, safeReplyCount
+            ],
+            (err) => (err ? reject(err) : resolve())
+          )
         );
-        inserted = true;
+        success = true;
+        break;
       } catch (err) {
-        if (err.code === "ER_DUP_ENTRY") {
-          console.log("Duplicate OUTWARD No found, retrying…");
-          continue;
-        }
-        throw err;
+        if (err.code !== "ER_DUP_ENTRY") throw err;
       }
     }
 
-    if (!inserted) {
-      return res.status(500).send("Failed to generate unique Outward Number.");
-    }
+    if (!success) return res.status(500).send("Failed to generate outward number");
 
     res.send(`
-      <h3 style="font-family:Arial; text-align:center;">Outward Entry Saved!</h3>
-      <p style="text-align:center;">Generated Outward No: <strong>${outward_no_value}</strong></p>
-      <p style="text-align:center;"><a href="/outward.html">Add Another Outward Entry</a></p>
+      <h3 style="text-align:center;">Outward Entry Saved</h3>
+      <p style="text-align:center;">Outward No: <strong>${outward_no}</strong></p>
+      <p style="text-align:center;"><a href="/outward.html">Add another</a></p>
     `);
-
-  } catch (error) {
-    console.error("Outward insert error:", error);
-    res.status(500).send("Server Error");
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server error");
   }
 });
 
+  //  OUTWARD LIST
 
+app.get("/outward/all", requireLogin, (req, res) => {
+  db.query("SELECT * FROM outward_records ORDER BY s_no DESC", (err, rows) => {
+    if (err) return res.status(500).send("Error");
+    res.json(rows);
+  });
+});
 
-app.listen(3000, () => console.log("Server running on http://localhost:3000"));
+  //  START SERVER
+
+app.listen(3000, () =>
+  console.log("Server running on http://localhost:3000")
+);
