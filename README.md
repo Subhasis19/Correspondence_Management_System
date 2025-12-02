@@ -60,7 +60,14 @@ cd Correspondence_Management_System
 npm install
 ```
 
-3. Create a database (example name: `login_system`) and create a DB user (optional but recommended).
+3. Create a database (example name: `Correspondence_Management_System`) and create a DB user (optional but recommended).
+
+You can create the database from the MySQL client with:
+
+```sql
+CREATE DATABASE IF NOT EXISTS Correspondence_Management_System;
+USE Correspondence_Management_System;
+```
 
 4. Create a `.env` file at the project root and provide DB connection values (see the Configuration section below).
 
@@ -83,7 +90,7 @@ node server.js
 
 The app uses a `users` table for authentication and an `inward_records` table for inward correspondence entries. Below are the DDL statements.
 
-Users table (already present in the README earlier):
+Users table :
 
 ```sql
 CREATE TABLE IF NOT EXISTS users (
@@ -141,7 +148,7 @@ CREATE TABLE inward_records (
 Recommended verification commands in MySQL client:
 
 ```sql
-USE login_system;
+USE Correspondence_Management_System;
 SHOW TABLES;
 DESCRIBE inward_records;
 ```

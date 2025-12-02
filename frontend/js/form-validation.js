@@ -92,7 +92,8 @@ function initPin() {
 /* ---------------- INIT: TEXT FIELD VALIDATIONS ---------------- */
 function initFieldValidations() {
   // name can be name_of_sender (inward) or receiver_name (outward)
-  const name = getByIdAny("name_of_sender", "receiver_name");
+  const name = getByIdAny("name_of_sender", "name_of_receiver");
+
   const city = document.querySelector("[name='sender_city']") || document.querySelector("[name='receiver_city']");
   // optional fields
   const issued = document.querySelector("[name='issued_to']") || document.querySelector("[name='reply_issued_by']");
@@ -272,4 +273,298 @@ window.addEventListener("DOMContentLoaded", () => {
   initFieldValidations();
   initCounts();
   initFormValidation();
+});
+
+
+/* OUTWARD FORM: LIVE SEARCH BY inward_no + AUTO-FILL */
+
+window.addEventListener("DOMContentLoaded", () => {
+  const inwardInput = document.querySelector('input[name="inward_no"]');
+  if (!inwardInput) return; // only run on outward form
+
+  // Create suggestion dropdown container
+  const suggestBox = document.createElement("div");
+  suggestBox.className = "suggest-box";
+  suggestBox.style.position = "absolute";
+  suggestBox.style.top = (inwardInput.offsetHeight + 4) + "px";
+  suggestBox.style.left = "0px";
+  suggestBox.style.width = inwardInput.offsetWidth + "px";
+  suggestBox.style.background = "#fff";
+  suggestBox.style.border = "1px solid #ccc";
+  suggestBox.style.maxHeight = "200px";
+  suggestBox.style.overflowY = "auto";
+  suggestBox.style.display = "none";
+  suggestBox.style.zIndex = "9999";
+
+  inwardInput.parentElement.style.position = "relative";
+  inwardInput.parentElement.appendChild(suggestBox);
+
+  let searchTimeout = null;
+
+  inwardInput.addEventListener("input", () => {
+    const q = inwardInput.value.trim();
+    if (!q) {
+      suggestBox.style.display = "none";
+      suggestBox.innerHTML = "";
+      return;
+    }
+
+    // Delay to prevent too many API calls
+    if (searchTimeout) clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => fetchSearchResults(q), 250);
+  });
+
+  function fetchSearchResults(q) {
+    fetch(`/api/inward/search?q=${encodeURIComponent(q)}`)
+      .then((res) => res.json())
+      .then((rows) => {
+        if (!rows || rows.length === 0) {
+          suggestBox.style.display = "none";
+          return;
+        }
+        suggestBox.innerHTML = "";
+        rows.forEach((row) => {
+          const item = document.createElement("div");
+          item.style.padding = "8px";
+          item.style.cursor = "pointer";
+          item.style.borderBottom = "1px solid #eee";
+          item.innerHTML = `
+            <strong>${row.inward_no}</strong>
+            <br>
+            <span style="font-size:12px;color:#666;">
+              ${row.name_of_sender || ""} (${row.sender_city || ""})
+            </span>
+          `;
+
+          item.addEventListener("click", () => fillOutwardFields(row));
+          suggestBox.appendChild(item);
+        });
+
+        suggestBox.style.display = "block";
+      })
+      .catch((err) => {
+        console.error("Search error:", err);
+        suggestBox.style.display = "none";
+      });
+  }
+
+  function fillOutwardFields(r) {
+    // Fill the input with selected inward_no
+    inwardInput.value = r.inward_no;
+
+    // Hide suggestions
+    suggestBox.style.display = "none";
+
+    // Map sender → receiver fields
+    const map = {
+  name_of_receiver: r.name_of_sender,
+  address_of_receiver: r.address_of_sender,
+  receiver_city: r.sender_city,
+  receiver_state: r.sender_state,
+  receiver_pin: r.sender_pin,
+  receiver_region: r.sender_region,
+  receiver_org_type: r.sender_org_type,
+};
+
+
+    Object.entries(map).forEach(([field, value]) => {
+      const el = document.querySelector(`[name="${field}"]`);
+      if (el) el.value = value || "";
+    });
+  }
+
+  // Hide suggestion box when clicking outside
+  document.addEventListener("click", (e) => {
+    if (!suggestBox.contains(e.target) && e.target !== inwardInput) {
+      suggestBox.style.display = "none";
+    }
+  });
+});
+
+
+/* 
+   OUTWARD: LIVE SEARCH BY inward_no + AUTO-FILL (enhanced)
+   - Shows "No results found"
+   - nicer styling (rounded card + shadow)
+   - shows inward_no, sender name, city, date, office
+   - keeps all auto-filled fields editable
+  */
+
+window.addEventListener("DOMContentLoaded", () => {
+  const inwardInput = document.querySelector('input[name="inward_no"]');
+  if (!inwardInput) return; // only run on outward form
+
+  // Create suggestion dropdown container
+  const suggestBox = document.createElement("div");
+  suggestBox.className = "suggest-box";
+  suggestBox.style.position = "absolute";
+  suggestBox.style.top = (inwardInput.offsetHeight + 6) + "px";
+  suggestBox.style.left = "0px";
+  suggestBox.style.width = Math.max(inwardInput.offsetWidth, 320) + "px";
+  suggestBox.style.background = "#fff";
+  suggestBox.style.border = "1px solid rgba(20,30,60,0.08)";
+  suggestBox.style.borderRadius = "8px";
+  suggestBox.style.boxShadow = "0 8px 24px rgba(20,30,60,0.08)";
+  suggestBox.style.maxHeight = "260px";
+  suggestBox.style.overflowY = "auto";
+  suggestBox.style.display = "none";
+  suggestBox.style.zIndex = "9999";
+  suggestBox.style.padding = "6px 6px";
+
+  inwardInput.parentElement.style.position = "relative";
+  inwardInput.parentElement.appendChild(suggestBox);
+
+  let searchTimeout = null;
+
+  inwardInput.addEventListener("input", () => {
+    const q = inwardInput.value.trim();
+    if (!q) {
+      suggestBox.style.display = "none";
+      suggestBox.innerHTML = "";
+      return;
+    }
+
+    // Delay to prevent too many API calls
+    if (searchTimeout) clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => fetchSearchResults(q), 220);
+  });
+
+  async function fetchSearchResults(q) {
+    try {
+      const res = await fetch(`/api/inward/search?q=${encodeURIComponent(q)}`);
+      if (!res.ok) throw new Error("Network error");
+      const rows = await res.json();
+
+      suggestBox.innerHTML = "";
+
+      if (!rows || rows.length === 0) {
+        const noRes = document.createElement("div");
+        noRes.style.padding = "12px";
+        noRes.style.color = "#666";
+        noRes.style.textAlign = "center";
+        noRes.textContent = "No results found";
+        suggestBox.appendChild(noRes);
+        suggestBox.style.display = "block";
+        return;
+      }
+
+      rows.forEach((row) => {
+        const item = document.createElement("div");
+        item.className = "suggest-item";
+        item.style.padding = "10px";
+        item.style.cursor = "pointer";
+        item.style.borderRadius = "6px";
+        item.style.marginBottom = "6px";
+        item.style.background = "transparent";
+
+        item.innerHTML = `
+          <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-start;">
+            <div>
+              <div style="font-weight:600; font-size:14px; color:#0b3b66;">${row.inward_no}</div>
+              <div style="font-size:13px; color:#334155; margin-top:4px;">
+                ${row.name_of_sender ? escapeHtml(row.name_of_sender) : ''}
+                ${row.sender_city ? `<span style="color:#6b7280"> — ${escapeHtml(row.sender_city)}</span>` : ''}
+              </div>
+            </div>
+            <div style="text-align:right; font-size:12px; color:#6b7280;">
+              ${row.date_of_receipt ? formatDateShort(row.date_of_receipt) : ''}
+              <div style="margin-top:6px; font-weight:600; color:#0b3b66;">${row.received_in || ''}</div>
+            </div>
+          </div>
+        `;
+
+        item.addEventListener("mouseenter", () => item.style.background = "#f6f9ff");
+        item.addEventListener("mouseleave", () => item.style.background = "transparent");
+        item.addEventListener("click", () => fillOutwardFields(row));
+        suggestBox.appendChild(item);
+      });
+
+      suggestBox.style.display = "block";
+    } catch (err) {
+      console.error("Search error:", err);
+      suggestBox.style.display = "none";
+    }
+  }
+
+  function fillOutwardFields(r) {
+    // Fill the input with selected inward_no
+    inwardInput.value = r.inward_no;
+
+    // Hide suggestions
+    suggestBox.style.display = "none";
+
+    // Map sender → receiver fields (keeps editable)
+    const map = {
+      name_of_receiver: r.name_of_sender,
+      address_of_receiver: r.address_of_sender,
+      receiver_city: r.sender_city,
+      receiver_state: r.sender_state,
+      receiver_pin: r.sender_pin,
+      receiver_region: r.sender_region,
+      receiver_org_type: r.sender_org_type
+    };
+
+    Object.entries(map).forEach(([field, value]) => {
+      const el = document.querySelector(`[name="${field}"]`);
+      if (el) el.value = value || "";
+    });
+
+    // add hidden inward_s_no if needed for backend optimization
+    let hidden = document.querySelector('input[name="inward_s_no"]');
+    if (!hidden) {
+      hidden = document.createElement('input');
+      hidden.type = 'hidden';
+      hidden.name = 'inward_s_no';
+      inwardInput.form.appendChild(hidden);
+    }
+    hidden.value = r.s_no;
+  }
+
+  // Utilities
+  function formatDateShort(d) {
+    // d may be YYYY-MM-DD or Date object — convert
+    if (!d) return '';
+    const parts = String(d).split('T')[0].split('-'); // YYYY-MM-DD
+    if (parts.length === 3) return `${parts[2]}-${parts[1]}-${parts[0]}`; // DD-MM-YYYY
+    return d;
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  // Hide suggestion box when clicking outside
+  document.addEventListener("click", (e) => {
+    if (!suggestBox.contains(e.target) && e.target !== inwardInput) {
+      suggestBox.style.display = "none";
+    }
+  });
+
+  // Handle keyboard navigation (optional small UX)
+  let focusedIndex = -1;
+  inwardInput.addEventListener("keydown", (ev) => {
+    const items = Array.from(suggestBox.querySelectorAll('.suggest-item'));
+    if (items.length === 0) return;
+
+    if (ev.key === "ArrowDown") {
+      focusedIndex = Math.min(focusedIndex + 1, items.length - 1);
+      items.forEach((it, i) => it.style.background = i === focusedIndex ? "#eef6ff" : "transparent");
+      ev.preventDefault();
+    } else if (ev.key === "ArrowUp") {
+      focusedIndex = Math.max(focusedIndex - 1, 0);
+      items.forEach((it, i) => it.style.background = i === focusedIndex ? "#eef6ff" : "transparent");
+      ev.preventDefault();
+    } else if (ev.key === "Enter") {
+      if (focusedIndex >= 0 && items[focusedIndex]) {
+        items[focusedIndex].click();
+        ev.preventDefault();
+      }
+    }
+  });
 });

@@ -315,6 +315,22 @@ function generateInwardNumber() {
   });
 }
 
+// ====================== OUTWARD NUMBER GENERATOR ========================= //
+
+function generateOutwardNumber(reply_from) {
+  return new Promise((resolve) => {
+    const year = new Date().getFullYear();
+
+    const randomNum = Math.floor(Math.random() * 1000000)
+      .toString()
+      .padStart(6, "0");
+
+    const outwardNo = `OUTW/${year}/${randomNum}`;
+    resolve(outwardNo);
+  });
+}
+
+
 
 // ====================== INWARD ENTRY ROUTE ========================= //
 
@@ -427,6 +443,35 @@ app.post("/inward/add", async (req, res) => {
 });
 
 
+// ====================== INWARD SEARCH BY inward_no ========================= //
+
+app.get("/api/inward/search", (req, res) => {
+  const q = (req.query.q || "").trim();
+  if (!q) return res.json([]);
+
+  const sql = `
+    SELECT 
+      s_no, inward_no,
+      name_of_sender, address_of_sender, sender_city,
+      sender_state, sender_pin, sender_region, sender_org_type,
+      date_of_receipt, received_in
+    FROM inward_records
+    WHERE inward_no LIKE ?
+    ORDER BY s_no DESC
+    LIMIT 10
+  `;
+
+  db.query(sql, [`%${q}%`], (err, results) => {
+    if (err) {
+      console.error("Search error:", err);
+      return res.status(500).json([]);
+    }
+    return res.json(results);
+  });
+});
+
+
+
 
 // ====================== FETCH ALL INWARD RECORDS ========================= //
 app.get("/inward/all", (req, res) => {
@@ -440,6 +485,136 @@ app.get("/inward/all", (req, res) => {
     res.json(results);
   });
 });
+
+
+// ====================== OUTWARD ENTRY ROUTE ========================= //
+
+app.post("/outward/add", async (req, res) => {
+  try {
+    const {
+      date_of_despatch,
+      month,
+      year,
+      reply_from,
+      name_of_receiver,
+      address_of_receiver,
+      receiver_city,
+      receiver_state,
+      receiver_pin,
+      receiver_region,
+      receiver_org_type,
+      type_of_document,
+      language_of_document,
+      count,
+      inward_no,
+      reply_issued_by,
+      reply_sent_date,
+      reply_ref_no,
+      reply_sent_by,
+      reply_sent_in,
+      reply_count
+    } = req.body;
+
+    // REQUIRED FIELDS
+    if (!date_of_despatch || !reply_from || !name_of_receiver || !type_of_document) {
+      return res.status(400).send("Missing required fields.");
+    }
+
+    // Validate receiver PIN
+    if (!/^\d{6}$/.test(receiver_pin)) {
+      return res.status(400).send("Invalid PIN Code. Must be 6 digits.");
+    }
+
+    // Validate receiver name
+    if (!/^[A-Za-z ]+$/.test(name_of_receiver)) {
+      return res.status(400).send("Invalid Receiver Name.");
+    }
+
+    // Lookup inward_s_no if inward_no provided
+    let inward_s_no = null;
+    if (inward_no && inward_no.trim() !== "") {
+      const lookupSQL = "SELECT s_no FROM inward_records WHERE inward_no = ? LIMIT 1";
+      const lookupResult = await new Promise((resolve, reject) =>
+        db.query(lookupSQL, [inward_no.trim()], (err, result) => {
+          if (err) return reject(err);
+          resolve(result);
+        })
+      );
+
+      if (lookupResult.length > 0) {
+        inward_s_no = lookupResult[0].s_no;
+      }
+    }
+
+    // Prevent negatives
+    const safeCount = Math.max(0, Number(count) || 0);
+    const safeReplyCount = Math.max(0, Number(reply_count) || 0);
+
+    // Generate unique outward_no
+    let outward_no_value;
+    let inserted = false;
+    let attempts = 0;
+
+    while (!inserted && attempts < 5) {
+      attempts++;
+
+      outward_no_value = await generateOutwardNumber(reply_from);
+
+      const sql = `
+        INSERT INTO outward_records (
+          date_of_despatch, month, year, reply_from,
+          name_of_receiver, address_of_receiver, receiver_city,
+          receiver_state, receiver_pin, receiver_region, receiver_org_type,
+          outward_no, type_of_document, language_of_document, count,
+          inward_no, inward_s_no, 
+          reply_issued_by, reply_sent_date, reply_ref_no,
+          reply_sent_by, reply_sent_in, reply_count
+        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      `;
+
+      const values = [
+        date_of_despatch, month, year, reply_from,
+        name_of_receiver, address_of_receiver, receiver_city,
+        receiver_state, receiver_pin, receiver_region, receiver_org_type,
+        outward_no_value, type_of_document, language_of_document, safeCount,
+        inward_no || null, inward_s_no,
+        reply_issued_by, reply_sent_date || null, reply_ref_no,
+        reply_sent_by, reply_sent_in, safeReplyCount
+      ];
+
+      try {
+        await new Promise((resolve, reject) =>
+          db.query(sql, values, (err, result) => {
+            if (err) return reject(err);
+            resolve(result);
+          })
+        );
+        inserted = true;
+      } catch (err) {
+        if (err.code === "ER_DUP_ENTRY") {
+          console.log("Duplicate OUTWARD No found, retrying…");
+          continue;
+        }
+        throw err;
+      }
+    }
+
+    if (!inserted) {
+      return res.status(500).send("Failed to generate unique Outward Number.");
+    }
+
+    res.send(`
+      <h3 style="font-family:Arial; text-align:center;">Outward Entry Saved!</h3>
+      <p style="text-align:center;">Generated Outward No: <strong>${outward_no_value}</strong></p>
+      <p style="text-align:center;"><a href="/outward.html">Add Another Outward Entry</a></p>
+    `);
+
+  } catch (error) {
+    console.error("Outward insert error:", error);
+    res.status(500).send("Server Error");
+  }
+});
+
 
 
 app.listen(3000, () => console.log("Server running on http://localhost:3000"));

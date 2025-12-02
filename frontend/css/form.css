@@ -143,3 +143,38 @@ button:hover {
     width: 100%;
   }
 }
+
+.suggest-box div:hover {
+  background: #f0f4ff;
+}
+
+/* Suggestion box improvements */
+.suggest-box {
+  font-family: "Poppins", Arial, sans-serif;
+  font-size: 14px;
+  color: #102a43;
+}
+
+.suggest-box .suggest-item {
+  transition: background 0.15s ease;
+}
+
+.suggest-box div[role="no-result"] {
+  padding: 10px;
+  color: #666;
+  text-align: center;
+}
+
+/* Hover effect already used but more subtle */
+.suggest-box .suggest-item:hover {
+  background: #eef6ff;
+}
+
+/* small responsive tweak so suggestion box width follows input on resize */
+@media (max-width: 768px) {
+  .suggest-box {
+    width: 100% !important;
+    left: 0 !important;
+    right: auto;
+  }
+}
