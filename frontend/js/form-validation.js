@@ -1,20 +1,46 @@
 /* ===========================================================
    UNIVERSAL FORM VALIDATION (Inward + Outward)
-   Safe, modular, and fully compatible with your HTML
    =========================================================== */
 
 /* ---------------- STATE → REGION MAP ---------------- */
 const stateToRegion = {
-  Bihar: "A", Haryana: "A", "Himachal Pradesh": "A", "Madhya Pradesh": "A",
-  Rajasthan: "A", "Uttar Pradesh": "A", Jharkhand: "A", Chhattisgarh: "A",
-  Uttarakhand: "A", Delhi: "A", "Andaman & Nicobar Islands": "A",
-  Gujarat: "B", Maharashtra: "B", Punjab: "B", Chandigarh: "B",
-  "Daman & Diu": "B", "Dadra & Nagar Haveli": "B",
-  "Andhra Pradesh": "C", "Arunachal Pradesh": "C", Assam: "C", Goa: "C",
-  Kerala: "C", "Tamil Nadu": "C", "West Bengal": "C", Karnataka: "C",
-  Odisha: "C", Telangana: "C", Sikkim: "C", Tripura: "C",
-  Meghalaya: "C", Mizoram: "C", Nagaland: "C", Manipur: "C",
-  Puducherry: "C", Lakshadweep: "C", Ladakh: "C", "Jammu & Kashmir": "C",
+  Bihar: "A",
+  Haryana: "A",
+  "Himachal Pradesh": "A",
+  "Madhya Pradesh": "A",
+  Rajasthan: "A",
+  "Uttar Pradesh": "A",
+  Jharkhand: "A",
+  Chhattisgarh: "A",
+  Uttarakhand: "A",
+  Delhi: "A",
+  "Andaman & Nicobar Islands": "A",
+  Gujarat: "B",
+  Maharashtra: "B",
+  Punjab: "B",
+  Chandigarh: "B",
+  "Daman & Diu": "B",
+  "Dadra & Nagar Haveli": "B",
+  "Andhra Pradesh": "C",
+  "Arunachal Pradesh": "C",
+  Assam: "C",
+  Goa: "C",
+  Kerala: "C",
+  "Tamil Nadu": "C",
+  "West Bengal": "C",
+  Karnataka: "C",
+  Odisha: "C",
+  Telangana: "C",
+  Sikkim: "C",
+  Tripura: "C",
+  Meghalaya: "C",
+  Mizoram: "C",
+  Nagaland: "C",
+  Manipur: "C",
+  Puducherry: "C",
+  Lakshadweep: "C",
+  Ladakh: "C",
+  "Jammu & Kashmir": "C",
 };
 
 /* ---------------- ERROR HELPERS ---------------- */
@@ -65,8 +91,18 @@ function initMonthYear() {
     if (isNaN(d)) return;
 
     const months = [
-      "January", "February", "March", "April", "May", "June",
-      "July", "August", "September", "October", "November", "December",
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
     ];
 
     month.value = months[d.getMonth()];
@@ -94,22 +130,36 @@ function initFieldValidations() {
   // name can be name_of_sender (inward) or receiver_name (outward)
   const name = getByIdAny("name_of_sender", "name_of_receiver");
 
-  const city = document.querySelector("[name='sender_city']") || document.querySelector("[name='receiver_city']");
+  const city =
+    document.querySelector("[name='sender_city']") ||
+    document.querySelector("[name='receiver_city']");
   // optional fields
-  const issued = document.querySelector("[name='issued_to']") || document.querySelector("[name='reply_issued_by']");
+  const issued =
+    document.querySelector("[name='issued_to']") ||
+    document.querySelector("[name='reply_issued_by']");
   const ref = document.querySelector("[name='reply_ref_no']");
 
   if (name) {
     name.addEventListener("input", () => {
       /^[A-Za-z ]+$/.test(name.value)
-        ? clearErr(name.id === "name_of_sender" ? "err_name_of_sender" : "err_receiver_name")
-        : showErr(name.id === "name_of_sender" ? "err_name_of_sender" : "err_receiver_name", "Only alphabets allowed");
+        ? clearErr(
+            name.id === "name_of_sender"
+              ? "err_name_of_sender"
+              : "err_receiver_name"
+          )
+        : showErr(
+            name.id === "name_of_sender"
+              ? "err_name_of_sender"
+              : "err_receiver_name",
+            "Only alphabets allowed"
+          );
     });
   }
 
   if (city) {
     city.addEventListener("input", () => {
-      const errId = city.name === 'sender_city' ? 'err_sender_city' : 'err_receiver_city';
+      const errId =
+        city.name === "sender_city" ? "err_sender_city" : "err_receiver_city";
       /^[A-Za-z ]*$/.test(city.value)
         ? clearErr(errId)
         : showErr(errId, "City must contain only letters");
@@ -118,7 +168,8 @@ function initFieldValidations() {
 
   if (issued) {
     issued.addEventListener("input", () => {
-      const errId = issued.name === 'issued_to' ? 'err_issued_to' : 'err_reply_issued_by';
+      const errId =
+        issued.name === "issued_to" ? "err_issued_to" : "err_reply_issued_by";
       /^[A-Za-z ]*$/.test(issued.value)
         ? clearErr(errId)
         : showErr(errId, "Only alphabets allowed");
@@ -171,7 +222,9 @@ function initFormValidation() {
     let firstErrorField = null;
 
     // Remove old errors
-    document.querySelectorAll(".error").forEach((el) => (el.style.display = "none"));
+    document
+      .querySelectorAll(".error")
+      .forEach((el) => (el.style.display = "none"));
 
     /* REQUIRED FIELDS (HTML required attribute) */
     form.querySelectorAll("[required]").forEach((field) => {
@@ -192,25 +245,34 @@ function initFormValidation() {
     // Name (sender or receiver)
     const name = getByIdAny("name_of_sender", "receiver_name");
     if (name && !/^[A-Za-z ]+$/.test(name.value)) {
-      const errId = name.id === "name_of_sender" ? "err_name_of_sender" : "err_receiver_name";
+      const errId =
+        name.id === "name_of_sender"
+          ? "err_name_of_sender"
+          : "err_receiver_name";
       showErr(errId, "Only alphabets allowed");
       valid = false;
       if (!firstErrorField) firstErrorField = name;
     }
 
     // City (sender or receiver)
-    const city = document.querySelector("[name='sender_city']") || document.querySelector("[name='receiver_city']");
+    const city =
+      document.querySelector("[name='sender_city']") ||
+      document.querySelector("[name='receiver_city']");
     if (city && city.value && !/^[A-Za-z ]+$/.test(city.value)) {
-      const errId = city.name === 'sender_city' ? 'err_sender_city' : 'err_receiver_city';
+      const errId =
+        city.name === "sender_city" ? "err_sender_city" : "err_receiver_city";
       showErr(errId, "City must contain only letters");
       valid = false;
       if (!firstErrorField) firstErrorField = city;
     }
 
     // Issued To / Reply Issued By (optional)
-    const issued = document.querySelector("[name='issued_to']") || document.querySelector("[name='reply_issued_by']");
+    const issued =
+      document.querySelector("[name='issued_to']") ||
+      document.querySelector("[name='reply_issued_by']");
     if (issued && issued.value && !/^[A-Za-z ]+$/.test(issued.value)) {
-      const errId = issued.name === 'issued_to' ? 'err_issued_to' : 'err_reply_issued_by';
+      const errId =
+        issued.name === "issued_to" ? "err_issued_to" : "err_reply_issued_by";
       showErr(errId, "Only alphabets allowed");
       valid = false;
       if (!firstErrorField) firstErrorField = issued;
@@ -275,7 +337,6 @@ window.addEventListener("DOMContentLoaded", () => {
   initFormValidation();
 });
 
-
 /* OUTWARD FORM: LIVE SEARCH BY inward_no + AUTO-FILL */
 
 window.addEventListener("DOMContentLoaded", () => {
@@ -286,7 +347,7 @@ window.addEventListener("DOMContentLoaded", () => {
   const suggestBox = document.createElement("div");
   suggestBox.className = "suggest-box";
   suggestBox.style.position = "absolute";
-  suggestBox.style.top = (inwardInput.offsetHeight + 4) + "px";
+  suggestBox.style.top = inwardInput.offsetHeight + 4 + "px";
   suggestBox.style.left = "0px";
   suggestBox.style.width = inwardInput.offsetWidth + "px";
   suggestBox.style.background = "#fff";
@@ -357,15 +418,14 @@ window.addEventListener("DOMContentLoaded", () => {
 
     // Map sender → receiver fields
     const map = {
-  name_of_receiver: r.name_of_sender,
-  address_of_receiver: r.address_of_sender,
-  receiver_city: r.sender_city,
-  receiver_state: r.sender_state,
-  receiver_pin: r.sender_pin,
-  receiver_region: r.sender_region,
-  receiver_org_type: r.sender_org_type,
-};
-
+      name_of_receiver: r.name_of_sender,
+      address_of_receiver: r.address_of_sender,
+      receiver_city: r.sender_city,
+      receiver_state: r.sender_state,
+      receiver_pin: r.sender_pin,
+      receiver_region: r.sender_region,
+      receiver_org_type: r.sender_org_type,
+    };
 
     Object.entries(map).forEach(([field, value]) => {
       const el = document.querySelector(`[name="${field}"]`);
@@ -381,9 +441,8 @@ window.addEventListener("DOMContentLoaded", () => {
   });
 });
 
-
 /* 
-   OUTWARD: LIVE SEARCH BY inward_no + AUTO-FILL (enhanced)
+   OUTWARD: LIVE SEARCH BY inward_no + AUTO-FILL 
    - Shows "No results found"
    - nicer styling (rounded card + shadow)
    - shows inward_no, sender name, city, date, office
@@ -398,7 +457,7 @@ window.addEventListener("DOMContentLoaded", () => {
   const suggestBox = document.createElement("div");
   suggestBox.className = "suggest-box";
   suggestBox.style.position = "absolute";
-  suggestBox.style.top = (inwardInput.offsetHeight + 6) + "px";
+  suggestBox.style.top = inwardInput.offsetHeight + 6 + "px";
   suggestBox.style.left = "0px";
   suggestBox.style.width = Math.max(inwardInput.offsetWidth, 320) + "px";
   suggestBox.style.background = "#fff";
@@ -431,7 +490,10 @@ window.addEventListener("DOMContentLoaded", () => {
 
   async function fetchSearchResults(q) {
     try {
-      const res = await fetch(`/api/inward/search?q=${encodeURIComponent(q)}`);
+      const res = await fetch(`/api/inward/search?q=${q}`, {
+        credentials: "include",
+      });
+
       if (!res.ok) throw new Error("Network error");
       const rows = await res.json();
 
@@ -460,21 +522,37 @@ window.addEventListener("DOMContentLoaded", () => {
         item.innerHTML = `
           <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-start;">
             <div>
-              <div style="font-weight:600; font-size:14px; color:#0b3b66;">${row.inward_no}</div>
+              <div style="font-weight:600; font-size:14px; color:#0b3b66;">${
+                row.inward_no
+              }</div>
               <div style="font-size:13px; color:#334155; margin-top:4px;">
-                ${row.name_of_sender ? escapeHtml(row.name_of_sender) : ''}
-                ${row.sender_city ? `<span style="color:#6b7280"> — ${escapeHtml(row.sender_city)}</span>` : ''}
+                ${row.name_of_sender ? escapeHtml(row.name_of_sender) : ""}
+                ${
+                  row.sender_city
+                    ? `<span style="color:#6b7280"> — ${escapeHtml(
+                        row.sender_city
+                      )}</span>`
+                    : ""
+                }
               </div>
             </div>
             <div style="text-align:right; font-size:12px; color:#6b7280;">
-              ${row.date_of_receipt ? formatDateShort(row.date_of_receipt) : ''}
-              <div style="margin-top:6px; font-weight:600; color:#0b3b66;">${row.received_in || ''}</div>
+              ${row.date_of_receipt ? formatDateShort(row.date_of_receipt) : ""}
+              <div style="margin-top:6px; font-weight:600; color:#0b3b66;">${
+                row.received_in || ""
+              }</div>
             </div>
           </div>
         `;
 
-        item.addEventListener("mouseenter", () => item.style.background = "#f6f9ff");
-        item.addEventListener("mouseleave", () => item.style.background = "transparent");
+        item.addEventListener(
+          "mouseenter",
+          () => (item.style.background = "#f6f9ff")
+        );
+        item.addEventListener(
+          "mouseleave",
+          () => (item.style.background = "transparent")
+        );
         item.addEventListener("click", () => fillOutwardFields(row));
         suggestBox.appendChild(item);
       });
@@ -501,7 +579,7 @@ window.addEventListener("DOMContentLoaded", () => {
       receiver_state: r.sender_state,
       receiver_pin: r.sender_pin,
       receiver_region: r.sender_region,
-      receiver_org_type: r.sender_org_type
+      receiver_org_type: r.sender_org_type,
     };
 
     Object.entries(map).forEach(([field, value]) => {
@@ -512,9 +590,9 @@ window.addEventListener("DOMContentLoaded", () => {
     // add hidden inward_s_no if needed for backend optimization
     let hidden = document.querySelector('input[name="inward_s_no"]');
     if (!hidden) {
-      hidden = document.createElement('input');
-      hidden.type = 'hidden';
-      hidden.name = 'inward_s_no';
+      hidden = document.createElement("input");
+      hidden.type = "hidden";
+      hidden.name = "inward_s_no";
       inwardInput.form.appendChild(hidden);
     }
     hidden.value = r.s_no;
@@ -523,20 +601,20 @@ window.addEventListener("DOMContentLoaded", () => {
   // Utilities
   function formatDateShort(d) {
     // d may be YYYY-MM-DD or Date object — convert
-    if (!d) return '';
-    const parts = String(d).split('T')[0].split('-'); // YYYY-MM-DD
+    if (!d) return "";
+    const parts = String(d).split("T")[0].split("-"); // YYYY-MM-DD
     if (parts.length === 3) return `${parts[2]}-${parts[1]}-${parts[0]}`; // DD-MM-YYYY
     return d;
   }
 
   function escapeHtml(str) {
-    if (!str) return '';
+    if (!str) return "";
     return String(str)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#039;');
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
   }
 
   // Hide suggestion box when clicking outside
@@ -549,16 +627,22 @@ window.addEventListener("DOMContentLoaded", () => {
   // Handle keyboard navigation (optional small UX)
   let focusedIndex = -1;
   inwardInput.addEventListener("keydown", (ev) => {
-    const items = Array.from(suggestBox.querySelectorAll('.suggest-item'));
+    const items = Array.from(suggestBox.querySelectorAll(".suggest-item"));
     if (items.length === 0) return;
 
     if (ev.key === "ArrowDown") {
       focusedIndex = Math.min(focusedIndex + 1, items.length - 1);
-      items.forEach((it, i) => it.style.background = i === focusedIndex ? "#eef6ff" : "transparent");
+      items.forEach(
+        (it, i) =>
+          (it.style.background = i === focusedIndex ? "#eef6ff" : "transparent")
+      );
       ev.preventDefault();
     } else if (ev.key === "ArrowUp") {
       focusedIndex = Math.max(focusedIndex - 1, 0);
-      items.forEach((it, i) => it.style.background = i === focusedIndex ? "#eef6ff" : "transparent");
+      items.forEach(
+        (it, i) =>
+          (it.style.background = i === focusedIndex ? "#eef6ff" : "transparent")
+      );
       ev.preventDefault();
     } else if (ev.key === "Enter") {
       if (focusedIndex >= 0 && items[focusedIndex]) {
