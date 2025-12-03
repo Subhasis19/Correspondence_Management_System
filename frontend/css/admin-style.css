@@ -1,6 +1,7 @@
 /* ============================================================
-   FINAL MERGED DASHBOARD + FORM SUPPORT + FIXES
-   ============================================================ */
+   OPTIMIZED DASHBOARD + IFRAME LAYOUT
+   Clean, stable, no conflicts with inward/outward forms
+============================================================ */
 
 :root {
   --primary: #4a90e2;
@@ -12,142 +13,153 @@
   --text-primary: #2c3e50;
   --text-secondary: #7f8c8d;
   --border-light: #ecf0f1;
+  --bg-main: #f5f7fa;
 }
 
+/* ------------------------------------------------------------
+   RESET
+------------------------------------------------------------ */
 * {
   box-sizing: border-box;
 }
 
- html, body {
+html, body {
   margin: 0;
   padding: 0;
   height: 100%;
-  overflow-x: hidden;    /* prevent horizontal scroll only */
-  overflow-y: auto;      /* allow normal page scrolling */
+  overflow: hidden; /* Prevent global scroll */
+  background: var(--bg-main);
   font-family: "Inter", sans-serif;
-  background: #f5f7fa;
-  color: var(--text-primary);
 }
 
+/* ------------------------------------------------------------
+   LAYOUT WRAPPER
+------------------------------------------------------------ */
 
-/* ============================================================
+body {
+  display: flex;
+  height: 100vh;
+}
+
+/* ------------------------------------------------------------
    SIDEBAR
-   ============================================================ */
+------------------------------------------------------------ */
 
 .sidebar {
-  width: 280px;
+  width: 260px;
   background: var(--sidebar-bg);
   border-right: 1px solid var(--card-border);
   padding: 24px 16px;
   display: flex;
   flex-direction: column;
-  height: 100vh;
   overflow-y: auto;
 }
 
 .sidebar-header h2 {
   margin: 0;
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 700;
   color: var(--primary);
 }
 
 .sidebar-header p {
-  margin: 4px 0 0 0;
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text-secondary);
+  margin-top: 4px;
 }
 
 .sidebar-menu {
-  margin-top: 18px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
+  margin-top: 20px;
 }
 
 .menu-item {
+  padding: 12px 12px;
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 14px;
-  border-radius: 6px;
+  text-decoration: none;
   color: var(--sidebar-text);
   background: transparent;
   border-left: 3px solid transparent;
-  text-decoration: none;
-  font-size: 14px;
-  font-weight: 500;
+  border-radius: 6px;
   transition: 0.2s;
 }
 
 .menu-item:hover {
-  background: rgba(74,144,226,0.08);
+  background: rgba(74,144,226,0.10);
   color: var(--primary);
 }
 
 .menu-item.active {
-  background: rgba(74,144,226,0.12);
+  background: rgba(74,144,226,0.16);
   border-left-color: var(--primary);
   color: var(--primary);
 }
 
-/* Sidebar Footer */
+/* Sidebar footer */
 .sidebar-footer {
   margin-top: auto;
-  border-top: 1px solid var(--border-light);
   padding-top: 16px;
+  border-top: 1px solid var(--border-light);
 }
 
 .user-profile {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .avatar {
-  width: 40px;
-  height: 40px;
-  background: linear-gradient(135deg, var(--primary), #6ba3f5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  color: white;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
-  font-size: 18px;
-  font-weight: bold;
+  background: linear-gradient(135deg, var(--primary), #6ba3f5);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .logout-link {
-  display: inline-flex;
-  gap: 10px;
-  margin-top: 8px;
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   color: #e74c3c;
   text-decoration: none;
-  padding: 8px 12px;
+  padding: 8px 10px;
   border-radius: 4px;
 }
 
 .logout-link:hover {
-  background: rgba(231,76,60,0.12);
+  background: rgba(231,76,60,0.10);
 }
 
-/* ============================================================
-   MAIN CONTENT AREA
-   ============================================================ */
+/* ------------------------------------------------------------
+   MAIN CONTENT (Dashboard OR Iframe)
+------------------------------------------------------------ */
 
 .content {
   flex: 1;
-  padding: 32px;
+  height: 100vh;
   overflow-y: auto;
-  height: auto;         /* FIXED */
-  min-height: 100vh;    /* Keeps full-height when needed */
-  box-sizing: border-box;
+  padding: 28px;
+  background: var(--bg-main);
 }
 
+/* ------------------------------------------------------------
+   DASHBOARD VIEW ONLY
+------------------------------------------------------------ */
 
-/* Header section */
+#dashboardView {
+  display: block;
+}
+
 .header-section {
-  margin-bottom: 32px;
+  margin-bottom: 30px;
 }
 
 .welcome-header h1 {
@@ -156,12 +168,11 @@
 }
 
 .subtitle {
-  margin-top: 6px;
+  margin-top: 5px;
   font-size: 14px;
   color: var(--text-secondary);
 }
 
-/* Quick stats */
 .quick-stats {
   margin-top: 20px;
   display: grid;
@@ -170,111 +181,105 @@
 }
 
 .stat-card {
+  background: white;
+  padding: 16px;
+  border-radius: 8px;
+  border: 1px solid var(--card-border);
   display: flex;
   align-items: center;
-  gap: 14px;
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-  padding: 16px;
-  border-radius: 10px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  gap: 12px;
 }
 
-.stat-card i {
-  font-size: 26px;
-  color: var(--primary);
-}
-
-/* Dashboard cards */
 .dashboard-cards {
+  margin-top: 25px;
   display: grid;
   grid-template-columns: repeat(2,1fr);
   gap: 24px;
-  margin-top: 20px;
 }
 
 .card {
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
+  background: white;
   border-radius: 8px;
+  border: 1px solid var(--card-border);
   overflow: hidden;
 }
 
 .card-header {
-  background: #f9fafb;
   padding: 16px;
+  background: #f9fafb;
   border-bottom: 1px solid var(--card-border);
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
-.card-body {
-  padding: 0;
-}
-
-/* Table */
 .records-table {
   width: 100%;
   border-collapse: collapse;
 }
 
-.records-table th {
-  background: #f9fafb;
-  padding: 14px;
-  font-size: 13px;
-  color: var(--text-secondary);
-  border-bottom: 1px solid var(--border-light);
-}
-
+.records-table th,
 .records-table td {
   padding: 14px;
-  border-bottom: 1px solid var(--border-light);
+  border-bottom: 1px solid #eee;
 }
 
 .records-table tr:hover {
   background: #f6f8fa;
 }
 
-/* ============================================================
-   FORM VIEW (DYNAMICALLY LOADED)
-   ============================================================ */
+/* ------------------------------------------------------------
+   IFRAME VIEW (Inward / Outward)
+------------------------------------------------------------ */
 
-#formView {
+#iframeContainer {
   display: none;
+  width: 100%;
+  height: 100%;
 }
 
-#formView .form-wrapper {
-  max-width: 900px;
-  margin: 0 auto;
+#iframeHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   background: white;
-  padding: 32px;
-  border-radius: 10px;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+  padding: 14px 20px;
+  border-radius: 8px;
+  margin-bottom: 14px;
+  border: 1px solid #ddd;
 }
 
-.back-btn {
+#iframeHeader h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+#iframeClose {
+  padding: 6px 12px;
   background: #666;
   color: white;
+  border-radius: 6px;
   border: none;
-  padding: 8px 12px;
-  border-radius: 6px;
   cursor: pointer;
-  margin-bottom: 18px;
 }
 
-/* fix autocomplete */
-#inward-autocomplete-box {
-  border-radius: 6px;
-  overflow: hidden;
+#formFrame {
+  width: 100%;
+  height: calc(100vh - 180px); /* Auto fit remaining space */
+  border-radius: 10px;
+  border: 1px solid #ddd;
 }
 
-/* ============================================================
+/* ------------------------------------------------------------
    RESPONSIVE
-   ============================================================ */
+------------------------------------------------------------ */
 
-@media (max-width: 1000px) {
+@media (max-width: 900px) {
   .dashboard-cards {
+    grid-template-columns: 1fr;
+  }
+  .quick-stats {
     grid-template-columns: 1fr;
   }
 }
@@ -283,20 +288,15 @@
   body {
     flex-direction: column;
   }
-  
+
   .sidebar {
     width: 100%;
     height: auto;
-    flex-direction: row;
-    border-bottom: 1px solid var(--card-border);
-  }
-
-  .sidebar-menu {
     flex-direction: row;
     overflow-x: auto;
   }
 
   .content {
-    padding: 18px;
+    padding: 16px;
   }
 }
