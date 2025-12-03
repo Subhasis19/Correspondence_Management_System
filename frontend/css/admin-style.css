@@ -300,3 +300,77 @@ body {
     padding: 16px;
   }
 }
+
+
+/* ============================================================
+   ADMIN PANEL VIEW
+============================================================ */
+
+#adminPanelView {
+  display: none;
+  width: 100%;
+}
+
+/* Header row with back button */
+.admin-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+/* Back button styling (same style as iframe back button but cleaner) */
+.back-btn {
+  padding: 6px 14px;
+  background: var(--primary-dark);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: 0.2s ease;
+}
+
+.back-btn:hover {
+  background: var(--primary);
+}
+
+/* Add User button reused from dashboard small button style */
+.btn-small {
+  padding: 6px 12px;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.btn-small:hover {
+  background: var(--primary-dark);
+}
+
+/* Admin table action buttons */
+.action-btn {
+  padding: 4px 8px;
+  font-size: 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  border: none;
+  margin-right: 6px;
+}
+
+.action-edit {
+  background: #3498db;
+  color: #fff;
+}
+.action-edit:hover {
+  background: #2d7fbd;
+}
+
+.action-delete {
+  background: #e74c3c;
+  color: white;
+}
+.action-delete:hover {
+  background: #c0392b;
+}

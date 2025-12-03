@@ -165,6 +165,9 @@
      PAGE HANDLER
   ============================================================ */
   function loadPage(page) {
+    const adminPanel = document.getElementById("adminPanelView");
+    if (adminPanel) adminPanel.style.display = "none";
+
     if (page === "dashboard") {
       closeIframe();
       return;
@@ -184,10 +187,14 @@
 
         document.getElementById("adminBackBtn").onclick = () => loadPage("dashboard");
 
+         if (typeof window.__adminPanelLoadUsers === "function") {
+        window.__adminPanelLoadUsers();
+    }
+
         return;
     }
 
-}  //  <-- ADD THIS CLOSING BRACE TO END loadPage()
+}  
 
 
   /* ============================================================

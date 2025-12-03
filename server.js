@@ -381,6 +381,161 @@ app.get("/outward/all", requireLogin, (req, res) => {
   });
 });
 
+
+// =========================
+// ADMIN: GET ALL USERS
+// =========================
+app.get("/admin/users", requireAdmin, (req, res) => {
+  const sql = "SELECT id, name, email, mobile, role, group_name FROM users ORDER BY id DESC";
+
+  db.query(sql, (err, rows) => {
+    if (err) return res.status(500).json({ success: false, message: "DB Error" });
+    res.json(rows);
+  });
+});
+
+// =========================
+// ADMIN: ADD USER
+// =========================
+app.post("/admin/users/add", requireAdmin, (req, res) => {
+  const { name, email, mobile, password, group_name } = req.body;
+
+  if (!name || !email || !password) {
+    return res.status(400).json({ success: false, message: "Missing required fields" });
+  }
+
+  bcrypt.hash(password, 10, (err, hash) => {
+    if (err) return res.status(500).json({ success: false, message: "Hash error" });
+
+    const sql = `
+      INSERT INTO users (name, email, mobile, password, role, group_name)
+      VALUES (?, ?, ?, ?, "user", ?)
+    `;
+
+    db.query(sql, [name, email, mobile, hash, group_name], (err) => {
+      if (err) {
+        if (err.code === "ER_DUP_ENTRY") {
+          return res.status(400).json({ success: false, message: "Email already exists" });
+        }
+        return res.status(500).json({ success: false, message: "DB Error" });
+      }
+
+      res.json({ success: true });
+    });
+  });
+});
+
+// =========================
+// ADMIN: UPDATE USER
+// =========================
+app.patch("/admin/users/update/:id", requireAdmin, (req, res) => {
+  const { name, email, mobile, group_name } = req.body;
+
+  const sql = `
+    UPDATE users 
+    SET name=?, email=?, mobile=?, group_name=? 
+    WHERE id=?
+  `;
+
+  db.query(sql, [name, email, mobile, group_name, req.params.id], (err) => {
+    if (err) return res.status(500).json({ success: false, message: "DB Error" });
+    res.json({ success: true });
+  });
+});
+
+// =========================
+// ADMIN: DELETE USER
+// =========================
+app.delete("/admin/users/delete/:id", requireAdmin, (req, res) => {
+
+  // Prevent admin from deleting themselves
+  if (req.session.user.id === Number(req.params.id)) {
+    return res.status(400).json({ success: false, message: "You cannot delete your own account" });
+  }
+
+  const sql = "DELETE FROM users WHERE id=?";
+
+  db.query(sql, [req.params.id], (err) => {
+    if (err) return res.status(500).json({ success: false, message: "DB Error" });
+    res.json({ success: true });
+  });
+});
+
+/* ============================
+   ADMIN PANEL USER MANAGEMENT
+============================ */
+
+app.get("/admin/users", requireAdmin, (req, res) => {
+  db.query(
+    "SELECT id, name, email, mobile, role, group_name FROM users ORDER BY id DESC",
+    (err, rows) => {
+      if (err) return res.status(500).json({ message: "Database error" });
+      res.json(rows);
+    }
+  );
+});
+
+/* ---- ADD USER ---- */
+app.post("/admin/users/add", requireAdmin, (req, res) => {
+  const { name, email, mobile, password, group_name } = req.body;
+
+  if (!name || !email || !password)
+    return res.status(400).json({ message: "Missing required fields" });
+
+  // Default new users get role "user"
+  const role = "user";
+
+  bcrypt.hash(password, 10, (err, hash) => {
+    if (err) return res.status(500).json({ message: "Hash error" });
+
+    db.query(
+      "INSERT INTO users (name, email, mobile, password, role, group_name) VALUES (?, ?, ?, ?, ?, ?)",
+      [name, email, mobile, hash, role, group_name],
+      (err) => {
+        if (err) {
+          if (err.code === "ER_DUP_ENTRY")
+            return res.status(400).json({ message: "Email already exists" });
+
+          return res.status(500).json({ message: "Database error" });
+        }
+        res.json({ success: true });
+      }
+    );
+  });
+});
+
+/* ---- UPDATE USER ---- */
+app.patch("/admin/users/update/:id", requireAdmin, (req, res) => {
+  const { name, email, mobile, group_name } = req.body;
+  const id = req.params.id;
+
+  db.query(
+    "UPDATE users SET name=?, email=?, mobile=?, group_name=? WHERE id=?",
+    [name, email, mobile, group_name, id],
+    (err) => {
+      if (err) return res.status(500).json({ message: "Update failed" });
+      res.json({ success: true });
+    }
+  );
+});
+
+/* ---- DELETE USER ---- */
+app.delete("/admin/users/delete/:id", requireAdmin, (req, res) => {
+  const id = req.params.id;
+
+  // Prevent admin deleting themselves
+  if (req.session.user.id == id) {
+    return res.status(400).json({ message: "You cannot delete your own account" });
+  }
+
+  db.query("DELETE FROM users WHERE id=?", [id], (err) => {
+    if (err) return res.status(500).json({ message: "Delete failed" });
+    res.json({ success: true });
+  });
+});
+
+
+
   //  START SERVER
 
 app.listen(3000, () =>
