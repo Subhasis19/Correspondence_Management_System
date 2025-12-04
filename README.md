@@ -144,7 +144,51 @@ CREATE TABLE inward_records (
   PRIMARY KEY (s_no)
 );
 ```
+Outward Records Table (WITH Foreign Key Link to Inward)
+```sql
+CREATE TABLE outward_records (
+  s_no INT NOT NULL AUTO_INCREMENT,
 
+  date_of_despatch DATE NOT NULL,
+  outward_no VARCHAR(50) NOT NULL UNIQUE,
+
+  month VARCHAR(20),
+  year INT,
+
+  reply_from ENUM('Silchar','Guwahati'),
+  name_of_receiver VARCHAR(100),
+  address_of_receiver VARCHAR(255),
+  receiver_city VARCHAR(100),
+  receiver_state VARCHAR(100),
+  receiver_pin VARCHAR(6),
+  receiver_region ENUM('A','B','C'),
+  receiver_org_type ENUM('Central','State','Private','Individual'),
+
+  type_of_document ENUM('Letter','Bill','Other Document'),
+  language_of_document ENUM('English','Hindi','Bilingual'),
+  count INT DEFAULT 1,
+
+  inward_no VARCHAR(100),
+  inward_s_no INT,
+
+  reply_issued_by VARCHAR(100),
+  reply_sent_date DATE,
+  reply_ref_no VARCHAR(100),
+  reply_sent_by ENUM('Speed Post','Email'),
+  reply_sent_in ENUM('English','Hindi','Bilingual'),
+  reply_count INT DEFAULT 0,
+
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+  PRIMARY KEY (s_no),
+  KEY idx_inward_s_no (inward_s_no),
+  CONSTRAINT fk_outward_inward FOREIGN KEY (inward_s_no)
+     REFERENCES inward_records(s_no)
+     ON DELETE SET NULL
+     ON UPDATE CASCADE
+);
+
+```
 Recommended verification commands in MySQL client:
 
 ```sql
