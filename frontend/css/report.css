@@ -1,0 +1,108 @@
+/* =============================================
+   TABLES-ONLY MINIMAL PROFESSIONAL REPORT THEME
+   ============================================= */
+
+#reportHtml {
+  font-family: Arial, sans-serif;
+  color: #000;
+  line-height: 1.45;
+  padding: 20px 10px;
+  max-width: 900px;
+  margin: auto;
+}
+
+/* Headings: minimal, no borders, no colors */
+#reportHtml h3 {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 6px 0;
+}
+
+#reportHtml h4 {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 20px 0 8px 0;
+}
+
+/* --- Minimal Table Style --- */
+#reportHtml table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 18px;
+}
+
+/* Borders only on the cells — no thick frames */
+#reportHtml table td,
+#reportHtml table th {
+  border: 1px solid #bfbfbf;
+  padding: 8px 10px;
+  font-size: 14px;
+}
+
+/* Header row: subtle grey to differentiate */
+#reportHtml table th {
+  background: #f7f7f7;
+  font-weight: 600;
+}
+
+/* Slight zebra rows for readability */
+#reportHtml table tr:nth-child(even) {
+  background: #fafafa;
+}
+
+/* Footer area — minimal */
+#reportHtml .footer-block {
+  margin-top: 35px;
+  font-size: 14px;
+}
+
+#reportHtml .signature-line {
+  height: 30px;
+  border-bottom: 1px solid #aaa;
+  width: 220px;
+  margin-top: 8px;
+}
+
+/* Print mode — ensures table borders remain crisp */
+@media print {
+  #reportHtml table th {
+    background: #ededed !important;
+    -webkit-print-color-adjust: exact;
+  }
+
+  #reportHtml table tr:nth-child(even) {
+    background: #f9f9f9 !important;
+    -webkit-print-color-adjust: exact;
+  }
+}
+
+/* Force all tables to have 2 equal-width columns */
+#reportHtml table {
+  width: 100%;
+  table-layout: fixed;        /* THIS FIXES ALL MISALIGNMENT */
+  border-collapse: collapse;
+  margin-bottom: 18px;
+}
+
+/* Cells */
+#reportHtml table td,
+#reportHtml table th {
+  border: 1px solid #bfbfbf;
+  padding: 10px 12px;
+  font-size: 14px;
+  vertical-align: middle;
+}
+
+/* First column = label */
+#reportHtml table td:first-child,
+#reportHtml table th:first-child {
+  width: 70%;                 /* force consistent width */
+  text-align: left;
+}
+
+/* Second column = numbers */
+#reportHtml table td:last-child,
+#reportHtml table th:last-child {
+  width: 30%;                 /* force consistent width */
+  text-align: right;          /* align numeric values */
+}
