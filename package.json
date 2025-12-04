@@ -16,6 +16,7 @@
     "express": "^5.1.0",
     "express-session": "^1.18.2",
     "mysql2": "^3.15.3",
-    "nodemailer": "^7.0.10"
+    "nodemailer": "^7.0.10",
+    "puppeteer": "^24.32.0"
   }
 }

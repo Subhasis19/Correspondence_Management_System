@@ -87,7 +87,7 @@ transporter.verify((err) => {
     },
     (err) => {
       if (err) return res.status(500).send({ success: false, message: "Mail error" });
-      console.log("OTP sent:", otp);
+      console.log("OTP sent");
       res.send({ success: true });
     }
   );
@@ -198,6 +198,154 @@ function generateOutwardNumber() {
   const rand = Math.floor(Math.random() * 1_000_000).toString().padStart(6, "0");
   return `OUTW/${year}/${rand}`;
 }
+
+// =============================================
+// REPORT CALCULATION  FUNCTIONS
+// =============================================
+function getMonthDateRange(year, month) {
+  const start = new Date(year, month - 1, 1);
+  const end = new Date(year, month, 1);
+  return {
+    start: start.toISOString().slice(0,10),
+    end: end.toISOString().slice(0,10)
+  };
+}
+
+function dbQuery(sql, params = []) {
+  return new Promise((resolve, reject) => {
+    db.query(sql, params, (err, rows) => err ? reject(err) : resolve(rows));
+  });
+}
+
+async function calculateReportData(month, year, office = "") {
+  const { start, end } = getMonthDateRange(year, month);
+
+  const inOfficeCond = office ? "AND received_in = ?" : "";
+  const outOfficeCond = office ? "AND reply_from = ?" : "";
+  const paramsIn = office ? [start, end, office] : [start, end];
+  const paramsOut = office ? [start, end, office] : [start, end];
+
+  // 1. Hindi, Replies, Not Expected
+  const sqlHindi = `
+    SELECT COUNT(*) AS cnt
+    FROM inward_records
+    WHERE date_of_receipt >= ? AND date_of_receipt < ?
+    ${inOfficeCond}
+    AND language_of_document IN ('Hindi','Bilingual')
+  `;
+
+  const sqlReplyHindi = `
+    SELECT COUNT(*) AS cnt
+    FROM inward_records
+    WHERE date_of_receipt >= ? AND date_of_receipt < ?
+    ${inOfficeCond}
+    AND reply_sent_in = 'Hindi'
+  `;
+
+  const sqlReplyEnglish = `
+    SELECT COUNT(*) AS cnt
+    FROM inward_records
+    WHERE date_of_receipt >= ? AND date_of_receipt < ?
+    ${inOfficeCond}
+    AND reply_sent_in = 'English'
+  `;
+
+  const sqlNotExpected = `
+    SELECT COUNT(*) AS cnt
+    FROM inward_records
+    WHERE date_of_receipt >= ? AND date_of_receipt < ?
+    ${inOfficeCond}
+    AND reply_required = 'No'
+  `;
+
+  const sqlInwardRegion = `
+    SELECT sender_region AS region,
+           SUM(language_of_document = 'English') AS receivedEnglish,
+           SUM(reply_sent_in = 'Hindi') AS repliedHindi,
+           SUM(reply_sent_in = 'English') AS repliedEnglish,
+           SUM(reply_required = 'No') AS notExpected
+    FROM inward_records
+    WHERE date_of_receipt >= ? AND date_of_receipt < ?
+    ${inOfficeCond}
+    GROUP BY sender_region
+  `;
+
+  const sqlOutwardRegion = `
+    SELECT receiver_region AS region,
+           SUM(language_of_document IN ('Hindi','Bilingual')) AS hindi,
+           SUM(language_of_document = 'English') AS english,
+           COUNT(*) AS total
+    FROM outward_records
+    WHERE date_of_despatch >= ? AND date_of_despatch < ?
+    ${outOfficeCond}
+    GROUP BY receiver_region
+  `;
+
+  const sqlTotalInward = `
+    SELECT COUNT(*) AS cnt
+    FROM inward_records
+    WHERE date_of_receipt >= ? AND date_of_receipt < ?
+    ${inOfficeCond}
+  `;
+
+  const sqlTotalOutward = `
+    SELECT COUNT(*) AS cnt
+    FROM outward_records
+    WHERE date_of_despatch >= ? AND date_of_despatch < ?
+    ${outOfficeCond}
+  `;
+
+  const [
+    rowsHindi,
+    rowsReplyHindi,
+    rowsReplyEnglish,
+    rowsNotExpected,
+    rowsInwardRegion,
+    rowsOutwardRegion,
+    totalInward,
+    totalOutward
+  ] = await Promise.all([
+    dbQuery(sqlHindi, paramsIn),
+    dbQuery(sqlReplyHindi, paramsIn),
+    dbQuery(sqlReplyEnglish, paramsIn),
+    dbQuery(sqlNotExpected, paramsIn),
+    dbQuery(sqlInwardRegion, paramsIn),
+    dbQuery(sqlOutwardRegion, paramsOut),
+    dbQuery(sqlTotalInward, paramsIn),
+    dbQuery(sqlTotalOutward, paramsOut)
+  ]);
+
+  const inwardByRegion = {};
+  rowsInwardRegion.forEach(r => {
+    inwardByRegion[r.region || "Unknown"] = {
+      receivedEnglish: r.receivedEnglish || 0,
+      repliedHindi: r.repliedHindi || 0,
+      repliedEnglish: r.repliedEnglish || 0,
+      notExpected: r.notExpected || 0,
+    };
+  });
+
+  const outwardByRegion = {};
+  rowsOutwardRegion.forEach(r => {
+    outwardByRegion[r.region || "Unknown"] = {
+      hindi: r.hindi || 0,
+      english: r.english || 0,
+      total: r.total || 0
+    };
+  });
+
+  return {
+    lettersReceivedHindi: rowsHindi[0].cnt,
+    repliesSentHindi: rowsReplyHindi[0].cnt,
+    repliesSentEnglish: rowsReplyEnglish[0].cnt,
+    notExpectedTotal: rowsNotExpected[0].cnt,
+    inwardByRegion,
+    outwardByRegion,
+    totalInwards: totalInward[0].cnt,
+    totalOutwards: totalOutward[0].cnt
+  };
+}
+
 
   //  INWARD ENTRY
 
@@ -465,75 +613,189 @@ app.delete("/admin/users/delete/:id", requireAdmin, (req, res) => {
    ADMIN PANEL USER MANAGEMENT
 ============================ */
 
-app.get("/admin/users", requireAdmin, (req, res) => {
-  db.query(
-    "SELECT id, name, email, mobile, role, group_name FROM users ORDER BY id DESC",
-    (err, rows) => {
-      if (err) return res.status(500).json({ message: "Database error" });
-      res.json(rows);
+// app.get("/admin/users", requireAdmin, (req, res) => {
+//   db.query(
+//     "SELECT id, name, email, mobile, role, group_name FROM users ORDER BY id DESC",
+//     (err, rows) => {
+//       if (err) return res.status(500).json({ message: "Database error" });
+//       res.json(rows);
+//     }
+//   );
+// });
+
+// /* ---- ADD USER ---- */
+// app.post("/admin/users/add", requireAdmin, (req, res) => {
+//   const { name, email, mobile, password, group_name } = req.body;
+
+//   if (!name || !email || !password)
+//     return res.status(400).json({ message: "Missing required fields" });
+
+//   // Default new users get role "user"
+//   const role = "user";
+
+//   bcrypt.hash(password, 10, (err, hash) => {
+//     if (err) return res.status(500).json({ message: "Hash error" });
+
+//     db.query(
+//       "INSERT INTO users (name, email, mobile, password, role, group_name) VALUES (?, ?, ?, ?, ?, ?)",
+//       [name, email, mobile, hash, role, group_name],
+//       (err) => {
+//         if (err) {
+//           if (err.code === "ER_DUP_ENTRY")
+//             return res.status(400).json({ message: "Email already exists" });
+
+//           return res.status(500).json({ message: "Database error" });
+//         }
+//         res.json({ success: true });
+//       }
+//     );
+//   });
+// });
+
+// /* ---- UPDATE USER ---- */
+// app.patch("/admin/users/update/:id", requireAdmin, (req, res) => {
+//   const { name, email, mobile, group_name } = req.body;
+//   const id = req.params.id;
+
+//   db.query(
+//     "UPDATE users SET name=?, email=?, mobile=?, group_name=? WHERE id=?",
+//     [name, email, mobile, group_name, id],
+//     (err) => {
+//       if (err) return res.status(500).json({ message: "Update failed" });
+//       res.json({ success: true });
+//     }
+//   );
+// });
+
+// /* ---- DELETE USER ---- */
+// app.delete("/admin/users/delete/:id", requireAdmin, (req, res) => {
+//   const id = req.params.id;
+
+//   // Prevent admin deleting themselves
+//   if (req.session.user.id == id) {
+//     return res.status(400).json({ message: "You cannot delete your own account" });
+//   }
+
+//   db.query("DELETE FROM users WHERE id=?", [id], (err) => {
+//     if (err) return res.status(500).json({ message: "Delete failed" });
+//     res.json({ success: true });
+//   });
+// });
+
+
+// =============================================
+// ADMIN — REPORT DATA API
+// =============================================
+app.post("/admin/report/data", requireAdmin, async (req, res) => {
+  try {
+    const { month, year, office } = req.body;
+
+    if (!month || !year) {
+      return res.status(400).json({ message: "Month and Year required" });
     }
-  );
-});
 
-/* ---- ADD USER ---- */
-app.post("/admin/users/add", requireAdmin, (req, res) => {
-  const { name, email, mobile, password, group_name } = req.body;
+    const data = await calculateReportData(month, year, office || "");
 
-  if (!name || !email || !password)
-    return res.status(400).json({ message: "Missing required fields" });
+    res.json(data);
 
-  // Default new users get role "user"
-  const role = "user";
-
-  bcrypt.hash(password, 10, (err, hash) => {
-    if (err) return res.status(500).json({ message: "Hash error" });
-
-    db.query(
-      "INSERT INTO users (name, email, mobile, password, role, group_name) VALUES (?, ?, ?, ?, ?, ?)",
-      [name, email, mobile, hash, role, group_name],
-      (err) => {
-        if (err) {
-          if (err.code === "ER_DUP_ENTRY")
-            return res.status(400).json({ message: "Email already exists" });
-
-          return res.status(500).json({ message: "Database error" });
-        }
-        res.json({ success: true });
-      }
-    );
-  });
-});
-
-/* ---- UPDATE USER ---- */
-app.patch("/admin/users/update/:id", requireAdmin, (req, res) => {
-  const { name, email, mobile, group_name } = req.body;
-  const id = req.params.id;
-
-  db.query(
-    "UPDATE users SET name=?, email=?, mobile=?, group_name=? WHERE id=?",
-    [name, email, mobile, group_name, id],
-    (err) => {
-      if (err) return res.status(500).json({ message: "Update failed" });
-      res.json({ success: true });
-    }
-  );
-});
-
-/* ---- DELETE USER ---- */
-app.delete("/admin/users/delete/:id", requireAdmin, (req, res) => {
-  const id = req.params.id;
-
-  // Prevent admin deleting themselves
-  if (req.session.user.id == id) {
-    return res.status(400).json({ message: "You cannot delete your own account" });
+  } catch (err) {
+    console.error("Report Data Error:", err);
+    res.status(500).json({ message: "Failed to calculate report" });
   }
-
-  db.query("DELETE FROM users WHERE id=?", [id], (err) => {
-    if (err) return res.status(500).json({ message: "Delete failed" });
-    res.json({ success: true });
-  });
 });
 
+
+// =============================================
+// ADMIN — REPORT PDF
+// =============================================
+const puppeteer = require("puppeteer");
+
+app.post("/admin/report/pdf", requireAdmin, async (req, res) => {
+  try {
+    const { month, year, office } = req.body;
+    if (!month || !year) {
+      return res.status(400).json({ message: "Month and Year required" });
+    }
+
+    const data = await calculateReportData(month, year, office || "");
+
+    const html = `
+      <html>
+      <head>
+        <style>
+          body { font-family: Arial; padding: 20px; }
+          table { width:100%; border-collapse: collapse; margin-bottom:20px; }
+          th, td { border:1px solid #ccc; padding:8px; }
+          th { background:#eee; }
+        </style>
+      </head>
+      <body>
+        <h2>Hindi Rajbhasha Monthly Report</h2>
+        <p><b>Month:</b> ${month}/${year} ${office ? "| Office: "+office : ""}</p>
+
+        <h3>Section 1 — Letters Received in Hindi</h3>
+        <table>
+          <tr><td>Total letters received in Hindi</td><td>${data.lettersReceivedHindi}</td></tr>
+          <tr><td>Replies sent in Hindi</td><td>${data.repliesSentHindi}</td></tr>
+          <tr><td>Replies sent in English</td><td>${data.repliesSentEnglish}</td></tr>
+          <tr><td>Not expected</td><td>${data.notExpectedTotal}</td></tr>
+        </table>
+
+        <h3>Section 2 — English Letters by Region</h3>
+        <table>
+          <tr><th>Region</th><th>English Received</th><th>Replied Hindu</th><th>Replied English</th><th>Not Expected</th></tr>
+          ${Object.keys(data.inwardByRegion).map(r => `
+            <tr>
+              <td>${r}</td>
+              <td>${data.inwardByRegion[r].receivedEnglish}</td>
+              <td>${data.inwardByRegion[r].repliedHindi}</td>
+              <td>${data.inwardByRegion[r].repliedEnglish}</td>
+              <td>${data.inwardByRegion[r].notExpected}</td>
+            </tr>
+          `).join("")}
+        </table>
+
+        <h3>Section 3 — Outward Letters by Region</h3>
+        <table>
+          <tr><th>Region</th><th>Hindi</th><th>English</th><th>Total</th><th>% Hindi</th></tr>
+          ${Object.keys(data.outwardByRegion).map(r => {
+            const o = data.outwardByRegion[r];
+            const perc = o.total ? Math.round((o.hindi/o.total)*100) : 0;
+            return `
+              <tr>
+                <td>${r}</td>
+                <td>${o.hindi}</td>
+                <td>${o.english}</td>
+                <td>${o.total}</td>
+                <td>${perc}%</td>
+              </tr>
+            `;
+          }).join("")}
+        </table>
+      </body>
+      </html>
+    `;
+
+    const browser = await puppeteer.launch({
+      headless: 'new',
+      args: ["--no-sandbox","--disable-setuid-sandbox"]
+    });
+
+    const page = await browser.newPage();
+    await page.setContent(html, { waitUntil:"networkidle0" });
+
+    const pdf = await page.pdf({ format:"A4", printBackground:true });
+    await browser.close();
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename=Report_${month}_${year}.pdf`);
+    res.send(pdf);
+
+  } catch (err) {
+    console.error("PDF Error:", err);
+    res.status(500).json({ message:"Failed to generate PDF" });
+  }
+});
 
 
   //  START SERVER
