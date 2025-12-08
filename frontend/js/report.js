@@ -47,7 +47,7 @@ function renderReportHtml(payload, filters) {
   const notEng = safe(s.notingsEnglish);
 
   /* -----------------------------
-     Template (Layout unchanged)
+      Template 
   ----------------------------- */
   return `
 <div id="reportHtml" style="font-family: Arial; font-size:14px; color:#000;">
