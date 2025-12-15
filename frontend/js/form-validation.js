@@ -84,7 +84,10 @@ function initMonthYear() {
   const date = getByIdAny("inwardDate", "outwardDate");
   const month = document.getElementById("month");
   const year = document.getElementById("year");
-  if (!date || !month || !year) return;
+  // if (!date || !month || !year) return;
+  if (!date) return;
+  if (!month || !year) return;
+
 
   date.addEventListener("change", () => {
     const d = new Date(date.value);
@@ -259,7 +262,7 @@ function initReplyToggle() {
 
     // If turning off, also clear any error messages related to reply fields
     if (!enabled) {
-      ["err_reply_ref_no", "err_reply_count", "err_pin", "err_reply_required"].forEach(id => {
+      ["err_reply_ref_no", "err_reply_count"].forEach(id => {
         const e = document.getElementById(id);
         if (e) e.style.display = "none";
       });
@@ -287,22 +290,35 @@ function initFormValidation() {
 
     /* REQUIRED FIELDS (HTML required attribute) */
     form.querySelectorAll("[required]").forEach((field) => {
+      if (field.disabled) return;
       const err = field.parentElement.querySelector(".error");
       if (!err) return;
 
       if (field.value.trim() === "") {
-        valid = false;
-        err.style.display = "block";
-        err.textContent = "This field is required";
+  valid = false;
 
-        if (!firstErrorField) firstErrorField = field;
-      }
+  // Human-friendly field name
+  const label =
+    field.getAttribute("data-label") ||
+    field.previousElementSibling?.textContent ||
+    "This field";
+
+  err.style.display = "block";
+  err.textContent = `${label} is required`;
+
+  field.classList.add("error-input");
+
+  if (!firstErrorField) firstErrorField = field;
+} else {
+  field.classList.remove("error-input");
+}
     });
+
 
     /* ADDITIONAL CUSTOM VALIDATION BELOW (identical to your old JS) */
 
     // Name (sender or receiver)
-    const name = getByIdAny("name_of_sender", "receiver_name");
+    const name = getByIdAny("name_of_sender", "name_of_receiver");
     if (name && !/^[A-Za-z ]+$/.test(name.value)) {
       const errId =
         name.id === "name_of_sender"
@@ -412,109 +428,6 @@ window.addEventListener("DOMContentLoaded", () => {
   initFormValidation();
 });
 
-/* OUTWARD FORM: LIVE SEARCH BY inward_no + AUTO-FILL */
-
-window.addEventListener("DOMContentLoaded", () => {
-  const inwardInput = document.querySelector('input[name="inward_no"]');
-  if (!inwardInput) return; // only run on outward form
-
-  // Create suggestion dropdown container
-  const suggestBox = document.createElement("div");
-  suggestBox.className = "suggest-box";
-  suggestBox.style.position = "absolute";
-  suggestBox.style.top = inwardInput.offsetHeight + 4 + "px";
-  suggestBox.style.left = "0px";
-  suggestBox.style.width = inwardInput.offsetWidth + "px";
-  suggestBox.style.background = "#fff";
-  suggestBox.style.border = "1px solid #ccc";
-  suggestBox.style.maxHeight = "200px";
-  suggestBox.style.overflowY = "auto";
-  suggestBox.style.display = "none";
-  suggestBox.style.zIndex = "9999";
-
-  inwardInput.parentElement.style.position = "relative";
-  inwardInput.parentElement.appendChild(suggestBox);
-
-  let searchTimeout = null;
-
-  inwardInput.addEventListener("input", () => {
-    const q = inwardInput.value.trim();
-    if (!q) {
-      suggestBox.style.display = "none";
-      suggestBox.innerHTML = "";
-      return;
-    }
-
-    // Delay to prevent too many API calls
-    if (searchTimeout) clearTimeout(searchTimeout);
-    searchTimeout = setTimeout(() => fetchSearchResults(q), 250);
-  });
-
-  function fetchSearchResults(q) {
-    fetch(`/api/inward/search?q=${encodeURIComponent(q)}`)
-      .then((res) => res.json())
-      .then((rows) => {
-        if (!rows || rows.length === 0) {
-          suggestBox.style.display = "none";
-          return;
-        }
-        suggestBox.innerHTML = "";
-        rows.forEach((row) => {
-          const item = document.createElement("div");
-          item.style.padding = "8px";
-          item.style.cursor = "pointer";
-          item.style.borderBottom = "1px solid #eee";
-          item.innerHTML = `
-            <strong>${row.inward_no}</strong>
-            <br>
-            <span style="font-size:12px;color:#666;">
-              ${row.name_of_sender || ""} (${row.sender_city || ""})
-            </span>
-          `;
-
-          item.addEventListener("click", () => fillOutwardFields(row));
-          suggestBox.appendChild(item);
-        });
-
-        suggestBox.style.display = "block";
-      })
-      .catch((err) => {
-        console.error("Search error:", err);
-        suggestBox.style.display = "none";
-      });
-  }
-
-  function fillOutwardFields(r) {
-    // Fill the input with selected inward_no
-    inwardInput.value = r.inward_no;
-
-    // Hide suggestions
-    suggestBox.style.display = "none";
-
-    // Map sender → receiver fields
-    const map = {
-      name_of_receiver: r.name_of_sender,
-      address_of_receiver: r.address_of_sender,
-      receiver_city: r.sender_city,
-      receiver_state: r.sender_state,
-      receiver_pin: r.sender_pin,
-      receiver_region: r.sender_region,
-      receiver_org_type: r.sender_org_type,
-    };
-
-    Object.entries(map).forEach(([field, value]) => {
-      const el = document.querySelector(`[name="${field}"]`);
-      if (el) el.value = value || "";
-    });
-  }
-
-  // Hide suggestion box when clicking outside
-  document.addEventListener("click", (e) => {
-    if (!suggestBox.contains(e.target) && e.target !== inwardInput) {
-      suggestBox.style.display = "none";
-    }
-  });
-});
 
 /* 
    OUTWARD: LIVE SEARCH BY inward_no + AUTO-FILL 
