@@ -209,6 +209,65 @@ function initCounts() {
   }
 }
 
+/* ---------------- TOGGLE REPLY FIELDS WHEN REPLY_REQUIRED CHANGES ---------------- */
+function initReplyToggle() {
+  // find the reply_required control 
+  const replyRequired = document.querySelector("[name='reply_required']") || document.getElementById("reply_required");
+  if (!replyRequired) return; 
+
+  // fields to enable/disable when reply_required = No
+  const replyRelatedSelectors = [
+    "[name='reply_sent_date']",
+    "[name='reply_ref_no']",
+    "[name='reply_sent_by']",
+    "[name='reply_sent_in']",
+    "[name='reply_count']"
+  ];
+
+  function setReplyFields(enabled) {
+    replyRelatedSelectors.forEach(sel => {
+      const el = document.querySelector(sel);
+      if (!el) return;
+      // disable/enable the control
+      el.disabled = !enabled;
+
+      
+      if (enabled) {
+        el.removeAttribute("aria-disabled");
+        el.classList.remove("disabled-field");
+      } else {
+        if (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.tagName === "SELECT") {
+          if (el.type === "date" || el.type === "text" || el.type === "number") {
+            el.value = "";
+          } else if (el.tagName === "SELECT") {
+            el.selectedIndex = 0;
+          }
+        }
+        el.setAttribute("aria-disabled", "true");
+        el.classList.add("disabled-field");
+      }
+    });
+  }
+
+  // initial set based on current value
+  setReplyFields(replyRequired.value === "Yes");
+
+  // listen for changes
+  replyRequired.addEventListener("change", function () {
+    const enabled = this.value === "Yes";
+    setReplyFields(enabled);
+
+    // If turning off, also clear any error messages related to reply fields
+    if (!enabled) {
+      ["err_reply_ref_no", "err_reply_count", "err_pin", "err_reply_required"].forEach(id => {
+        const e = document.getElementById(id);
+        if (e) e.style.display = "none";
+      });
+    }
+  });
+}
+
+
 /* ---------------- FULL FORM VALIDATION ---------------- */
 function initFormValidation() {
   const form =
@@ -309,14 +368,29 @@ function initFormValidation() {
       valid = false;
       if (!firstErrorField) firstErrorField = ct;
     }
+   
+      // inside initFormValidation submit handler, before finalizing `valid`:
+const replyRequiredField = document.querySelector("[name='reply_required']");
+const replyIsRequired = replyRequiredField ? replyRequiredField.value === "Yes" : false;
+
+// Validate reply fields only if replyIsRequired === true
+if (replyIsRequired) {
+  
+  const rct = document.querySelector("[name='reply_count']");
+  if (rct && rct.value && (rct.value < 0 || rct.value > 9999)) {
+    showErr("err_reply_count", "Reply count must be between 0 – 9999");
+    valid = false;
+    if (!firstErrorField) firstErrorField = rct;
+  }
+}
 
     // Reply Count 0–9999
-    const rct = document.querySelector("[name='reply_count']");
-    if (rct && rct.value && (rct.value < 0 || rct.value > 9999)) {
-      showErr("err_reply_count", "Reply count must be between 0 – 9999");
-      valid = false;
-      if (!firstErrorField) firstErrorField = rct;
-    }
+    // const rct = document.querySelector("[name='reply_count']");
+    // if (rct && rct.value && (rct.value < 0 || rct.value > 9999)) {
+    //   showErr("err_reply_count", "Reply count must be between 0 – 9999");
+    //   valid = false;
+    //   if (!firstErrorField) firstErrorField = rct;
+    // }
 
     if (!valid) {
       e.preventDefault();
@@ -334,6 +408,7 @@ window.addEventListener("DOMContentLoaded", () => {
   initPin();
   initFieldValidations();
   initCounts();
+  initReplyToggle();
   initFormValidation();
 });
 

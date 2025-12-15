@@ -178,3 +178,18 @@ button:hover {
     right: auto;
   }
 }
+
+
+/* visually indicate programmatically disabled fields */
+.disabled-field,
+input[disabled],
+select[disabled],
+textarea[disabled] {
+  opacity: 0.6;
+  background-color: #f3f4f6;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* keep focus-visible look for readonly inputs if needed */
+input[readonly] { background-color: #f5f5f5; }
