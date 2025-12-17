@@ -161,10 +161,23 @@
   document.getElementById("iframeClose").addEventListener("click", closeIframe);
 
 
+  function hideAllViews() {
+  dashboardView.style.display = "none";
+  iframeContainer.style.display = "none";
+
+  const adminPanel = document.getElementById("adminPanelView");
+  if (adminPanel) adminPanel.style.display = "none";
+
+  const notingsView = document.getElementById("notingsView");
+  if (notingsView) notingsView.style.display = "none";
+}
+
+
   /* ============================================================
      PAGE HANDLER
   ============================================================ */
   function loadPage(page) {
+    hideAllViews();
     const adminPanel = document.getElementById("adminPanelView");
     if (adminPanel) adminPanel.style.display = "none";
 
@@ -239,9 +252,9 @@
 const notingsBackBtn = document.getElementById("notingsBackBtn");
 if (notingsBackBtn) {
   notingsBackBtn.addEventListener("click", () => {
-    document.getElementById("notingsView").style.display = "none";
-    loadPage("dashboard");
-  });
+  loadPage("dashboard");
+});
+
 }
 
   // Sidebar click handlers
