@@ -194,6 +194,24 @@
         return;
     }
 
+    if (page === "notings") {
+        dashboardView.style.display = "none";
+        iframeContainer.style.display = "none";
+
+        const adminPanel = document.getElementById("adminPanelView");
+        if (adminPanel) adminPanel.style.display = "none";
+
+        document.getElementById("notingsView").style.display = "block";
+        setActiveMenuItem("notings");
+        document.getElementById("notingsHindi").value = 0;
+        document.getElementById("notingsEnglish").value = 0;
+        document.getElementById("notingsEoffice").value = 0;
+        document.getElementById("notingsMsg").textContent = "";
+
+        document.getElementById("entryType").value = "";
+
+    return;
+  }
 }  
 
 
@@ -216,6 +234,16 @@
     }
   }
 
+  // Notings back button
+
+const notingsBackBtn = document.getElementById("notingsBackBtn");
+if (notingsBackBtn) {
+  notingsBackBtn.addEventListener("click", () => {
+    document.getElementById("notingsView").style.display = "none";
+    loadPage("dashboard");
+  });
+}
+
   // Sidebar click handlers
   document.querySelectorAll(".menu-item").forEach((it) => {
     it.addEventListener("click", (e) => {
@@ -229,3 +257,48 @@
   setActiveMenuItem("dashboard");
 
 })();
+
+
+// Populate year dropdown
+(function initNotingsYear() {
+  const sel = document.getElementById("notingsYear");
+  if (!sel) return;
+  const now = new Date().getFullYear();
+  for (let y = now + 2; y >= now - 10; y--) {
+    const o = document.createElement("option");
+    o.value = y;
+    o.textContent = y;
+    sel.appendChild(o);
+  }
+})();
+
+
+
+// Save (UI only)
+document.getElementById("saveNotingsBtn")?.addEventListener("click", () => {
+
+  const msg = document.getElementById("notingsMsg");
+  if (!msg) return;
+
+
+  const payload = {
+  month: document.getElementById("notingsMonth").value,
+  year: document.getElementById("notingsYear").value,
+  entry_type: document.getElementById("entryType").value,
+  hindi: Number(document.getElementById("notingsHindi").value) || 0,
+  english: Number(document.getElementById("notingsEnglish").value) || 0,
+  eoffice: Number(document.getElementById("notingsEoffice").value) || 0
+};
+
+
+  if (!payload.month || !payload.year || !payload.entry_type) {
+    msg.textContent = "Please select Month, Year and Entry Type";
+    return;
+  }
+
+
+  console.log("Notings payload (UI only):", payload);
+  msg.textContent = "Saved (UI only)";
+
+});
+

@@ -39,10 +39,11 @@
                 <span>Outward Entry</span>
             </a>
 
-            <a href="#" class="menu-item" data-page="#">
-                 <i class="fa-solid fa-square-poll-horizontal"></i>
-                <span>Notings </span>
+            <a href="#" class="menu-item" data-page="notings">
+                <i class="fa-solid fa-square-poll-horizontal"></i>
+                <span>Notings</span>
             </a>
+
 
             <a href="#" class="menu-item" data-page="#">
                 <i class="fa-solid fa-envelope-open"></i>
@@ -265,6 +266,81 @@
 </div>
 
 </div>
+
+    <!-- ================================
+     NOTINGS VIEW (Monthly)
+================================ -->
+<div id="notingsView" style="display:none; padding:24px;">
+
+  <div class="admin-header">
+    <button class="back-btn" id="notingsBackBtn">← Back to Dashboard</button>
+    <h2 style="margin-left:10px;">Notings – Monthly Report</h2>
+  </div>
+
+  <div class="card" style="margin-top:16px;">
+    <div class="card-header">
+      <h3>Enter Monthly Data</h3>
+    </div>
+
+    <div class="card-body" style="padding:18px;">
+
+      <!-- Month / Year -->
+      <div style="display:flex; gap:12px; margin-bottom:16px;">
+        <select id="notingsMonth" style="padding:8px; width:160px;">
+          <option value="">Select Month</option>
+          <option value="1">January</option><option value="2">February</option>
+          <option value="3">March</option><option value="4">April</option>
+          <option value="5">May</option><option value="6">June</option>
+          <option value="7">July</option><option value="8">August</option>
+          <option value="9">September</option><option value="10">October</option>
+          <option value="11">November</option><option value="12">December</option>
+        </select>
+
+        <select id="notingsYear" style="padding:8px; width:140px;">
+          <option value="">Select Year</option>
+        </select>
+      </div>
+
+
+    <div>
+        <label>Type of Entry</label>
+        <select id="entryType" required>
+            <option value="">Select Type</option>
+            <option value="Noting">Noting</option>
+            <option value="Comment">Comment</option>
+        </select>
+    </div>
+
+
+      <!-- Inputs -->
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px;">
+        <div>
+          <label>Notings in Hindi (pages)</label>
+          <input type="number" id="notingsHindi" min="0" value="0">
+        </div>
+
+        <div>
+          <label>Notings in English (pages)</label>
+          <input type="number" id="notingsEnglish" min="0" value="0">
+        </div>
+
+
+        <div>
+          <label>Comments sent through e-Office</label>
+          <input type="number" id="notingsEoffice" min="0" value="0">
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div style="margin-top:20px;">
+        <button class="btn-small" id="saveNotingsBtn">Save</button>
+        <span id="notingsMsg" style="margin-left:10px;color:#777;"></span>
+      </div>
+
+    </div>
+  </div>
+</div>
+
 
 
     </div>
