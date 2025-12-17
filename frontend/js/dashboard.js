@@ -123,6 +123,7 @@
 
 
   function openIframe(page) {
+    hideAllViews(); 
     let file = "";
 
     if (page === "inward") {
@@ -178,13 +179,16 @@
   ============================================================ */
   function loadPage(page) {
     hideAllViews();
-    const adminPanel = document.getElementById("adminPanelView");
-    if (adminPanel) adminPanel.style.display = "none";
+    
 
     if (page === "dashboard") {
-      closeIframe();
+      dashboardView.style.display = "block";
+      setActiveMenuItem("dashboard");
+      loadInwardRecords();
+      loadOutwardRecords();
       return;
     }
+
 
     if (page === "inward" || page === "outward") {
       openIframe(page);
