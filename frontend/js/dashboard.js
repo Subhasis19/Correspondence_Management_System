@@ -281,7 +281,7 @@ if (notingsBackBtn) {
   const sel = document.getElementById("notingsYear");
   if (!sel) return;
   const now = new Date().getFullYear();
-  for (let y = now + 2; y >= now - 10; y--) {
+  for (let y = now + 2; y >= now - 5; y--) {
     const o = document.createElement("option");
     o.value = y;
     o.textContent = y;
@@ -314,8 +314,30 @@ document.getElementById("saveNotingsBtn")?.addEventListener("click", () => {
   }
 
 
-  console.log("Notings payload (UI only):", payload);
-  msg.textContent = "Saved (UI only)";
+  fetch("/notings/save", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify(payload)
+})
+  .then(res => res.json())
+  .then(data => {
+    if (!data.success) {
+      msg.textContent = data.message || "Save failed";
+      msg.style.color = "red";
+      return;
+    }
+
+    msg.textContent = "Saved successfully";
+    msg.style.color = "green";
+  })
+  .catch(err => {
+    console.error("Save notings error:", err);
+    msg.textContent = "Server error";
+    msg.style.color = "red";
+  });
+
 
 });
 

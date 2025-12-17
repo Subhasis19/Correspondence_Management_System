@@ -362,10 +362,36 @@ async function calculateReportData(month, year, office = "") {
   const emailReceived = { A: { eng: 0, hin: 0 }, B: { eng: 0, hin: 0 }, C: { eng: 0, hin: 0 } };
   const emailReplied = { A: 0, B: 0, C: 0 };
 
-  // NOTINGS defaults
-  const notingsHindi = 0;
-  const notingsEnglish = 0;
-  const notingsEoffice = 0;
+  
+// NOTINGS DATA (FROM DB)
+
+const notingsRows = await dbQuery(
+  `
+  SELECT entry_type,
+         notings_hindi_pages,
+         notings_english_pages,
+         eoffice_comments
+  FROM notings_records
+  WHERE month = ? AND year = ?
+  `,
+  [month, year]
+);
+
+let notingsHindi = 0;
+let notingsEnglish = 0;
+let notingsEoffice = 0;
+
+notingsRows.forEach(row => {
+  if (row.entry_type === "Noting") {
+    notingsHindi += row.notings_hindi_pages || 0;
+    notingsEnglish += row.notings_english_pages || 0;
+  }
+
+  if (row.entry_type === "Comment") {
+    notingsEoffice += row.eoffice_comments || 0;
+  }
+});
+
 
   // -----------------------------
   // GROUP NAME DATA (from admin)
@@ -628,6 +654,63 @@ app.get("/outward/all", requireLogin, (req, res) => {
   db.query("SELECT * FROM outward_records ORDER BY s_no DESC", (err, rows) => {
     if (err) return res.status(500).send("Error");
     res.json(rows);
+  });
+});
+
+
+// =========================
+// NOTINGS: SAVE MONTHLY DATA
+// =========================
+app.post("/notings/save", requireLogin, (req, res) => {
+  const {
+    month,
+    year,
+    entry_type,
+    hindi,
+    english,
+    eoffice
+  } = req.body;
+
+  // Validation
+  if (!month || !year || !entry_type) {
+    return res.status(400).json({
+      success: false,
+      message: "Month, Year and Entry Type are required"
+    });
+  }
+
+  const sql = `
+    INSERT INTO notings_records
+      (month, year, entry_type, notings_hindi_pages, notings_english_pages, eoffice_comments)
+    VALUES (?, ?, ?, ?, ?, ?)
+    ON DUPLICATE KEY UPDATE
+      notings_hindi_pages = VALUES(notings_hindi_pages),
+      notings_english_pages = VALUES(notings_english_pages),
+      eoffice_comments = VALUES(eoffice_comments)
+  `;
+
+  const params = [
+    Number(month),
+    Number(year),
+    entry_type,
+    Number(hindi) || 0,
+    Number(english) || 0,
+    Number(eoffice) || 0
+  ];
+
+  db.query(sql, params, (err) => {
+    if (err) {
+      console.error("Notings save error:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Database error"
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Notings saved successfully"
+    });
   });
 });
 

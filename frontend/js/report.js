@@ -175,7 +175,7 @@ function renderReportHtml(payload, filters) {
     const link = document.createElement("link");
     link.id = "report-css";
     link.rel = "stylesheet";
-    link.href = "/css/report.css";   // <-- path to your CSS file
+    link.href = "/css/report.css";   
     document.head.appendChild(link);
   }
 }
@@ -256,8 +256,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const currentYear = new Date().getFullYear();
 
-  // Generate range: current year → 10 years back and 2 year future 
-  for (let y = currentYear + 2; y >= currentYear - 10; y--) {
+  // Generate range: current year → 5 years back and 2 year future 
+  for (let y = currentYear + 2; y >= currentYear - 5; y--) {
     const opt = document.createElement("option");
     opt.value = y;
     opt.textContent = y;
