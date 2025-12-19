@@ -171,6 +171,10 @@
 
   const notingsView = document.getElementById("notingsView");
   if (notingsView) notingsView.style.display = "none";
+
+  const emailsView = document.getElementById("emailsView");
+  if (emailsView) emailsView.style.display = "none";
+
 }
 
 
@@ -229,6 +233,18 @@
 
     return;
   }
+
+      if (page === "emails") {
+      document.getElementById("emailsView").style.display = "block";
+      setActiveMenuItem("emails");
+      document.getElementById("emailsMsg").textContent = "";
+      document.getElementById("emailsEnglish").value = 0;
+      document.getElementById("emailsHindi").value = 0;
+      document.getElementById("emailsEntryType").value = "";
+      document.getElementById("emailsRegion").value = "";
+      return;
+    }
+
 }  
 
 
@@ -260,6 +276,14 @@ if (notingsBackBtn) {
 });
 
 }
+// Emails back button
+const emailsBackBtn = document.getElementById("emailsBackBtn");
+if (emailsBackBtn) {
+  emailsBackBtn.addEventListener("click", () => {
+    loadPage("dashboard");
+  });
+}
+
 
   // Sidebar click handlers
   document.querySelectorAll(".menu-item").forEach((it) => {
@@ -288,6 +312,19 @@ if (notingsBackBtn) {
     sel.appendChild(o);
   }
 })();
+
+(function initEmailsYear() {
+  const sel = document.getElementById("emailsYear");
+  if (!sel) return;
+  const now = new Date().getFullYear();
+  for (let y = now + 2; y >= now - 5; y--) {
+    const o = document.createElement("option");
+    o.value = y;
+    o.textContent = y;
+    sel.appendChild(o);
+  }
+})();
+
 
 
 

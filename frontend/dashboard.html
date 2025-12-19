@@ -45,7 +45,7 @@
             </a>
 
 
-            <a href="#" class="menu-item" data-page="#">
+            <a href="#" class="menu-item" data-page="emails">
                 <i class="fa-solid fa-envelope-open"></i>
                 <span>Emails</span>
             </a>  
@@ -307,12 +307,12 @@
       <!-- Inputs -->
       <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px;">
         <div>
-          <label>Notings in Hindi </label>
+          <label>Total Notings in Hindi </label>
           <input type="number" id="notingsHindi" min="0" value="0">
         </div>
 
         <div>
-          <label>Notings in English </label>
+          <label>Total Notings in English </label>
           <input type="number" id="notingsEnglish" min="0" value="0">
         </div>
 
@@ -333,6 +333,74 @@
   </div>
 </div>
 
+<!-- ================================
+     EMAILS VIEW (Monthly)
+================================ -->
+<div id="emailsView" style="display:none; padding:24px;">
+  <div class="emails-container">
+
+    <button class="back-btn" id="emailsBackBtn">← Back to Dashboard</button>
+    <h2>Emails – Monthly Entry</h2>
+
+    <!-- Month / Year -->
+    <div style="display:flex; gap:12px; margin-bottom:16px;">
+      <select id="emailsMonth" style="padding:8px; width:160px;">
+        <option value="">Select Month</option>
+        <option value="1">January</option><option value="2">February</option>
+        <option value="3">March</option><option value="4">April</option>
+        <option value="5">May</option><option value="6">June</option>
+        <option value="7">July</option><option value="8">August</option>
+        <option value="9">September</option><option value="10">October</option>
+        <option value="11">November</option><option value="12">December</option>
+      </select>
+
+      <select id="emailsYear" style="padding:8px; width:140px;">
+        <option value="">Select Year</option>
+      </select>
+    </div>
+
+    <!-- Entry Type -->
+    <div>
+      <label>Type of Entry</label>
+      <select id="emailsEntryType">
+        <option value="">Select Type</option>
+        <option value="Received">Received</option>
+        <option value="Replied">Replied</option>
+      </select>
+    </div>
+
+    <!-- Region -->
+    <div>
+      <label>Region</label>
+      <select id="emailsRegion">
+        <option value="">Select Region</option>
+        <option value="A">Region A</option>
+        <option value="B">Region B</option>
+        <option value="C">Region C</option>
+      </select>
+    </div>
+
+    <!-- Counts -->
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px;">
+      <div>
+        <label>Total Emails in English</label>
+        <input type="number" id="emailsEnglish" min="0" value="0">
+      </div>
+
+      <div>
+        <label>Total Emails in Hindi</label>
+        <input type="number" id="emailsHindi" min="0" value="0">
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div style="margin-top:20px;">
+      <button class="btn-small" id="saveEmailsBtn">Save</button>
+      <span id="emailsMsg" style="margin-left:10px;color:#777;"></span>
+    </div>
+
+  </div>
+</div>
 
 
     </div>
