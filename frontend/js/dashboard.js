@@ -328,7 +328,7 @@ if (emailsBackBtn) {
 
 
 
-// Save (UI only)
+// Save notings
 document.getElementById("saveNotingsBtn")?.addEventListener("click", () => {
 
   const msg = document.getElementById("notingsMsg");
@@ -377,4 +377,53 @@ document.getElementById("saveNotingsBtn")?.addEventListener("click", () => {
 
 
 });
+
+// =========================
+// EMAILS: SAVE
+// =========================
+document.getElementById("saveEmailsBtn")?.addEventListener("click", () => {
+  const msg = document.getElementById("emailsMsg");
+  if (!msg) return;
+
+  const payload = {
+    month: document.getElementById("emailsMonth").value,
+    year: document.getElementById("emailsYear").value,
+    entry_type: document.getElementById("emailsEntryType").value,
+    region: document.getElementById("emailsRegion").value,
+    total_english: Number(document.getElementById("emailsEnglish").value) || 0,
+    total_hindi: Number(document.getElementById("emailsHindi").value) || 0
+  };
+
+  // Validation
+  if (!payload.month || !payload.year || !payload.entry_type || !payload.region) {
+    msg.textContent = "Please select Month, Year, Type and Region";
+    msg.style.color = "red";
+    return;
+  }
+
+  fetch("/emails/save", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(payload)
+  })
+    .then(res => res.json())
+    .then(data => {
+      if (!data.success) {
+        msg.textContent = data.message || "Save failed";
+        msg.style.color = "red";
+        return;
+      }
+
+      msg.textContent = "Saved successfully";
+      msg.style.color = "green";
+    })
+    .catch(err => {
+      console.error("Save emails error:", err);
+      msg.textContent = "Server error";
+      msg.style.color = "red";
+    });
+});
+
 

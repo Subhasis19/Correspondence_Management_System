@@ -359,8 +359,57 @@ async function calculateReportData(month, year, office = "") {
   // -----------------------------
   // EMAIL/NOTINGS DEFAULTS
   // -----------------------------
-  const emailReceived = { A: { eng: 0, hin: 0 }, B: { eng: 0, hin: 0 }, C: { eng: 0, hin: 0 } };
-  const emailReplied = { A: 0, B: 0, C: 0 };
+  
+
+
+// 5. Emails Received
+const emailReceivedRows = await dbQuery(
+  `
+  SELECT region,
+         SUM(total_english) AS eng,
+         SUM(total_hindi)   AS hin
+  FROM email_records
+  WHERE month = ?
+    AND year = ?
+    AND entry_type = 'Received'
+  GROUP BY region
+  `,
+  [month, year]
+);
+
+const emailReceived = {
+  A: { eng: 0, hin: 0 },
+  B: { eng: 0, hin: 0 },
+  C: { eng: 0, hin: 0 }
+};
+
+emailReceivedRows.forEach(r => {
+  emailReceived[r.region] = {
+    eng: r.eng || 0,
+    hin: r.hin || 0
+  };
+});
+
+
+// 6. Emails Replied in Hindi
+const emailRepliedRows = await dbQuery(
+  `
+  SELECT region,
+         SUM(total_hindi) AS total
+  FROM email_records
+  WHERE month = ?
+    AND year = ?
+    AND entry_type = 'Replied'
+  GROUP BY region
+  `,
+  [month, year]
+);
+
+const emailReplied = { A: 0, B: 0, C: 0 };
+
+emailRepliedRows.forEach(r => {
+  emailReplied[r.region] = r.total || 0;
+});
 
   
 // NOTINGS DATA (FROM DB)
@@ -816,6 +865,60 @@ app.post("/admin/report/data", requireAdmin, async (req, res) => {
     res.status(500).json({ message: "Failed to calculate report" });
   }
 });
+
+
+// =========================
+// EMAILS: SAVE (UPSERT)
+// =========================
+app.post("/emails/save", requireLogin, async (req, res) => {
+  try {
+    const userId = req.session.user.id;
+
+    const {
+      month,
+      year,
+      entry_type,
+      region,
+      total_english,
+      total_hindi
+    } = req.body;
+
+    // Basic validation
+    if (!month || !year || !entry_type || !region) {
+      return res.json({ success: false, message: "Missing required fields" });
+    }
+
+    const eng = Math.max(0, Number(total_english) || 0);
+    const hin = Math.max(0, Number(total_hindi) || 0);
+
+    const sql = `
+      INSERT INTO email_records
+        (user_id, month, year, entry_type, region, total_english, total_hindi)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+      ON DUPLICATE KEY UPDATE
+        total_english = VALUES(total_english),
+        total_hindi   = VALUES(total_hindi),
+        created_at    = CURRENT_TIMESTAMP
+    `;
+
+    db.query(
+      sql,
+      [userId, month, year, entry_type, region, eng, hin],
+      (err) => {
+        if (err) {
+          console.error("Email save error:", err);
+          return res.json({ success: false, message: "Database error" });
+        }
+
+        res.json({ success: true });
+      }
+    );
+  } catch (err) {
+    console.error("Email save exception:", err);
+    res.json({ success: false, message: "Server error" });
+  }
+});
+
 
 
 
