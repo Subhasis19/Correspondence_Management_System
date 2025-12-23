@@ -238,6 +238,8 @@
       document.getElementById("emailsView").style.display = "block";
       setActiveMenuItem("emails");
       document.getElementById("emailsMsg").textContent = "";
+      document.getElementById("emailsMonth").value = "";
+      document.getElementById("emailsYear").value = "";
       document.getElementById("emailsEnglish").value = 0;
       document.getElementById("emailsHindi").value = 0;
       document.getElementById("emailsEntryType").value = "";

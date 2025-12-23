@@ -16,6 +16,7 @@
 </head>
 
 <body>
+  
     <div class="sidebar">
         <div class="sidebar-header">
             <h2>CMS</h2>
@@ -50,11 +51,6 @@
                 <span>Emails</span>
             </a>  
         
-
-            
-
-
-
             <a href="#" class="menu-item" data-page="admin-panel">
                 <i class="fa-solid fa-users-gear"></i>
                 <span>Admin Panel</span>
@@ -66,7 +62,6 @@
                 <div class="avatar">👤</div>
                 <div class="user-info">
                     <span class="username" id="adminName">admin</span>
-                    <!-- <span class="role">ADMIN</span> -->
                 </div>
             </div>
 
@@ -113,7 +108,6 @@
                 <div class="card">
                     <div class="card-header">
                         <h3>Recent Inwards</h3>
-                        <!-- <a href="#" class="btn-small" onclick="loadPage('inward'); return false;">+ Add New</a> -->
                     </div>
 
                     <div class="card-body">
@@ -141,7 +135,6 @@
                 <div class="card">
                     <div class="card-header">
                         <h3>Recent Outwards</h3>
-                        <!-- <a href="#" class="btn-small" onclick="loadPage('outward'); return false;">+ Add New</a> -->
                     </div>
 
                     <div class="card-body">
@@ -169,9 +162,9 @@
         </div>
 
 
-        <!-- -------------------------
-             IFRAME FORM VIEW
-        --------------------------- -->
+<!-- ================================
+      IFRAME FORM VIEW
+================================ -->
         <div id="iframeContainer" style="display:none;">
             <div class="iframe-toolbar">
                 <button id="iframeClose" class="back-btn">← Back to Dashboard</button>
@@ -181,7 +174,7 @@
             <iframe id="formFrame" src="" frameborder="0"></iframe>
         </div>
 
-        <!-- ================================
+<!-- ================================
       ADMIN PANEL VIEW
 ================================ -->
 <div id="adminPanelView" style="display: none;">
@@ -236,10 +229,6 @@
         <option value="11">November</option><option value="12">December</option>
       </select>
 
-      <!-- <select id="reportYear" style="padding:6px;">
-        <option value="">Select Year</option>
-        <option>2023</option><option>2024</option><option>2025</option>
-      </select> -->
 
         <select id="reportYear" style="padding:6px;">
             <option value="">Select Year</option>
@@ -263,15 +252,16 @@
       Select month & year then click <strong>View Report</strong>.
     </div>
   </div>
-</div>
+</div> 
 
 </div>
 
-    <!-- ================================
-     NOTINGS VIEW (Monthly)
+
+<!-- ================================
+      NOTINGS FORM
 ================================ -->
-<div id="notingsView" style="display:none; padding:24px;">
-    <div class="notings-container">
+  <div id="notingsView" style="display:none;">
+  <div class="form-card">
 
   <button class="back-btn" id="notingsBackBtn">← Back to Dashboard</button>
   <h2>Notings – Monthly Report</h2>
@@ -305,7 +295,7 @@
 
 
       <!-- Inputs -->
-      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px;">
+        <div class="form-grid">
         <div>
           <label>Total Notings in Hindi </label>
           <input type="number" id="notingsHindi" min="0" value="0">
@@ -323,21 +313,19 @@
         </div>
       </div>
 
-      <!-- Actions -->
-      <div style="margin-top:20px;">
+      <div class="form-actions">
         <button class="btn-small" id="saveNotingsBtn">Save</button>
         <span id="notingsMsg" style="margin-left:10px;color:#777;"></span>
       </div>
 
     </div>
   </div>
-</div>
 
 <!-- ================================
-     EMAILS VIEW (Monthly)
+      EMAILS Form 
 ================================ -->
-<div id="emailsView" style="display:none; padding:24px;">
-  <div class="emails-container">
+  <div id="emailsView" style="display:none;">
+  <div class="form-card">
 
     <button class="back-btn" id="emailsBackBtn">← Back to Dashboard</button>
     <h2>Emails – Monthly Entry</h2>
@@ -380,8 +368,7 @@
       </select>
     </div>
 
-    <!-- Counts -->
-    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px;">
+        <div class="form-grid">
       <div>
         <label>Total Emails in English</label>
         <input type="number" id="emailsEnglish" min="0" value="0">
@@ -393,8 +380,7 @@
       </div>
     </div>
 
-    <!-- Actions -->
-    <div style="margin-top:20px;">
+    <div class="form-actions">
       <button class="btn-small" id="saveEmailsBtn">Save</button>
       <span id="emailsMsg" style="margin-left:10px;color:#777;"></span>
     </div>
@@ -402,10 +388,7 @@
   </div>
 </div>
 
-
-
-
-    </div>
+</div>
 
     
     <script src="js/dashboard.js"></script>
