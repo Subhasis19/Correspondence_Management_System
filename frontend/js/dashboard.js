@@ -349,6 +349,7 @@ document.getElementById("saveNotingsBtn")?.addEventListener("click", () => {
 
   if (!payload.month || !payload.year || !payload.entry_type) {
     msg.textContent = "Please select Month, Year and Entry Type";
+    msg.style.color = "red";
     return;
   }
 
