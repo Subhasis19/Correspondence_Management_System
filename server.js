@@ -490,6 +490,10 @@ notingsRows.forEach(row => {
 app.post("/inward/add", requireLogin, async (req, res) => {
   try {
     const data = req.body;
+    const groupName =
+  req.session.user.role === "admin"
+    ? "ALL"
+    : req.session.user.group;
 
         // REQUIRED FIELD VALIDATION (BEFORE ANY DB LOGIC)
     const requiredFields = [
@@ -542,15 +546,15 @@ if (data.reply_required === "No") {
               sender_state, sender_pin, sender_region, sender_org_type,
               inward_no, type_of_document, language_of_document, count,
               remarks, issued_to, reply_required, reply_sent_date,
-              reply_ref_no, reply_sent_by, reply_sent_in, reply_count
-            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+              reply_ref_no, reply_sent_by, reply_sent_in, reply_count, group_name
+            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
             [
               data.date_of_receipt, data.month, data.year, data.received_in,
               data.name_of_sender, data.address_of_sender, data.sender_city,
               data.sender_state, data.sender_pin, data.sender_region, data.sender_org_type,
               inward_no, data.type_of_document, data.language_of_document, safeCount,
               data.remarks, data.issued_to, data.reply_required, data.reply_sent_date || null,
-              data.reply_ref_no, data.reply_sent_by, data.reply_sent_in, safeReplyCount
+              data.reply_ref_no, data.reply_sent_by, data.reply_sent_in, safeReplyCount, groupName
             ],
             (err) => (err ? reject(err) : resolve())
           )
@@ -613,6 +617,12 @@ app.get("/api/inward/search", requireLogin, (req, res) => {
 app.post("/outward/add", requireLogin, async (req, res) => {
   try {
     const data = req.body;
+    const groupName =
+  req.session.user.role === "admin"
+    ? "ALL"
+    : req.session.user.group;
+
+
 
 // Normalize reply fields safely
 if (data.reply_required === "No") {
@@ -668,8 +678,8 @@ if (data.reply_required === "No") {
               receiver_state, receiver_pin, receiver_region, receiver_org_type,
               outward_no, type_of_document, language_of_document, count,
               inward_no, inward_s_no, reply_issued_by, reply_sent_date,
-              reply_ref_no, reply_sent_by, reply_sent_in, reply_count
-            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+              reply_ref_no, reply_sent_by, reply_sent_in, reply_count, group_name
+            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
             [
               data.date_of_despatch, data.month, data.year, data.reply_from,
               data.name_of_receiver, data.address_of_receiver, data.receiver_city,
@@ -677,7 +687,7 @@ if (data.reply_required === "No") {
               outward_no, data.type_of_document, data.language_of_document, safeCount,
               data.inward_no || null, inward_s_no, data.reply_issued_by,
               data.reply_sent_date || null, data.reply_ref_no, data.reply_sent_by,
-              data.reply_sent_in, safeReplyCount
+              data.reply_sent_in, safeReplyCount, groupName
             ],
             (err) => (err ? reject(err) : resolve())
           )
@@ -716,6 +726,11 @@ app.get("/outward/all", requireLogin, (req, res) => {
 // NOTINGS: SAVE MONTHLY DATA
 // =========================
 app.post("/notings/save", requireLogin, (req, res) => {
+  const groupName =
+  req.session.user.role === "admin"
+    ? "ALL"
+    : req.session.user.group;
+
   const {
     month,
     year,
@@ -735,8 +750,8 @@ app.post("/notings/save", requireLogin, (req, res) => {
 
   const sql = `
     INSERT INTO notings_records
-      (month, year, entry_type, notings_hindi_pages, notings_english_pages, eoffice_comments)
-    VALUES (?, ?, ?, ?, ?, ?)
+      (group_name, month, year, entry_type, notings_hindi_pages, notings_english_pages, eoffice_comments)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
     ON DUPLICATE KEY UPDATE
       notings_hindi_pages = VALUES(notings_hindi_pages),
       notings_english_pages = VALUES(notings_english_pages),
@@ -744,6 +759,7 @@ app.post("/notings/save", requireLogin, (req, res) => {
   `;
 
   const params = [
+    groupName,
     Number(month),
     Number(year),
     entry_type,
@@ -767,6 +783,64 @@ app.post("/notings/save", requireLogin, (req, res) => {
     });
   });
 });
+
+
+// =========================
+// EMAILS: SAVE MONTHLY DATA
+// =========================
+app.post("/emails/save", requireLogin, async (req, res) => {
+  try {
+
+    const groupName =
+  req.session.user.role === "admin"
+    ? "ALL"
+    : req.session.user.group;
+
+    const {
+      month,
+      year,
+      entry_type,
+      region,
+      total_english,
+      total_hindi
+    } = req.body;
+
+    // Basic validation
+    if (!month || !year || !entry_type || !region) {
+      return res.json({ success: false, message: "Missing required fields" });
+    }
+
+    const eng = Math.max(0, Number(total_english) || 0);
+    const hin = Math.max(0, Number(total_hindi) || 0);
+
+    const sql = `
+      INSERT INTO email_records
+        (group_name, month, year, entry_type, region, total_english, total_hindi)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+      ON DUPLICATE KEY UPDATE
+        total_english = VALUES(total_english),
+        total_hindi   = VALUES(total_hindi),
+        created_at    = CURRENT_TIMESTAMP
+    `;
+
+    db.query(
+      sql,
+      [groupName, month, year, entry_type, region, eng, hin],
+      (err) => {
+        if (err) {
+          console.error("Email save error:", err);
+          return res.json({ success: false, message: "Database error" });
+        }
+
+        res.json({ success: true });
+      }
+    );
+  } catch (err) {
+    console.error("Email save exception:", err);
+    res.json({ success: false, message: "Server error" });
+  }
+});
+
 
 
 // =========================
@@ -940,57 +1014,6 @@ app.post("/admin/report/pdf", requireAdmin, async (req, res) => {
 
 
 
-// =========================
-// EMAILS: SAVE (UPSERT)
-// =========================
-app.post("/emails/save", requireLogin, async (req, res) => {
-  try {
-    const userId = req.session.user.id;
-
-    const {
-      month,
-      year,
-      entry_type,
-      region,
-      total_english,
-      total_hindi
-    } = req.body;
-
-    // Basic validation
-    if (!month || !year || !entry_type || !region) {
-      return res.json({ success: false, message: "Missing required fields" });
-    }
-
-    const eng = Math.max(0, Number(total_english) || 0);
-    const hin = Math.max(0, Number(total_hindi) || 0);
-
-    const sql = `
-      INSERT INTO email_records
-        (user_id, month, year, entry_type, region, total_english, total_hindi)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-      ON DUPLICATE KEY UPDATE
-        total_english = VALUES(total_english),
-        total_hindi   = VALUES(total_hindi),
-        created_at    = CURRENT_TIMESTAMP
-    `;
-
-    db.query(
-      sql,
-      [userId, month, year, entry_type, region, eng, hin],
-      (err) => {
-        if (err) {
-          console.error("Email save error:", err);
-          return res.json({ success: false, message: "Database error" });
-        }
-
-        res.json({ success: true });
-      }
-    );
-  } catch (err) {
-    console.error("Email save exception:", err);
-    res.json({ success: false, message: "Server error" });
-  }
-});
 
 
 
