@@ -79,7 +79,7 @@
 /* Force all tables to have 2 equal-width columns */
 #reportHtml table {
   width: 100%;
-  table-layout: fixed;        /* THIS FIXES ALL MISALIGNMENT */
+  table-layout: fixed;        
   border-collapse: collapse;
   margin-bottom: 18px;
 }

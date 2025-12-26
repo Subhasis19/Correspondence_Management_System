@@ -225,7 +225,7 @@ body {
 }
 
 /* ============================================================
-   IFRAME PANEL (FULLSCREEN FORM VIEW)
+  IFRAME PANEL 
 ============================================================ */
 #iframeContainer {
   display: none;      /* shown via JS */
@@ -419,7 +419,7 @@ body {
 
 
 
-/* single row (full width) */
+/* single row  */
 .form-row {
   margin-bottom: 16px;
 }

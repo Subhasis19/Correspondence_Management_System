@@ -128,13 +128,18 @@
 
     if (page === "inward") {
       file = "inward.html";
-      iframeTitle.textContent = "Inward Entry Form";
+      iframeTitle.textContent = window.currentUserGroup
+        ? `Inward Entry Form (${window.currentUserGroup})`
+        : "Inward Entry Form";
     }
 
     if (page === "outward") {
       file = "outward.html";
-      iframeTitle.textContent = "Outward Entry Form";
+      iframeTitle.textContent = window.currentUserGroup
+        ? `Outward Entry Form (${window.currentUserGroup})`
+        : "Outward Entry Form";
     }
+
 
     if (!file) return;
 
@@ -231,6 +236,14 @@
 
         document.getElementById("entryType").value = "";
 
+        const nt = document.getElementById("notingsTitle");
+          if (nt) {
+            nt.textContent = window.currentUserGroup
+              ? `Notings – Monthly Report (${window.currentUserGroup})`
+              : "Notings – Monthly Report";
+          }
+
+
     return;
   }
 
@@ -244,6 +257,14 @@
       document.getElementById("emailsHindi").value = 0;
       document.getElementById("emailsEntryType").value = "";
       document.getElementById("emailsRegion").value = "";
+
+      const et = document.getElementById("emailsTitle");
+if (et) {
+  et.textContent = window.currentUserGroup
+    ? `Emails – Monthly Entry (${window.currentUserGroup})`
+    : "Emails – Monthly Entry";
+}
+
       return;
     }
 
@@ -259,8 +280,10 @@
   if (session?.user) {
     const user = session.user;
 
+     window.currentUserGroup = user.group || "";
+
     document.getElementById("adminName").textContent = user.name;
-    document.getElementById("welcomeName").textContent = user.name;
+    document.getElementById("welcomeName").textContent =   user.group ? `${user.name} (${user.group})` : user.name;
 
     // hide admin for non-admins
     if (user.role !== "admin") {

@@ -2,6 +2,8 @@
 (function () {
   // helper template: render report HTML 
 
+  let cachedReportHtml = "";
+
 function renderReportHtml(payload, filters) {
   const { month, year, office } = filters;
   const s = payload || {};
@@ -196,57 +198,101 @@ function renderReportHtml(payload, filters) {
     try {
       const data = await fetchReportData(filters);
       injectReportStylesheet();
-      container.innerHTML = renderReportHtml(data, filters);
+      // container.innerHTML = renderReportHtml(data, filters);
+
+      const html = renderReportHtml(data, filters);
+container.innerHTML = html;
+
+// Cache HTML for PDF
+cachedReportHtml = html;
+
+// Enable PDF button now
+const pdfBtn = document.getElementById("downloadPdfBtn");
+if (pdfBtn) {
+  pdfBtn.disabled = false;
+  pdfBtn.style.opacity = "1";
+  pdfBtn.style.cursor = "pointer";
+}
+
+
     } catch (err) {
       console.error("viewReport:", err);
       container.innerHTML = `<div style="padding:30px;text-align:center;color:#c00">${err.message}</div>`;
     }
   }
 
-  // request server to create PDF; server will return a URL for download
   async function generatePdf() {
-    const month = Number(document.getElementById("reportMonth").value);
-    const year = Number(document.getElementById("reportYear").value);
-    const office = document.getElementById("reportOffice").value || "";
+  const month = Number(document.getElementById("reportMonth").value);
+  const year = Number(document.getElementById("reportYear").value);
 
-    if (!month || !year) return alert("Select month and year");
-
-    const payload = { month, year, office };
-
-    try {
-      const res = await fetch("/admin/report/pdf", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "same-origin",
-        body: JSON.stringify(payload)
-      });
-      if (!res.ok) {
-        const j = await res.json().catch(()=>null);
-        throw new Error((j && j.message) || "PDF generation failed");
-      }
-
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `Rajbhasha_Report_${payload.year}_${payload.month}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error("generatePdf:", err);
-      alert(err.message || "Failed to create PDF");
-    }
+  if (!month || !year) {
+    alert("Select month and year");
+    return;
   }
 
-  // wire buttons
-  document.addEventListener("DOMContentLoaded", () => {
-    const viewBtn = document.getElementById("viewReportBtn");
-    const pdfBtn = document.getElementById("downloadPdfBtn");
-    if (viewBtn) viewBtn.addEventListener("click", viewReport);
-    if (pdfBtn) pdfBtn.addEventListener("click", generatePdf);
+  
+  if (!cachedReportHtml) {
+    alert("Please click View Report before generating PDF");
+    return;
+  }
+
+  // Month name for filename
+  const monthName = new Date(year, month - 1).toLocaleString("en-US", {
+    month: "short"
   });
+
+  const filename = `Rajbhasha_Report_${monthName}_${year}.pdf`;
+
+  try {
+    const res = await fetch("/admin/report/pdf", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "same-origin",
+      body: JSON.stringify({
+        html: cachedReportHtml,
+        filename
+      })
+    });
+
+    if (!res.ok) {
+      const j = await res.json().catch(() => null);
+      throw new Error((j && j.message) || "PDF generation failed");
+    }
+
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+
+    URL.revokeObjectURL(url);
+
+  } catch (err) {
+    console.error("generatePdf:", err);
+    alert(err.message || "Failed to generate PDF");
+  }
+}
+
+
+  document.addEventListener("DOMContentLoaded", () => {
+  const viewBtn = document.getElementById("viewReportBtn");
+  const pdfBtn = document.getElementById("downloadPdfBtn");
+
+  // Disable PDF button initially
+  if (pdfBtn) {
+    pdfBtn.disabled = true;
+    pdfBtn.style.opacity = "0.6";
+    pdfBtn.style.cursor = "not-allowed";
+  }
+
+  if (viewBtn) viewBtn.addEventListener("click", viewReport);
+  if (pdfBtn) pdfBtn.addEventListener("click", generatePdf);
+});
+
 })();
 
 

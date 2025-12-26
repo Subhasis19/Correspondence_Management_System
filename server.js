@@ -8,6 +8,11 @@ require("dotenv").config();
 const nodemailer = require("nodemailer");
 const crypto = require("crypto");
 
+const puppeteer = require("puppeteer");
+const fs = require("fs");
+const path = require("path");
+
+
 const app = express();
 
   //  CORE MIDDLEWARE
@@ -865,6 +870,74 @@ app.post("/admin/report/data", requireAdmin, async (req, res) => {
     res.status(500).json({ message: "Failed to calculate report" });
   }
 });
+
+
+// =============================================
+// ADMIN — REPORT PDF GENERATION
+// =============================================
+app.post("/admin/report/pdf", requireAdmin, async (req, res) => {
+  try {
+    const { html, filename } = req.body;
+
+    if (!html || !filename) {
+      return res.status(400).json({ message: "Missing report HTML or filename" });
+    }
+
+    // Load report CSS (used in preview)
+    const cssPath = path.join(__dirname, "frontend", "css", "report.css");
+    const reportCss = fs.readFileSync(cssPath, "utf8");
+
+    // Build full HTML for Puppeteer
+    const fullHtml = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="UTF-8" />
+          <style>
+            ${reportCss}
+          </style>
+        </head>
+        <body>
+          ${html}
+        </body>
+      </html>
+    `;
+
+    const browser = await puppeteer.launch({
+      headless: "new",
+      args: ["--no-sandbox", "--disable-setuid-sandbox"]
+    });
+
+    const page = await browser.newPage();
+    await page.setContent(fullHtml, { waitUntil: "networkidle0" });
+
+    const pdfBuffer = await page.pdf({
+      format: "A4",
+      printBackground: true,
+      margin: {
+        top: "20mm",
+        bottom: "20mm",
+        left: "15mm",
+        right: "15mm"
+      }
+    });
+
+    await browser.close();
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${filename}"`
+    );
+
+    res.send(pdfBuffer);
+
+  } catch (err) {
+    console.error("PDF generation error:", err);
+    res.status(500).json({ message: "Failed to generate PDF" });
+  }
+});
+
 
 
 // =========================
