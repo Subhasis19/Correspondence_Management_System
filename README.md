@@ -108,7 +108,7 @@ Inward records table (copy / run exactly as shown):
 
 ```sql
 CREATE TABLE inward_records (
-  s_no INT NOT NULL AUTO_INCREMENT,
+  s_no INT AUTO_INCREMENT PRIMARY KEY,
 
   date_of_receipt DATE NOT NULL,
   inward_no VARCHAR(50) NOT NULL UNIQUE,
@@ -139,15 +139,18 @@ CREATE TABLE inward_records (
   reply_sent_in ENUM('English','Hindi','Bilingual'),
   reply_count INT DEFAULT 0,
 
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  group_name VARCHAR(50) ,
 
-  PRIMARY KEY (s_no)
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE INDEX idx_inward_group ON inward_records(group_name);
+
 ```
 Outward Records Table (WITH Foreign Key Link to Inward)
 ```sql
 CREATE TABLE outward_records (
-  s_no INT NOT NULL AUTO_INCREMENT,
+  s_no INT AUTO_INCREMENT PRIMARY KEY,
 
   date_of_despatch DATE NOT NULL,
   outward_no VARCHAR(50) NOT NULL UNIQUE,
@@ -178,14 +181,66 @@ CREATE TABLE outward_records (
   reply_sent_in ENUM('English','Hindi','Bilingual'),
   reply_count INT DEFAULT 0,
 
+  group_name VARCHAR(50) ,
+
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
-  PRIMARY KEY (s_no),
   KEY idx_inward_s_no (inward_s_no),
-  CONSTRAINT fk_outward_inward FOREIGN KEY (inward_s_no)
-     REFERENCES inward_records(s_no)
-     ON DELETE SET NULL
-     ON UPDATE CASCADE
+  KEY idx_outward_group (group_name),
+
+  CONSTRAINT fk_outward_inward
+    FOREIGN KEY (inward_s_no)
+    REFERENCES inward_records(s_no)
+    ON DELETE SET NULL
+    ON UPDATE CASCADE
+);
+
+```
+Notings Records
+```sql
+CREATE TABLE notings_records (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+
+  month TINYINT NOT NULL,
+  year SMALLINT NOT NULL,
+
+  entry_type ENUM('Noting','Comment') NOT NULL,
+
+  notings_hindi_pages INT UNSIGNED DEFAULT 0,
+  notings_english_pages INT UNSIGNED DEFAULT 0,
+  eoffice_comments INT UNSIGNED DEFAULT 0,
+
+  group_name VARCHAR(50) ,
+
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+  UNIQUE KEY uq_notings (
+    group_name, month, year, entry_type
+  )
+);
+
+CREATE INDEX idx_notings_group ON notings_records(group_name);
+
+```
+Email Records
+```sql
+CREATE TABLE email_records (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+
+  group_name VARCHAR(50) ,
+
+  month TINYINT NOT NULL,
+  year SMALLINT NOT NULL,
+
+  entry_type ENUM('Received','Replied') NOT NULL,
+  region ENUM('A','B','C') NOT NULL,
+
+  total_english INT UNSIGNED NOT NULL DEFAULT 0,
+  total_hindi   INT UNSIGNED NOT NULL DEFAULT 0,
+
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+  UNIQUE KEY uq_email_group (group_name, month, year, entry_type, region)
 );
 
 ```
