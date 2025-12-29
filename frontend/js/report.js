@@ -4,6 +4,17 @@
 
   let cachedReportHtml = "";
 
+  function resetPdfCache() {
+  cachedReportHtml = "";
+  const pdfBtn = document.getElementById("downloadPdfBtn");
+  if (pdfBtn) {
+    pdfBtn.disabled = true;
+    pdfBtn.style.opacity = "0.6";
+    pdfBtn.style.cursor = "not-allowed";
+  }
+}
+
+
 function renderReportHtml(payload, filters) {
   const { month, year, office } = filters;
   const s = payload || {};
@@ -56,7 +67,11 @@ function renderReportHtml(payload, filters) {
 
   <h3 style="margin-bottom:4px;">Monthly data for Quarterly Report for Hindi Rajbhasha</h3>
   <div><strong>Month / Year : </strong>${month} / ${year}</div>
-  ${office ? `<div>Office: <strong>${office}</strong></div>` : ""}
+  <div>
+    Office:
+      <strong>${office || "All Offices"}</strong>
+  </div>
+
 
   <!-- Section 1 -->
   <h4 style="margin-top:20px;">1. Letters received in Hindi (Official Language Rule - 5)</h4>
@@ -133,6 +148,7 @@ function renderReportHtml(payload, filters) {
     <tr><th>Region</th><th>English</th><th>Hindi</th></tr>
     <tr><td>A</td><td>${emailReceived("A","eng")}</td><td>${emailReceived("A","hin")}</td></tr>
     <tr><td>B</td><td>${emailReceived("B","eng")}</td><td>${emailReceived("B","hin")}</td></tr>
+    <tr><td>C</td><td>${emailReceived("C","eng")}</td><td>${emailReceived("C","hin")}</td></tr>
     
   </table>
 
@@ -147,7 +163,12 @@ function renderReportHtml(payload, filters) {
 
   <!-- Footer -->
   <div style="margin-top:40px;">
-    <div>Group Name: <strong>${s.groupName || ""}</strong></div>
+
+    <div>
+      Group Name:
+      <strong>${filters.group || "All Groups"}</strong>
+    </div>
+
     <div style="margin-top:10px;">Group Head Name: <strong>${s.groupHeadName || ""}</strong></div>
     <div style="margin-top:10px;">Signature: __________________________</div>
   </div>
@@ -199,10 +220,9 @@ function renderReportHtml(payload, filters) {
     try {
       const data = await fetchReportData(filters);
       injectReportStylesheet();
-      // container.innerHTML = renderReportHtml(data, filters);
 
       const html = renderReportHtml(data, filters);
-container.innerHTML = html;
+      container.innerHTML = html;
 
 // Cache HTML for PDF
 cachedReportHtml = html;
@@ -292,6 +312,11 @@ if (pdfBtn) {
 
   if (viewBtn) viewBtn.addEventListener("click", viewReport);
   if (pdfBtn) pdfBtn.addEventListener("click", generatePdf);
+  ["reportMonth","reportYear","reportOffice","reportGroup"].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener("change", resetPdfCache);
+});
+
 });
 
 })();
