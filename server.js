@@ -226,14 +226,27 @@ function dbQuery(sql, params = []) {
   });
 }
 
-async function calculateReportData(month, year, office = "") {
+    async function calculateReportData(
+      month,
+      year,
+      office = "",
+      group = ""
+    ) {
+
   const { start, end } = getMonthDateRange(year, month);
 
   const inOfficeCond = office ? "AND received_in = ?" : "";
   const outOfficeCond = office ? "AND reply_from = ?" : "";
+  const groupCond = group ? "AND group_name = ?" : "";
 
-  const paramsIn = office ? [start, end, office] : [start, end];
-  const paramsOut = office ? [start, end, office] : [start, end];
+
+  const paramsIn = [start, end];
+  if (office) paramsIn.push(office);
+  if (group) paramsIn.push(group);
+
+  const paramsOut = [start, end];
+  if (office) paramsOut.push(office);
+  if (group) paramsOut.push(group);
 
   // -----------------------------
   // SQL BLOCKS
@@ -243,6 +256,7 @@ async function calculateReportData(month, year, office = "") {
     FROM inward_records
     WHERE date_of_receipt >= ? AND date_of_receipt < ?
     ${inOfficeCond}
+    ${groupCond}
     AND language_of_document IN ('Hindi','Bilingual')
   `;
 
@@ -251,6 +265,7 @@ async function calculateReportData(month, year, office = "") {
     FROM inward_records
     WHERE date_of_receipt >= ? AND date_of_receipt < ?
     ${inOfficeCond}
+    ${groupCond}
     AND reply_sent_in = 'Hindi'
   `;
 
@@ -259,6 +274,7 @@ async function calculateReportData(month, year, office = "") {
     FROM inward_records
     WHERE date_of_receipt >= ? AND date_of_receipt < ?
     ${inOfficeCond}
+    ${groupCond}
     AND reply_required = 'Yes'
     AND reply_sent_date IS NOT NULL
     AND reply_sent_in = 'English'
@@ -269,6 +285,7 @@ async function calculateReportData(month, year, office = "") {
     FROM inward_records
     WHERE date_of_receipt >= ? AND date_of_receipt < ?
     ${inOfficeCond}
+    ${groupCond}
     AND reply_required = 'No'
   `;
 
@@ -281,6 +298,7 @@ async function calculateReportData(month, year, office = "") {
     FROM inward_records
     WHERE date_of_receipt >= ? AND date_of_receipt < ?
     ${inOfficeCond}
+    ${groupCond}
     GROUP BY region
   `;
 
@@ -292,6 +310,7 @@ async function calculateReportData(month, year, office = "") {
     FROM outward_records
     WHERE date_of_despatch >= ? AND date_of_despatch < ?
     ${outOfficeCond}
+    ${groupCond}
     GROUP BY region
   `;
 
@@ -300,6 +319,7 @@ async function calculateReportData(month, year, office = "") {
     FROM inward_records
     WHERE date_of_receipt >= ? AND date_of_receipt < ?
     ${inOfficeCond}
+    ${groupCond}
   `;
 
   const sqlTotalOutward = `
@@ -307,6 +327,7 @@ async function calculateReportData(month, year, office = "") {
     FROM outward_records
     WHERE date_of_despatch >= ? AND date_of_despatch < ?
     ${outOfficeCond}
+    ${groupCond}
   `;
 
   // -----------------------------
@@ -376,10 +397,11 @@ const emailReceivedRows = await dbQuery(
   FROM email_records
   WHERE month = ?
     AND year = ?
+    ${group ? "AND group_name = ?" : ""}
     AND entry_type = 'Received'
   GROUP BY region
   `,
-  [month, year]
+  group ? [month, year, group] : [month, year]
 );
 
 const emailReceived = {
@@ -404,10 +426,11 @@ const emailRepliedRows = await dbQuery(
   FROM email_records
   WHERE month = ?
     AND year = ?
+    ${group ? "AND group_name = ?" : ""}
     AND entry_type = 'Replied'
   GROUP BY region
   `,
-  [month, year]
+  group ? [month, year, group] : [month, year]
 );
 
 const emailReplied = { A: 0, B: 0, C: 0 };
@@ -427,8 +450,10 @@ const notingsRows = await dbQuery(
          eoffice_comments
   FROM notings_records
   WHERE month = ? AND year = ?
+  ${group ? "AND group_name = ?" : ""}
+
   `,
-  [month, year]
+  group ? [month, year, group] : [month, year]
 );
 
 let notingsHindi = 0;
@@ -448,15 +473,28 @@ notingsRows.forEach(row => {
 
 
   // -----------------------------
-  // GROUP NAME DATA (from admin)
+  // GROUP NAME DATA 
   // -----------------------------
+  let groupName = "";
+  let groupHeadName = "";
+
+  if (group) {
+    const row = await dbQuery(
+      "SELECT name, group_name FROM users WHERE group_name = ? LIMIT 1",
+      [group]
+    );
+
+    groupName = row[0]?.group_name || "";
+    groupHeadName = row[0]?.name || "";
+  }
+if (!group) {
   const adminRow = await dbQuery(
     "SELECT name, group_name FROM users WHERE role='admin' LIMIT 1"
   );
 
-  const groupName = adminRow[0]?.group_name || "";
-  const groupHeadName = adminRow[0]?.name || "";
-
+  groupName = adminRow[0]?.group_name || "";
+  groupHeadName = adminRow[0]?.name || "";
+}
   // -----------------------------
   // FINAL RETURN OBJECT
   // -----------------------------
@@ -490,10 +528,7 @@ notingsRows.forEach(row => {
 app.post("/inward/add", requireLogin, async (req, res) => {
   try {
     const data = req.body;
-    const groupName =
-  req.session.user.role === "admin"
-    ? "ALL"
-    : req.session.user.group;
+    const groupName = req.session.user.group;
 
         // REQUIRED FIELD VALIDATION (BEFORE ANY DB LOGIC)
     const requiredFields = [
@@ -617,12 +652,7 @@ app.get("/api/inward/search", requireLogin, (req, res) => {
 app.post("/outward/add", requireLogin, async (req, res) => {
   try {
     const data = req.body;
-    const groupName =
-  req.session.user.role === "admin"
-    ? "ALL"
-    : req.session.user.group;
-
-
+    const groupName = req.session.user.group;
 
 // Normalize reply fields safely
 if (data.reply_required === "No") {
@@ -726,11 +756,7 @@ app.get("/outward/all", requireLogin, (req, res) => {
 // NOTINGS: SAVE MONTHLY DATA
 // =========================
 app.post("/notings/save", requireLogin, (req, res) => {
-  const groupName =
-  req.session.user.role === "admin"
-    ? "ALL"
-    : req.session.user.group;
-
+  const groupName = req.session.user.group;
   const {
     month,
     year,
@@ -790,11 +816,7 @@ app.post("/notings/save", requireLogin, (req, res) => {
 // =========================
 app.post("/emails/save", requireLogin, async (req, res) => {
   try {
-
-    const groupName =
-  req.session.user.role === "admin"
-    ? "ALL"
-    : req.session.user.group;
+    const groupName = req.session.user.group;
 
     const {
       month,
@@ -929,13 +951,19 @@ app.delete("/admin/users/delete/:id", requireAdmin, (req, res) => {
 // =============================================
 app.post("/admin/report/data", requireAdmin, async (req, res) => {
   try {
-    const { month, year, office } = req.body;
+    const { month, year, office, group } = req.body;
 
     if (!month || !year) {
       return res.status(400).json({ message: "Month and Year required" });
     }
 
-    const data = await calculateReportData(month, year, office || "");
+    const data = await calculateReportData(
+      month,
+      year,
+      office || "",
+      group || ""
+    );
+
 
     res.json(data);
 
@@ -1010,6 +1038,29 @@ app.post("/admin/report/pdf", requireAdmin, async (req, res) => {
     console.error("PDF generation error:", err);
     res.status(500).json({ message: "Failed to generate PDF" });
   }
+});
+
+
+// =========================
+// ADMIN: GET DISTINCT GROUPS (for reports)
+// =========================
+app.get("/admin/report/groups", requireAdmin, (req, res) => {
+  const sql = `
+    SELECT DISTINCT group_name
+    FROM users
+    WHERE group_name IS NOT NULL
+      AND group_name <> ''
+    ORDER BY group_name
+  `;
+
+  db.query(sql, (err, rows) => {
+    if (err) {
+      console.error("Group fetch error:", err);
+      return res.status(500).json({ message: "Failed to load groups" });
+    }
+
+    res.json(rows.map(r => r.group_name));
+  });
 });
 
 

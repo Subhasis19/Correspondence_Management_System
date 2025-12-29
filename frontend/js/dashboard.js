@@ -40,6 +40,38 @@
     });
   }
 
+    /* ---------------------------
+     LOAD REPORT GROUPS
+  --------------------------- */
+  async function loadReportGroups() {
+    const select = document.getElementById("reportGroup");
+    if (!select) return;
+
+    // reset dropdown, keep default
+    select.innerHTML = `<option value="">All Groups</option>`;
+
+    try {
+      const res = await fetch("/admin/report/groups", {
+        credentials: "same-origin"
+      });
+
+      if (!res.ok) throw new Error("Failed to load groups");
+
+      const groups = await res.json();
+
+      groups.forEach(group => {
+        const opt = document.createElement("option");
+        opt.value = group;
+        opt.textContent = group;
+        select.appendChild(opt);
+      });
+
+    } catch (err) {
+      console.error("loadReportGroups:", err);
+    }
+  }
+
+
   /* ---------------------------
      LOAD INWARD RECORDS
   --------------------------- */
@@ -292,6 +324,7 @@ if (et) {
     }
   }
 
+   loadReportGroups();
   // Notings back button
 
 const notingsBackBtn = document.getElementById("notingsBackBtn");

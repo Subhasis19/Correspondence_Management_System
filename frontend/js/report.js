@@ -188,10 +188,11 @@ function renderReportHtml(payload, filters) {
     const month = Number(document.getElementById("reportMonth").value);
     const year = Number(document.getElementById("reportYear").value);
     const office = document.getElementById("reportOffice").value || "";
+    const group = document.getElementById("reportGroup").value || "";
 
     if (!month || !year) return alert("Select month and year");
 
-    const filters = { month, year, office };
+    const filters = { month, year, office, group };
     const container = document.getElementById("reportPreviewContainer");
     container.innerHTML = `<div style="padding:30px;text-align:center;color:#777">Loading report…</div>`;
 
