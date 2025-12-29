@@ -156,26 +156,28 @@
 
   function openIframe(page) {
     hideAllViews(); 
-    let file = "";
+    // let file = "";
 
     if (page === "inward") {
-      file = "inward.html";
+      // file = "inward.html";
+      formFrame.src = "/inward";
       iframeTitle.textContent = window.currentUserGroup
         ? `Inward Entry Form (${window.currentUserGroup})`
         : "Inward Entry Form";
     }
 
     if (page === "outward") {
-      file = "outward.html";
+      // file = "outward.html";
+      formFrame.src = "/outward";
       iframeTitle.textContent = window.currentUserGroup
         ? `Outward Entry Form (${window.currentUserGroup})`
         : "Outward Entry Form";
     }
 
 
-    if (!file) return;
+    // if (!file) return;
 
-    formFrame.src = file;
+    // formFrame.src = file;
     iframeContainer.style.display = "block";
     dashboardView.style.display = "none";
 
@@ -187,7 +189,7 @@
     iframeContainer.style.display = "none";
     dashboardView.style.display = "block";
 
-    formFrame.src = ""; // reset iframe
+    formFrame.src = ""; 
 
     setActiveMenuItem("dashboard");
     loadInwardRecords();

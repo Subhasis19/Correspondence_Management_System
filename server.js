@@ -13,6 +13,7 @@ const fs = require("fs");
 const path = require("path");
 
 
+
 const app = express();
 
   //  CORE MIDDLEWARE
@@ -54,7 +55,29 @@ function requireAdmin(req, res, next) {
 
   //  PROTECT DASHBOARD.HTML 
 app.get("/dashboard.html", requireLogin, (req, res, next) => next());
-app.use(express.static("frontend"));
+// app.use(express.static("frontend"));
+
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "frontend", "index.html"));
+});
+
+app.use(express.static("frontend", {
+  index: false
+}));
+
+
+
+// =========================
+// PROTECTED FORM ROUTES
+// =========================
+app.get("/inward", requireLogin, (req, res) => {
+  res.sendFile(path.join(__dirname, "views/forms/inward.html"));
+});
+
+app.get("/outward", requireLogin, (req, res) => {
+  res.sendFile(path.join(__dirname, "views/forms/outward.html"));
+});
+
 
   //  EMAIL TRANSPORTER
 const transporter = nodemailer.createTransport({
@@ -606,7 +629,7 @@ if (data.reply_required === "No") {
     res.send(`
       <h3 style="text-align:center;">Inward Entry Saved</h3>
       <p style="text-align:center;">Inward No: <strong>${inward_no}</strong></p>
-      <p style="text-align:center;"><a href="/inward.html">Add another</a></p>
+      <p style="text-align:center;"><a href="/inward" target="_self">Add another</a></p>
     `);
   } catch (err) {
     console.error("DB ERROR:", err.sqlMessage || err);
@@ -734,7 +757,7 @@ if (data.reply_required === "No") {
     res.send(`
       <h3 style="text-align:center;">Outward Entry Saved</h3>
       <p style="text-align:center;">Outward No: <strong>${outward_no}</strong></p>
-      <p style="text-align:center;"><a href="/outward.html">Add another</a></p>
+      <p style="text-align:center;"><a href="/outward" target="_self">Add another</a></p>
     `);
   } catch (err) {
       console.error("DB ERROR:", err.sqlMessage || err);

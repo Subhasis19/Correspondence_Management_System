@@ -9,7 +9,8 @@
 
   <body>
     <div class="inward-container">
-      <h2>New Outward Correspondence Entry</h2>
+      <h2 id="formTitle">New Outward Correspondence Entry</h2>
+
 
       <form id="outwardForm" action="/outward/add" method="POST">
         
@@ -261,6 +262,24 @@
     </div>
 
     <script src="js/form-validation.js"></script>
+
+    <script>
+      fetch("/session-info")
+        .then(res => res.json())
+        .then(data => {
+          if (data?.user?.group) {
+            const title = document.getElementById("formTitle");
+            if (title) {
+              title.textContent =
+                `New Outward Correspondence Entry (${data.user.group})`;
+            }
+          }
+        })
+        .catch(() => {
+          // silently ignore if session expired
+        });
+    </script>
+
 
   </body>
 </html>
