@@ -231,7 +231,7 @@ function generateOutwardNumber() {
 
 
 // =============================================
-// REPORT CALCULATION  FUNCTIONS  — NEW VERSION
+// REPORT CALCULATION  FUNCTIONS  
 // =============================================
 
 function getMonthDateRange(year, month) {
@@ -280,28 +280,49 @@ function dbQuery(sql, params = []) {
     WHERE date_of_receipt >= ? AND date_of_receipt < ?
     ${inOfficeCond}
     ${groupCond}
-    AND language_of_document IN ('Hindi','Bilingual')
+    AND language_of_document IN ('Hindi')
   `;
+
+  // const sqlReplyHindi = `
+  //   SELECT COUNT(*) AS cnt
+  //   FROM inward_records
+  //   WHERE date_of_receipt >= ? AND date_of_receipt < ?
+  //   ${inOfficeCond}
+  //   ${groupCond}
+  //   AND reply_sent_in = 'Hindi'
+  // `;
+
+  
+    // const sqlReplyEnglish = `
+    //   SELECT COUNT(*) AS cnt
+    //   FROM inward_records
+    //   WHERE date_of_receipt >= ? AND date_of_receipt < ?
+    //   ${inOfficeCond}
+    //   ${groupCond}
+    //   AND reply_required = 'Yes'
+    //   AND reply_sent_date IS NOT NULL
+    //   AND reply_sent_in = 'English'
+    // `;
 
   const sqlReplyHindi = `
-    SELECT COUNT(*) AS cnt
-    FROM inward_records
-    WHERE date_of_receipt >= ? AND date_of_receipt < ?
-    ${inOfficeCond}
-    ${groupCond}
-    AND reply_sent_in = 'Hindi'
-  `;
+  SELECT COUNT(*) AS cnt
+  FROM outward_records
+  WHERE date_of_despatch >= ? AND date_of_despatch < ?
+  ${outOfficeCond}
+  ${groupCond}
+  AND language_of_document = 'Hindi'
+  AND reply_sent_in = 'Hindi'
+`;
 
-  const sqlReplyEnglish = `
-    SELECT COUNT(*) AS cnt
-    FROM inward_records
-    WHERE date_of_receipt >= ? AND date_of_receipt < ?
-    ${inOfficeCond}
-    ${groupCond}
-    AND reply_required = 'Yes'
-    AND reply_sent_date IS NOT NULL
-    AND reply_sent_in = 'English'
-  `;
+const sqlReplyEnglish = `
+  SELECT COUNT(*) AS cnt
+  FROM outward_records
+  WHERE date_of_despatch >= ? AND date_of_despatch < ?
+  ${outOfficeCond}
+  ${groupCond}
+  AND language_of_document = 'Hindi'
+  AND reply_sent_in = 'English'
+`;
 
   const sqlNotExpected = `
     SELECT COUNT(*) AS cnt
@@ -309,6 +330,7 @@ function dbQuery(sql, params = []) {
     WHERE date_of_receipt >= ? AND date_of_receipt < ?
     ${inOfficeCond}
     ${groupCond}
+    AND language_of_document = 'Hindi'
     AND reply_required = 'No'
   `;
 
@@ -366,8 +388,10 @@ function dbQuery(sql, params = []) {
     totalInward,
     totalOutward
   ] = await Promise.all([
-    dbQuery(sqlHindi, paramsIn),
-    dbQuery(sqlReplyHindi, paramsIn),
+    // dbQuery(sqlHindi, paramsIn),
+    // dbQuery(sqlReplyHindi, paramsIn),
+    dbQuery(sqlReplyHindi, paramsOut),
+    dbQuery(sqlReplyEnglish, paramsOut),
     dbQuery(sqlReplyEnglish, paramsIn),
     dbQuery(sqlNotExpected, paramsIn),
     dbQuery(sqlInwardRegion, paramsIn),
@@ -399,7 +423,7 @@ function dbQuery(sql, params = []) {
     };
   });
 
-  // Ensure all regions exist
+ 
   ["A", "B", "C", "Unknown"].forEach((r) => {
     inwardByRegion[r] ||= { receivedEnglish: 0, repliedHindi: 0, repliedEnglish: 0, notExpected: 0 };
     outwardByRegion[r] ||= { hindi: 0, english: 0, total: 0 };
@@ -553,7 +577,7 @@ app.post("/inward/add", requireLogin, async (req, res) => {
     const data = req.body;
     const groupName = req.session.user.group;
 
-        // REQUIRED FIELD VALIDATION (BEFORE ANY DB LOGIC)
+        // REQUIRED FIELD VALIDATION 
     const requiredFields = [
       { key: "date_of_receipt", label: "Inward Date" },
       { key: "received_in", label: "Office" },
@@ -645,6 +669,8 @@ app.get("/inward/all", requireLogin, (req, res) => {
     res.json(rows);
   });
 });
+
+
 // OUTWARD: LIVE SEARCH BY inward_no + AUTO-FILL
 app.get("/api/inward/search", requireLogin, (req, res) => {
   const q = (req.query.q || "").trim();
@@ -655,7 +681,10 @@ app.get("/api/inward/search", requireLogin, (req, res) => {
       s_no, inward_no,
       name_of_sender, address_of_sender, sender_city,
       sender_state, sender_pin, sender_region, sender_org_type,
-      date_of_receipt, received_in
+      date_of_receipt, received_in,
+      type_of_document,
+      language_of_document,
+      issued_to AS reply_issued_by
     FROM inward_records
     WHERE inward_no LIKE ?
     ORDER BY s_no DESC
@@ -670,6 +699,8 @@ app.get("/api/inward/search", requireLogin, (req, res) => {
     res.json(results);
   });
 });
+
+
   //  OUTWARD ENTRY
 
 app.post("/outward/add", requireLogin, async (req, res) => {

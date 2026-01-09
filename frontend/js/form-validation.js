@@ -144,7 +144,7 @@ function initFieldValidations() {
 
   if (name) {
     name.addEventListener("input", () => {
-      /^[A-Za-z ]+$/.test(name.value)
+      /^[A-Za-z .]+$/.test(name.value)
         ? clearErr(
             name.id === "name_of_sender"
               ? "err_name_of_sender"
@@ -319,12 +319,12 @@ function initFormValidation() {
 
     // Name (sender or receiver)
     const name = getByIdAny("name_of_sender", "name_of_receiver");
-    if (name && !/^[A-Za-z ]+$/.test(name.value)) {
+    if (name && !/^[A-Za-z .]+$/.test(name.value)) {
       const errId =
         name.id === "name_of_sender"
           ? "err_name_of_sender"
           : "err_receiver_name";
-      showErr(errId, "Only alphabets allowed");
+      showErr(errId, "Only alphabets, space and dot allowed");
       valid = false;
       if (!firstErrorField) firstErrorField = name;
     }
@@ -568,6 +568,9 @@ window.addEventListener("DOMContentLoaded", () => {
       receiver_pin: r.sender_pin,
       receiver_region: r.sender_region,
       receiver_org_type: r.sender_org_type,
+      type_of_document: r.type_of_document,
+      language_of_document: r.language_of_document,
+      reply_issued_by: r.reply_issued_by
     };
 
     Object.entries(map).forEach(([field, value]) => {
