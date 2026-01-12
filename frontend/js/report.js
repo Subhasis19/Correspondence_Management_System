@@ -31,17 +31,16 @@ function renderReportHtml(payload, filters) {
     notExp: safe(s.inwardByRegion?.[region]?.notExpected),
   });
 
-  const outward = (region) => {
-    const o = s.outwardByRegion?.[region] || {};
-    const h = safe(o.hindi);
-    const e = safe(o.english);
-    const total = h + e;
-    return {
-      h, e,
-      total,
-      percent: total ? Math.round((h / total) * 100) : 0
-    };
+  const section3 = (region) => {
+  const r = s.section3ByRegion?.[region] || {};
+  return {
+    h: safe(r.hindi),
+    e: safe(r.english),
+    total: safe(r.total),
+    percent: safe(r.percent)
   };
+};
+
 
   const emailReceived = (region, type) =>
     safe(s.emailReceived?.[region]?.[type]);
@@ -51,10 +50,12 @@ function renderReportHtml(payload, filters) {
 
   const inwardA = inward("A");
   const inwardB = inward("B");
+  const inwardC = inward("C");
 
-  const outA = outward("A");
-  const outB = outward("B");
-  const outC = outward("C");
+  const sec3A = section3("A");
+  const sec3B = section3("B");
+  const sec3C = section3("C");
+
 
   const notHin = safe(s.notingsHindi);
   const notEng = safe(s.notingsEnglish);
@@ -103,34 +104,44 @@ function renderReportHtml(payload, filters) {
     <tr><td>Not expected to be replied</td><td>${inwardB.notExp}</td></tr>
   </table>
 
+  <!-- Region C -->
+  <div style="margin-top:10px;">From Region 'C'</div>
+  <table style="width:100%; border-collapse:collapse;">
+    <tr><td>Letters received in English</td><td>${inwardC.rEng}</td></tr>
+    <tr><td>Replied in Hindi</td><td>${inwardC.rHin}</td></tr>
+    <tr><td>Replied in English</td><td>${inwardC.rEngRep}</td></tr>
+    <tr><td>Not expected to be replied</td><td>${inwardC.notExp}</td></tr>
+  </table>
+
+
   <!-- Section 3 -->
   <h4 style="margin-top:25px;">3. Details of original letters issued</h4>
 
   <!-- Region A -->
   <div>To Region 'A'</div>
   <table style="width:100%; border-collapse:collapse;">
-    <tr><td>Issued in Hindi/Bilingual</td><td>${outA.h}</td></tr>
-    <tr><td>Issued in English</td><td>${outA.e}</td></tr>
-    <tr><td>Total issued</td><td>${outA.total}</td></tr>
-    <tr><td>Percentage Hindi/Bilingual</td><td>${outA.percent}%</td></tr>
+    <tr><td>Issued in Hindi/Bilingual</td><td>${sec3A.h}</td></tr>
+    <tr><td>Issued in English</td><td>${sec3A.e}</td></tr>
+    <tr><td>Total issued</td><td>${sec3A.total}</td></tr>
+    <tr><td>Percentage Hindi/Bilingual</td><td>${sec3A.percent}%</td></tr>
   </table>
 
   <!-- Region B -->
   <div style="margin-top:10px;">To Region 'B'</div>
   <table style="width:100%; border-collapse:collapse;">
-    <tr><td>Issued in Hindi/Bilingual</td><td>${outB.h}</td></tr>
-    <tr><td>Issued in English</td><td>${outB.e}</td></tr>
-    <tr><td>Total issued</td><td>${outB.total}</td></tr>
-    <tr><td>Percentage Hindi/Bilingual</td><td>${outB.percent}%</td></tr>
+    <tr><td>Issued in Hindi/Bilingual</td><td>${sec3B.h}</td></tr>
+    <tr><td>Issued in English</td><td>${sec3B.e}</td></tr>
+    <tr><td>Total issued</td><td>${sec3B.total}</td></tr>
+    <tr><td>Percentage Hindi/Bilingual</td><td>${sec3B.percent}%</td></tr>
   </table>
 
   <!-- Region C -->
   <div style="margin-top:10px;">To Region 'C'</div>
   <table style="width:100%; border-collapse:collapse;">
-    <tr><td>Issued in Hindi/Bilingual</td><td>${outC.h}</td></tr>
-    <tr><td>Issued in English</td><td>${outC.e}</td></tr>
-    <tr><td>Total issued</td><td>${outC.total}</td></tr>
-    <tr><td>Percentage Hindi/Bilingual</td><td>${outC.percent}%</td></tr>
+    <tr><td>Issued in Hindi/Bilingual</td><td>${sec3C.h}</td></tr>
+    <tr><td>Issued in English</td><td>${sec3C.e}</td></tr>
+    <tr><td>Total issued</td><td>${sec3C.total}</td></tr>
+    <tr><td>Percentage Hindi/Bilingual</td><td>${sec3C.percent}%</td></tr>
   </table>
 
   <!-- Section 4 -->

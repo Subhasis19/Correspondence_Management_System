@@ -283,34 +283,12 @@ function dbQuery(sql, params = []) {
     AND language_of_document IN ('Hindi')
   `;
 
-  // const sqlReplyHindi = `
-  //   SELECT COUNT(*) AS cnt
-  //   FROM inward_records
-  //   WHERE date_of_receipt >= ? AND date_of_receipt < ?
-  //   ${inOfficeCond}
-  //   ${groupCond}
-  //   AND reply_sent_in = 'Hindi'
-  // `;
-
-  
-    // const sqlReplyEnglish = `
-    //   SELECT COUNT(*) AS cnt
-    //   FROM inward_records
-    //   WHERE date_of_receipt >= ? AND date_of_receipt < ?
-    //   ${inOfficeCond}
-    //   ${groupCond}
-    //   AND reply_required = 'Yes'
-    //   AND reply_sent_date IS NOT NULL
-    //   AND reply_sent_in = 'English'
-    // `;
-
-  const sqlReplyHindi = `
+const sqlReplyHindi = `
   SELECT COUNT(*) AS cnt
   FROM outward_records
   WHERE date_of_despatch >= ? AND date_of_despatch < ?
   ${outOfficeCond}
   ${groupCond}
-  AND language_of_document = 'Hindi'
   AND reply_sent_in = 'Hindi'
 `;
 
@@ -320,9 +298,9 @@ const sqlReplyEnglish = `
   WHERE date_of_despatch >= ? AND date_of_despatch < ?
   ${outOfficeCond}
   ${groupCond}
-  AND language_of_document = 'Hindi'
   AND reply_sent_in = 'English'
 `;
+
 
   const sqlNotExpected = `
     SELECT COUNT(*) AS cnt
@@ -330,16 +308,13 @@ const sqlReplyEnglish = `
     WHERE date_of_receipt >= ? AND date_of_receipt < ?
     ${inOfficeCond}
     ${groupCond}
-    AND language_of_document = 'Hindi'
     AND reply_required = 'No'
   `;
 
   const sqlInwardRegion = `
     SELECT COALESCE(sender_region, 'Unknown') AS region,
-           SUM(language_of_document = 'English') AS receivedEnglish,
-           SUM(reply_sent_in = 'Hindi') AS repliedHindi,
-           SUM(reply_sent_in = 'English') AS repliedEnglish,
-           SUM(reply_required = 'No') AS notExpected
+            SUM(language_of_document = 'English') AS receivedEnglish,
+            SUM(language_of_document='English' AND reply_required = 'No') AS notExpected
     FROM inward_records
     WHERE date_of_receipt >= ? AND date_of_receipt < ?
     ${inOfficeCond}
@@ -347,17 +322,31 @@ const sqlReplyEnglish = `
     GROUP BY region
   `;
 
-  const sqlOutwardRegion = `
-    SELECT COALESCE(receiver_region, 'Unknown') AS region,
-           SUM(language_of_document IN ('Hindi','Bilingual')) AS hindi,
-           SUM(language_of_document = 'English') AS english,
-           COUNT(*) AS total
+  const sqlOutwardReplyRegion = `
+    SELECT
+      COALESCE(receiver_region, 'Unknown') AS region,
+      SUM(language_of_document = 'English' AND reply_sent_in = 'Hindi') AS repliedHindi,
+      SUM(language_of_document = 'English' AND reply_sent_in = 'English') AS repliedEnglish
     FROM outward_records
     WHERE date_of_despatch >= ? AND date_of_despatch < ?
     ${outOfficeCond}
     ${groupCond}
     GROUP BY region
   `;
+
+// SECTION 3: Original letters issued (FROM INWARD)
+const sqlSection3 = `
+  SELECT
+    COALESCE(sender_region, 'Unknown') AS region,
+    SUM(language_of_document IN ('Hindi','Bilingual')) AS hindiPlusBilingual,
+    SUM(language_of_document = 'English') AS english
+  FROM inward_records
+  WHERE date_of_receipt >= ? AND date_of_receipt < ?
+  ${inOfficeCond}
+  ${groupCond}
+  GROUP BY region
+`;
+
 
   const sqlTotalInward = `
     SELECT COUNT(*) AS cnt
@@ -379,55 +368,82 @@ const sqlReplyEnglish = `
   // RUN ALL QUERIES IN PARALLEL
   // -----------------------------
   const [
-    rowsHindi,
-    rowsReplyHindi,
-    rowsReplyEnglish,
-    rowsNotExpected,
-    rowsInwardRegion,
-    rowsOutwardRegion,
-    totalInward,
-    totalOutward
-  ] = await Promise.all([
-    // dbQuery(sqlHindi, paramsIn),
-    // dbQuery(sqlReplyHindi, paramsIn),
-    dbQuery(sqlReplyHindi, paramsOut),
-    dbQuery(sqlReplyEnglish, paramsOut),
-    dbQuery(sqlReplyEnglish, paramsIn),
-    dbQuery(sqlNotExpected, paramsIn),
-    dbQuery(sqlInwardRegion, paramsIn),
-    dbQuery(sqlOutwardRegion, paramsOut),
-    dbQuery(sqlTotalInward, paramsIn),
-    dbQuery(sqlTotalOutward, paramsOut)
-  ]);
+  rowsHindi,
+  rowsReplyHindi,
+  rowsReplyEnglish,
+  rowsNotExpected,
+  rowsInwardRegion,
+  rowsOutwardReplyRegion, 
+  rowsSection3,
+  totalInward,
+  totalOutward
+] = await Promise.all([
+  dbQuery(sqlHindi, paramsIn),            
+  dbQuery(sqlReplyHindi, paramsOut),      
+  dbQuery(sqlReplyEnglish, paramsOut),    
+  dbQuery(sqlNotExpected, paramsIn),      
+  dbQuery(sqlInwardRegion, paramsIn),   
+  dbQuery(sqlOutwardReplyRegion, paramsOut),   
+  dbQuery(sqlSection3, paramsIn),  
+  dbQuery(sqlTotalInward, paramsIn),      
+  dbQuery(sqlTotalOutward, paramsOut)    
+]);
 
   // -----------------------------
   // BUILD REGION MAPS
   // -----------------------------
   const inwardByRegion = { A: {}, B: {}, C: {}, Unknown: {} };
-  const outwardByRegion = { A: {}, B: {}, C: {}, Unknown: {} };
+
 
   rowsInwardRegion.forEach((r) => {
     inwardByRegion[r.region] = {
       receivedEnglish: r.receivedEnglish || 0,
-      repliedHindi: r.repliedHindi || 0,
-      repliedEnglish: r.repliedEnglish || 0,
-      notExpected: r.notExpected || 0
+      notExpected: r.notExpected || 0,
+      repliedHindi: 0,
+      repliedEnglish: 0
     };
   });
 
-  rowsOutwardRegion.forEach((r) => {
-    outwardByRegion[r.region] = {
-      hindi: r.hindi || 0,
-      english: r.english || 0,
-      total: r.total || 0
-    };
-  });
+  rowsOutwardReplyRegion.forEach((r) => {
+  inwardByRegion[r.region] ||= {
+    receivedEnglish: 0,
+    notExpected: 0,
+    repliedHindi: 0,
+    repliedEnglish: 0
+  };
+
+  inwardByRegion[r.region].repliedHindi   = r.repliedHindi || 0;
+  inwardByRegion[r.region].repliedEnglish = r.repliedEnglish || 0;
+});
 
  
   ["A", "B", "C", "Unknown"].forEach((r) => {
     inwardByRegion[r] ||= { receivedEnglish: 0, repliedHindi: 0, repliedEnglish: 0, notExpected: 0 };
-    outwardByRegion[r] ||= { hindi: 0, english: 0, total: 0 };
   });
+
+  // -----------------------------
+  // SECTION 3: ORIGINAL LETTERS ISSUED (FROM INWARD)
+  // -----------------------------
+  const section3ByRegion = {
+    A: { hindi: 0, english: 0, total: 0, percent: 0 },
+    B: { hindi: 0, english: 0, total: 0, percent: 0 },
+    C: { hindi: 0, english: 0, total: 0, percent: 0 },
+    Unknown: { hindi: 0, english: 0, total: 0, percent: 0 }
+  };
+
+  rowsSection3.forEach(r => {
+    const hb = Number(r.hindiPlusBilingual) || 0;
+    const e = Number(r.english) || 0;
+    const total = hb + e;
+
+    section3ByRegion[r.region] = {
+      hindi: hb,
+      english: e,
+      total,
+      percent: total ? Math.round((hb / total) * 100) : 0
+    };
+  });
+
 
   // -----------------------------
   // EMAIL/NOTINGS DEFAULTS
@@ -439,8 +455,8 @@ const sqlReplyEnglish = `
 const emailReceivedRows = await dbQuery(
   `
   SELECT region,
-         SUM(total_english) AS eng,
-         SUM(total_hindi)   AS hin
+          SUM(total_english) AS eng,
+          SUM(total_hindi)   AS hin
   FROM email_records
   WHERE month = ?
     AND year = ?
@@ -552,7 +568,8 @@ if (!group) {
     notExpectedTotal: rowsNotExpected[0].cnt,
 
     inwardByRegion,
-    outwardByRegion,
+    section3ByRegion, 
+    // outwardByRegion,
 
     totalInwards: totalInward[0].cnt,
     totalOutwards: totalOutward[0].cnt,
