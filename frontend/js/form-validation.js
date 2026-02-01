@@ -271,6 +271,51 @@ function initReplyToggle() {
 }
 
 
+/* ---------------- TOGGLE OTHER DOCUMENT INPUT (INWARD + OUTWARD) ---------------- */
+function initOtherDocumentToggle() {
+  // Inward
+  const inwardDoc = document.getElementById("type_of_document");
+  const inwardWrap = document.getElementById("otherDocWrapper");
+  const inwardInput = document.getElementById("other_document");
+
+  // Outward
+  const outwardDoc = document.getElementById("type_of_document");
+  const outwardWrap = document.getElementById("otherDocWrapperOutward");
+  const outwardInput = document.getElementById("other_document_outward");
+
+  function toggle(doc, wrap, input) {
+    if (!doc || !wrap || !input) return;
+
+    if (doc.value === "Other Document") {
+      wrap.style.display = "block";
+      input.setAttribute("required", "required");
+    } else {
+      wrap.style.display = "none";
+      input.removeAttribute("required");
+      input.value = "";
+      clearErr("err_other_document");
+      clearErr("err_other_document_outward");
+    }
+  }
+
+  // Inward binding
+  if (inwardDoc) {
+    toggle(inwardDoc, inwardWrap, inwardInput);
+    inwardDoc.addEventListener("change", () =>
+      toggle(inwardDoc, inwardWrap, inwardInput)
+    );
+  }
+
+  // Outward binding
+  if (outwardDoc) {
+    toggle(outwardDoc, outwardWrap, outwardInput);
+    outwardDoc.addEventListener("change", () =>
+      toggle(outwardDoc, outwardWrap, outwardInput)
+    );
+  }
+}
+
+
 /* ---------------- FULL FORM VALIDATION ---------------- */
 function initFormValidation() {
   const form =
@@ -283,7 +328,7 @@ function initFormValidation() {
     let valid = true;
     let firstErrorField = null;
 
-    // Remove old errors
+    
     document
       .querySelectorAll(".error")
       .forEach((el) => (el.style.display = "none"));
@@ -369,6 +414,29 @@ function initFormValidation() {
       if (!firstErrorField) firstErrorField = docType;
     }
 
+// Other Document text validation (INWARD + OUTWARD)
+const inwardOther = document.getElementById("other_document");
+const outwardOther = document.getElementById("other_document_outward");
+
+if (docType && docType.value === "Other Document") {
+  const activeOther =
+    inwardOther && inwardOther.offsetParent !== null
+      ? inwardOther
+      : outwardOther;
+
+  const errId =
+    activeOther === inwardOther
+      ? "err_other_document"
+      : "err_other_document_outward";
+
+  if (!activeOther || activeOther.value.trim() === "") {
+    showErr(errId, "Please specify the document type");
+    valid = false;
+    if (!firstErrorField) firstErrorField = activeOther;
+  }
+}
+  
+
     // Reply required (may exist only on inward)
     const reply = document.getElementById("reply_required");
     if (reply && reply.value === "") {
@@ -425,6 +493,7 @@ window.addEventListener("DOMContentLoaded", () => {
   initFieldValidations();
   initCounts();
   initReplyToggle();
+  initOtherDocumentToggle();
   initFormValidation();
 });
 
@@ -571,6 +640,8 @@ window.addEventListener("DOMContentLoaded", () => {
       type_of_document: r.type_of_document,
       language_of_document: r.language_of_document,
       reply_issued_by: r.reply_issued_by
+      //add date_of_receipt to outward date if needed
+
     };
 
     Object.entries(map).forEach(([field, value]) => {

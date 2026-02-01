@@ -157,8 +157,21 @@
             <option>Letter</option>
             <option>Bill</option>
             <option>Other Document</option>
-          </select>
+          </select> 
           <span id="err_doc_type" class="error"></span>
+
+          <!--  NEW FIELD (HIDDEN BY DEFAULT) -->
+        <div id="otherDocWrapper" style="display:none;">
+          <label>* Specify Other Document:</label>
+          <input
+            type="text"
+            name="other_document"
+            id="other_document"
+            placeholder="Enter document type"
+            maxlength="100"
+          />
+          <span id="err_other_document" class="error"></span>
+        </div>
 
           <label>Language of Document:</label>
           <select name="language_of_document">
@@ -262,7 +275,7 @@
           }
         })
         .catch(() => {
-          // silently ignore if session expired
+          
         });
     </script>
 
