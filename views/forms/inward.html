@@ -62,8 +62,8 @@
           />
           <span id="err_sender_city" class="error"></span>
 
-          <label>State:</label>
-          <select name="sender_state" id="senderState">
+          <label>*State:</label>
+          <select name="sender_state" id="senderState" required>
             <option value="">Select State</option>
 
             <!-- Region A -->
@@ -110,7 +110,7 @@
             <option>Jammu & Kashmir</option>
           </select>
 
-          <label>Pin Code:</label>
+          <label>* Pin Code:</label>
           <input
             type="text"
             name="sender_pin"
@@ -131,8 +131,8 @@
             readonly
           />
 
-          <label>Sender Organization Type:</label>
-          <select name="sender_org_type">
+          <label>* Sender Organization Type:</label>
+          <select name="sender_org_type" required>
             <option value="">Select Type</option>
             <option>Central</option>
             <option>State</option>
@@ -173,8 +173,8 @@
           <span id="err_other_document" class="error"></span>
         </div>
 
-          <label>Language of Document:</label>
-          <select name="language_of_document">
+          <label>* Language of Document:</label>
+          <select name="language_of_document" required>
             <option value="">Select Language</option>
             <option>English</option>
             <option>Hindi</option>
@@ -191,8 +191,8 @@
           />
           <span id="err_count" class="error"></span>
 
-          <label>Remarks:</label>
-          <select name="remarks">
+          <label>* Remarks:</label>
+          <select name="remarks" required>
             <option value="">Select Remark</option>
             <option>Action</option>
             <option>Information</option>
@@ -207,7 +207,7 @@
           />
           <span id="err_issued_to" class="error"></span>
 
-          <label>Reply Required:</label>
+          <label>* Reply Required:</label>
           <select name="reply_required" id="reply_required" required>
             <option value="">Select Option</option>
             <option>Yes</option>
@@ -215,8 +215,8 @@
           </select>
           <span id="err_reply_required" class="error"></span>
 
-          <label>Reply Sent Date:</label>
-          <input type="date" name="reply_sent_date" />
+          <label>* Reply Sent Date:</label>
+          <input type="date" name="reply_sent_date" required />
 
           <label>Reply Reference No.:</label>
           <input
@@ -227,15 +227,15 @@
           />
           <span id="err_reply_ref_no" class="error"></span>
 
-          <label>Reply Sent By:</label>
-          <select name="reply_sent_by">
+          <label>* Reply Sent By:</label>
+          <select name="reply_sent_by" required>
             <option value="">Select Mode</option>
             <option>Speed Post</option>
             <option>Email</option>
           </select>
 
-          <label>Reply Sent In:</label>
-          <select name="reply_sent_in">
+          <label>* Reply Sent In:</label>
+          <select name="reply_sent_in" required>
             <option value="">Select Language</option>
             <option>English</option>
             <option>Hindi</option>
