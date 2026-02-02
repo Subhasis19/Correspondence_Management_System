@@ -639,15 +639,41 @@ window.addEventListener("DOMContentLoaded", () => {
       receiver_org_type: r.sender_org_type,
       type_of_document: r.type_of_document,
       language_of_document: r.language_of_document,
-      reply_issued_by: r.reply_issued_by
-      //add date_of_receipt to outward date if needed
-
-    };
+      reply_issued_by: r.reply_issued_by,
+      // reply_sent_date: r.reply_sent_date 
+      reply_sent_date: r.reply_sent_date
+      ? r.reply_sent_date.substring(0, 10)
+        : ""
+        };
 
     Object.entries(map).forEach(([field, value]) => {
       const el = document.querySelector(`[name="${field}"]`);
       if (el) el.value = value || "";
     });
+
+
+    // AUTO-FILL OTHER DOCUMENT 
+    const docSelect = document.getElementById("type_of_document");
+    const otherWrap = document.getElementById("otherDocWrapperOutward");
+    const otherInput = document.getElementById("other_document_outward");
+
+    if (docSelect && otherWrap && otherInput) {
+      // If inward document is NOT Letter or Bill → treat as Other
+      if (
+        r.type_of_document &&
+        !["Letter", "Bill"].includes(r.type_of_document)
+      ) {
+        docSelect.value = "Other Document";
+        otherWrap.style.display = "block";
+        otherInput.value = r.type_of_document;
+        otherInput.setAttribute("required", "required");
+      } else {
+        otherWrap.style.display = "none";
+        otherInput.value = "";
+        otherInput.removeAttribute("required");
+      }
+    }
+
 
     // add hidden inward_s_no if needed for backend optimization
     let hidden = document.querySelector('input[name="inward_s_no"]');

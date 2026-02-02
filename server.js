@@ -609,6 +609,18 @@ app.post("/inward/add", requireLogin, async (req, res) => {
       }
     }
 
+    // NORMALIZE TYPE OF DOCUMENT (INWARD)
+
+    let finalDocumentType = data.type_of_document;
+
+    if (finalDocumentType === "Other Document") {
+      finalDocumentType = data.other_document?.trim();
+
+      if (!finalDocumentType) {
+        return res.status(400).send("Please specify Other Document type");
+      }
+    }
+
 
     if (!/^\d{6}$/.test(data.sender_pin))
       return res.status(400).send("Invalid PIN");
@@ -651,7 +663,7 @@ if (data.reply_required === "No") {
               data.date_of_receipt, data.month, data.year, data.received_in,
               data.name_of_sender, data.address_of_sender, data.sender_city,
               data.sender_state, data.sender_pin, data.sender_region, data.sender_org_type,
-              inward_no, data.type_of_document, data.language_of_document, safeCount,
+              inward_no, finalDocumentType, data.language_of_document, safeCount,
               data.remarks, data.issued_to, data.reply_required, data.reply_sent_date || null,
               data.reply_ref_no, data.reply_sent_by, data.reply_sent_in, safeReplyCount, groupName
             ],
@@ -701,6 +713,7 @@ app.get("/api/inward/search", requireLogin, (req, res) => {
       date_of_receipt, received_in,
       type_of_document,
       language_of_document,
+      DATE_FORMAT(reply_sent_date, '%Y-%m-%d') AS reply_sent_date,  
       issued_to AS reply_issued_by
     FROM inward_records
     WHERE inward_no LIKE ?
@@ -738,6 +751,18 @@ if (data.reply_required === "No") {
   data.reply_sent_by = data.reply_sent_by || null;
   data.reply_sent_in = data.reply_sent_in || null;
 }
+
+
+    // NORMALIZE TYPE OF DOCUMENT (OUTWARD)
+    let finalDocumentType = data.type_of_document;
+
+    if (finalDocumentType === "Other Document") {
+      finalDocumentType = data.other_document?.trim();
+
+      if (!finalDocumentType) {
+        return res.status(400).send("Please specify Other Document type");
+      }
+    }
 
 
 
@@ -785,7 +810,8 @@ if (data.reply_required === "No") {
               data.date_of_despatch, data.month, data.year, data.reply_from,
               data.name_of_receiver, data.address_of_receiver, data.receiver_city,
               data.receiver_state, data.receiver_pin, data.receiver_region, data.receiver_org_type,
-              outward_no, data.type_of_document, data.language_of_document, safeCount,
+              // outward_no, data.type_of_document, data.language_of_document, safeCount,
+              outward_no, finalDocumentType, data.language_of_document, safeCount,
               data.inward_no || null, inward_s_no, data.reply_issued_by,
               data.reply_sent_date || null, data.reply_ref_no, data.reply_sent_by,
               data.reply_sent_in, safeReplyCount, groupName
