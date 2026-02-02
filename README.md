@@ -125,7 +125,7 @@ CREATE TABLE inward_records (
   sender_region ENUM('A','B','C'),
   sender_org_type ENUM('Central','State','Private','Individual'),
 
-  type_of_document ENUM('Letter','Bill','Other Document'),
+   type_of_document VARCHAR(100),
   language_of_document ENUM('English','Hindi','Bilingual'),
   count INT DEFAULT 1,
 
@@ -167,7 +167,7 @@ CREATE TABLE outward_records (
   receiver_region ENUM('A','B','C'),
   receiver_org_type ENUM('Central','State','Private','Individual'),
 
-  type_of_document ENUM('Letter','Bill','Other Document'),
+  type_of_document VARCHAR(100),
   language_of_document ENUM('English','Hindi','Bilingual'),
   count INT DEFAULT 1,
 
