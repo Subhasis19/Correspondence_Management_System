@@ -215,8 +215,13 @@
           </select>
           <span id="err_reply_required" class="error"></span>
 
+          <p class="info-text">
+            Reply details will be filled automatically after Outward entry.
+          </p>
+
+
           <label>* Reply Sent Date:</label>
-          <input type="date" name="reply_sent_date" required />
+          <input type="date" name="reply_sent_date"  />
 
           <label>Reply Reference No.:</label>
           <input
@@ -228,14 +233,14 @@
           <span id="err_reply_ref_no" class="error"></span>
 
           <label>* Reply Sent By:</label>
-          <select name="reply_sent_by" required>
+          <select name="reply_sent_by" >
             <option value="">Select Mode</option>
             <option>Speed Post</option>
             <option>Email</option>
           </select>
 
           <label>* Reply Sent In:</label>
-          <select name="reply_sent_in" required>
+          <select name="reply_sent_in" >
             <option value="">Select Language</option>
             <option>English</option>
             <option>Hindi</option>

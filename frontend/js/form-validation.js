@@ -214,12 +214,12 @@ function initCounts() {
 
 /* ---------------- TOGGLE REPLY FIELDS WHEN REPLY_REQUIRED CHANGES ---------------- */
 function initReplyToggle() {
-  // find the reply_required control 
-  const replyRequired = document.querySelector("[name='reply_required']") || document.getElementById("reply_required");
-  if (!replyRequired) return; 
+  const replyRequired = document.getElementById("reply_required");
+  if (!replyRequired) return;
 
-  // fields to enable/disable when reply_required = No
-  const replyRelatedSelectors = [
+  const isInwardForm = !!document.getElementById("inwardForm");
+
+  const replyFields = [
     "[name='reply_sent_date']",
     "[name='reply_ref_no']",
     "[name='reply_sent_by']",
@@ -227,48 +227,30 @@ function initReplyToggle() {
     "[name='reply_count']"
   ];
 
-  function setReplyFields(enabled) {
-    replyRelatedSelectors.forEach(sel => {
+  function applyState() {
+    replyFields.forEach(sel => {
       const el = document.querySelector(sel);
       if (!el) return;
-      // disable/enable the control
-      el.disabled = !enabled;
 
-      
-      if (enabled) {
-        el.removeAttribute("aria-disabled");
-        el.classList.remove("disabled-field");
-      } else {
-        if (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.tagName === "SELECT") {
-          if (el.type === "date" || el.type === "text" || el.type === "number") {
-            el.value = "";
-          } else if (el.tagName === "SELECT") {
-            el.selectedIndex = 0;
-          }
-        }
-        el.setAttribute("aria-disabled", "true");
+      // INWARD: always disabled
+      if (isInwardForm) {
+        el.disabled = true;
         el.classList.add("disabled-field");
+        return;
       }
+
+      // OUTWARD logic (unchanged)
+      const enable = replyRequired.value === "Yes";
+      el.disabled = !enable;
+
+      if (!enable) el.value = "";
     });
   }
 
-  // initial set based on current value
-  setReplyFields(replyRequired.value === "Yes");
-
-  // listen for changes
-  replyRequired.addEventListener("change", function () {
-    const enabled = this.value === "Yes";
-    setReplyFields(enabled);
-
-    // If turning off, also clear any error messages related to reply fields
-    if (!enabled) {
-      ["err_reply_ref_no", "err_reply_count"].forEach(id => {
-        const e = document.getElementById(id);
-        if (e) e.style.display = "none";
-      });
-    }
-  });
+  applyState();
+  replyRequired.addEventListener("change", applyState);
 }
+
 
 
 /* ---------------- TOGGLE OTHER DOCUMENT INPUT (INWARD + OUTWARD) ---------------- */

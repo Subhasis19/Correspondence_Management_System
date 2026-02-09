@@ -789,6 +789,24 @@ if (data.reply_required === "No") {
       if (result.length > 0) inward_s_no = result[0].s_no;
     }
 
+    //  Block multiple outward for same inward
+      if (inward_s_no) {
+        const existing = await new Promise((resolve) =>
+          db.query(
+            "SELECT s_no FROM outward_records WHERE inward_s_no = ? LIMIT 1",
+            [inward_s_no],
+            (err, rows) => resolve(rows)
+          )
+        );
+
+        if (existing.length > 0) {
+          return res
+            .status(400)
+            .send("Outward reply already exists for this Inward entry");
+        }
+      }
+
+
     let outward_no;
     let success = false;
 
@@ -819,6 +837,35 @@ if (data.reply_required === "No") {
             (err) => (err ? reject(err) : resolve())
           )
         );
+
+ // AUTO-UPDATE INWARD FROM OUTWARD (SINGLE SOURCE OF TRUTH)
+        if (inward_s_no) {
+          await new Promise((resolve, reject) =>
+            db.query(
+              `
+              UPDATE inward_records
+              SET
+                reply_sent_date = ?,
+                reply_ref_no    = ?,
+                reply_sent_by   = ?,
+                reply_sent_in   = ?,
+                reply_count     = ?,
+                reply_required  = 'Yes'
+              WHERE s_no = ?
+              `,
+              [
+                data.reply_sent_date || null,
+                data.reply_ref_no || null,
+                data.reply_sent_by || null,
+                data.reply_sent_in || null,
+                safeReplyCount,
+                inward_s_no
+              ],
+              (err) => (err ? reject(err) : resolve())
+            )
+          );
+        }
+        
         success = true;
         break;
       } catch (err) {
