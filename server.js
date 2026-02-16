@@ -1089,6 +1089,81 @@ app.delete("/admin/users/delete/:id", requireAdmin, (req, res) => {
 });
 
 
+// =============================================
+// DASHBOARD  (GLOBAL + MONTHLY)
+// =============================================
+app.get("/dashboard/summary", requireLogin, async (req, res) => {
+  try {
+    const { month, year } = req.query;
+
+    let start = null;
+    let end = null;
+
+    // If month & year provided → monthly mode
+    if (month && year) {
+      const range = getMonthDateRange(Number(year), Number(month));
+      start = range.start;
+      end = range.end;
+    }
+
+    // -------- INWARD QUERY --------
+    let inwardSql = `
+      SELECT * FROM inward_records
+    `;
+    let inwardParams = [];
+
+    if (start && end) {
+      inwardSql += `
+        WHERE date_of_receipt >= ? AND date_of_receipt < ?
+      `;
+      inwardParams.push(start, end);
+    }
+
+    inwardSql += ` ORDER BY s_no DESC`;
+
+    const inwardRows = await dbQuery(inwardSql, inwardParams);
+
+    // -------- OUTWARD QUERY --------
+    let outwardSql = `
+      SELECT * FROM outward_records
+    `;
+    let outwardParams = [];
+
+    if (start && end) {
+      outwardSql += `
+        WHERE date_of_despatch >= ? AND date_of_despatch < ?
+      `;
+      outwardParams.push(start, end);
+    }
+
+    outwardSql += ` ORDER BY s_no DESC`;
+
+    const outwardRows = await dbQuery(outwardSql, outwardParams);
+
+    // -------- COUNTS --------
+    const totalInwards = inwardRows.length;
+    const totalOutwards = outwardRows.length;
+
+    const repliesPending = inwardRows.filter(r =>
+      r.reply_required === "Yes" && !r.reply_sent_date
+    ).length;
+
+    res.json({
+      totalInwards,
+      totalOutwards,
+      repliesPending,
+      inwards: inwardRows,
+      outwards: outwardRows
+    });
+
+  } catch (err) {
+    console.error("Dashboard summary error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+
+
 
 // =============================================
 // ADMIN — REPORT DATA API 

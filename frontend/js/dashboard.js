@@ -73,7 +73,106 @@
 
 
   /* ---------------------------
-     LOAD INWARD RECORDS
+    LOAD DASHBOARD (GLOBAL / MONTHLY)
+  --------------------------- */
+  async function loadDashboard(month = null, year = null) {
+    try {
+
+      let url = "/dashboard/summary";
+
+      if (month && year) {
+        url += `?month=${month}&year=${year}`;
+      }
+
+      // ===== CONTROL TABLE SCROLL =====
+      const inwardScroll = document.querySelector("#inwardsTable")?.closest(".table-scroll");
+      const outwardScroll = document.querySelector("#outwardsTable")?.closest(".table-scroll");
+
+      if (month && year) {
+        if (inwardScroll) inwardScroll.style.maxHeight = "400px";
+        if (outwardScroll) outwardScroll.style.maxHeight = "400px";
+      } else {
+        if (inwardScroll) inwardScroll.style.maxHeight = "none";
+        if (outwardScroll) outwardScroll.style.maxHeight = "none";
+      }
+
+
+      const res = await fetch(url);
+      const data = await res.json();
+
+      // Update Cards
+      document.getElementById("totalInwards").textContent = data.totalInwards;
+      document.getElementById("totalOutwards").textContent = data.totalOutwards;
+      document.getElementById("repliesPending").textContent = data.repliesPending;
+
+      // Render Inwards
+      const inwardTbody = document.getElementById("inwardsTbody");
+
+      if (!data.inwards.length) {
+        inwardTbody.innerHTML = `
+          <tr>
+            <td colspan="4" style="text-align:center; padding:20px; color:#999;">
+              No records found.
+            </td>
+          </tr>`;
+      } else {
+
+        const rowsToShow = (month && year)
+          ? data.inwards
+          : data.inwards.slice(0, 5);
+
+        inwardTbody.innerHTML = rowsToShow.map(r => {
+
+          const isPending =
+            r.reply_required === "Yes" && !r.reply_sent_date;
+
+          return `
+            <tr ${isPending ? 'style="background:#fff3cd;"' : ''}>
+              <td><strong>${r.inward_no}</strong></td>
+              <td>${formatDate(r.date_of_receipt)}</td>
+              <td>${r.name_of_sender}</td>
+              <td>${r.received_in}</td>
+            </tr>
+          `;
+        }).join("");
+      }
+
+      // Render Outwards
+      const outwardTbody = document.getElementById("outwardsTbody");
+
+      if (!data.outwards.length) {
+        outwardTbody.innerHTML = `
+          <tr>
+            <td colspan="4" style="text-align:center; padding:20px; color:#999;">
+              No records found.
+            </td>
+          </tr>`;
+      } else {
+
+        const rowsToShow = (month && year)
+          ? data.outwards
+          : data.outwards.slice(0, 5);
+
+        outwardTbody.innerHTML = rowsToShow.map(r => `
+          <tr>
+            <td><strong>${r.outward_no}</strong></td>
+            <td>${formatDate(r.date_of_despatch)}</td>
+            <td>${r.name_of_receiver}</td>
+            <td>${r.reply_from}</td>
+          </tr>
+        `).join("");
+      }
+
+    } catch (err) {
+      console.error("loadDashboard error:", err);
+    }
+  }
+
+  window.loadDashboard = loadDashboard;
+
+
+  /* ---------------------------
+    LOAD INWARD RECORDS
   --------------------------- */
   async function loadInwardRecords() {
     try {
@@ -227,8 +326,7 @@
     if (page === "dashboard") {
       dashboardView.style.display = "block";
       setActiveMenuItem("dashboard");
-      loadInwardRecords();
-      loadOutwardRecords();
+      loadDashboard();
       return;
     }
 
@@ -386,6 +484,21 @@ if (emailsBackBtn) {
 })();
 
 
+// Populate dashboard year dropdown for dashboard report filtering 
+(function initDashboardYear() {
+  const sel = document.getElementById("dashYear");
+  if (!sel) return;
+  const now = new Date().getFullYear();
+  for (let y = now + 2; y >= now - 5; y--) {
+    const o = document.createElement("option");
+    o.value = y;
+    o.textContent = y;
+    sel.appendChild(o);
+  }
+})();
+
+
+
 
 
 // Save notings
@@ -485,6 +598,33 @@ document.getElementById("saveEmailsBtn")?.addEventListener("click", () => {
       msg.textContent = "Server error";
       msg.style.color = "red";
     });
+});
+
+
+// Dashboard Filter Apply
+document.getElementById("dashFilterBtn")?.addEventListener("click", () => {
+  const month = document.getElementById("dashMonth").value;
+  const year = document.getElementById("dashYear").value;
+
+  console.log("Selected:", month, year);
+
+  if (!month || !year) {
+    alert("Select Month and Year");
+    return;
+  }
+
+  document.getElementById("dashFilterLabel").textContent =
+    `Showing Data For: ${document.getElementById("dashMonth").selectedOptions[0].text} ${year}`;
+
+  loadDashboard(month, year);
+});
+
+// Dashboard Filter Clear
+document.getElementById("dashClearBtn")?.addEventListener("click", () => {
+  document.getElementById("dashMonth").value = "";
+  document.getElementById("dashYear").value = "";
+  document.getElementById("dashFilterLabel").textContent = "";
+  loadDashboard(); // back to global
 });
 
 

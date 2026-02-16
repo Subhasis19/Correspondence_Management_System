@@ -83,6 +83,37 @@
                     <p class="subtitle">Manage inward and outward correspondence</p>
                 </div>
 
+        <!-- Dashboard Filter -->
+        <div style="display:flex; gap:10px; margin-top:15px; align-items:center;">
+            
+            <select id="dashMonth" style="padding:6px;">
+                <option value="">Select Month</option>
+                <option value="1">January</option>
+                <option value="2">February</option>
+                <option value="3">March</option>
+                <option value="4">April</option>
+                <option value="5">May</option>
+                <option value="6">June</option>
+                <option value="7">July</option>
+                <option value="8">August</option>
+                <option value="9">September</option>
+                <option value="10">October</option>
+                <option value="11">November</option>
+                <option value="12">December</option>
+            </select>
+
+            <select id="dashYear" style="padding:6px;">
+                <option value="">Select Year</option>
+            </select>
+
+            <button id="dashFilterBtn" class="btn-small">Apply</button>
+            <button id="dashClearBtn" class="btn-small" style="background:#888;">Clear</button>
+
+            <span id="dashFilterLabel" style="margin-left:10px; font-weight:600; color:#444;"></span>
+
+        </div>
+
+
                 <div class="quick-stats">
                     <div class="stat-card">
                         <i class="fa-solid fa-file-import"></i>
@@ -99,6 +130,15 @@
                             <p class="stat-value" id="totalOutwards">0</p>
                         </div>
                     </div>
+
+                    <div class="stat-card">
+                        <i class="fa-solid fa-clock"></i>
+                        <div>
+                            <p class="stat-label">Replies Pending</p>
+                            <p class="stat-value" id="repliesPending">0</p>
+                        </div>
+                    </div>
+
                 </div>
             </div>
 
@@ -111,6 +151,7 @@
                     </div>
 
                     <div class="card-body">
+                        <div class="table-scroll">
                         <table class="records-table" id="inwardsTable">
                             <thead>
                                 <tr>
@@ -128,6 +169,7 @@
                                 </tr>
                             </tbody>
                         </table>
+                        </div>
                     </div>
                 </div>
 
@@ -138,6 +180,7 @@
                     </div>
 
                     <div class="card-body">
+                        <div class="table-scroll">
                         <table class="records-table" id="outwardsTable">
                             <thead>
                                 <tr>
@@ -155,6 +198,7 @@
                                 </tr>
                             </tbody>
                         </table>
+                        </div>
                     </div>
                 </div>
 

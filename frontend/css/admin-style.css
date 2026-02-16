@@ -481,3 +481,8 @@ body {
   box-shadow: 0 0 0 3px rgba(106, 160, 255, 0.15);
   background-color: #fff;
 }
+
+.table-scroll {
+  /* max-height: 400px; */
+  overflow-y: auto;
+}
