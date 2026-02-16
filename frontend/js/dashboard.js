@@ -128,7 +128,10 @@
 
           return `
             <tr ${isPending ? 'style="background:#fff3cd;"' : ''}>
-              <td><strong>${r.inward_no}</strong></td>
+              <td>
+                <strong>${r.inward_no}</strong>
+                ${isPending ? `<span class="pending-badge">Pending</span>` : ''}
+              </td>
               <td>${formatDate(r.date_of_receipt)}</td>
               <td>${r.name_of_sender}</td>
               <td>${r.received_in}</td>
@@ -195,7 +198,11 @@
 
       tbody.innerHTML = rows.slice(0, 5).map(r => `
         <tr>
-          <td><strong>${r.inward_no}</strong></td>
+          <td>
+            <strong>${r.inward_no}</strong>
+            ${isPending ? `<span class="pending-badge">Pending</span>` : ''}
+          </td>
+
           <td>${formatDate(r.date_of_receipt)}</td>
           <td>${r.name_of_sender}</td>
           <td>${r.received_in}</td>
