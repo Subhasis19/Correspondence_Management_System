@@ -699,6 +699,31 @@ app.get("/inward/all", requireLogin, (req, res) => {
   });
 });
 
+// =========================
+// INWARD DETAILS (FOR MODAL)
+// =========================
+app.get("/inward/details/:id", requireLogin, async (req, res) => {
+  try {
+    const id = req.params.id;
+
+    const rows = await dbQuery(
+      "SELECT * FROM inward_records WHERE s_no = ? LIMIT 1",
+      [id]
+    );
+
+    if (!rows.length) {
+      return res.status(404).json({ message: "Record not found" });
+    }
+
+    res.json(rows[0]);
+
+  } catch (err) {
+    console.error("Inward details error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+
 
 // OUTWARD: LIVE SEARCH BY inward_no + AUTO-FILL
 app.get("/api/inward/search", requireLogin, (req, res) => {

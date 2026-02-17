@@ -127,7 +127,11 @@
             r.reply_required === "Yes" && !r.reply_sent_date;
 
           return `
-            <tr ${isPending ? 'style="background:#fff3cd;"' : ''}>
+              <tr 
+                class="record-row ${isPending ? 'pending-row' : ''}"
+                data-type="inward"
+                data-id="${r.s_no}"
+              >
               <td>
                 <strong>${r.inward_no}</strong>
                 ${isPending ? `<span class="pending-badge">Pending</span>` : ''}
@@ -157,7 +161,11 @@
           : data.outwards.slice(0, 5);
 
         outwardTbody.innerHTML = rowsToShow.map(r => `
-          <tr>
+            <tr 
+              class="record-row"
+              data-type="outward"
+              data-id="${r.s_no}"
+            >
             <td><strong>${r.outward_no}</strong></td>
             <td>${formatDate(r.date_of_despatch)}</td>
             <td>${r.name_of_receiver}</td>
@@ -202,7 +210,8 @@
         r.reply_required === "Yes" && !r.reply_sent_date;
 
       return `
-        <tr ${isPending ? 'style="background:#fff3cd;"' : ''}>
+          <tr data-id="${r.s_no}" class="inward-row"
+            ${isPending ? 'style="background:#fff3cd;"' : ''}>
           <td>
             <strong>${r.inward_no}</strong>
             ${isPending ? `<span class="pending-badge">Pending</span>` : ''}
@@ -468,7 +477,79 @@ if (emailsBackBtn) {
   loadPage("dashboard");
   setActiveMenuItem("dashboard");
 
-})();
+    document.addEventListener("click", async (e) => {
+      const row = e.target.closest(".record-row");
+      if (!row) return;
+
+      const id = row.dataset.id;
+      const type = row.dataset.type;
+
+      if (!id || !type) return;
+
+      try {
+        if (type === "inward") {
+          const res = await fetch(`/inward/details/${id}`);
+          const data = await res.json();
+
+          document.getElementById("inwardModalContent").innerHTML = `
+            <p><strong>Inward No:</strong> ${data.inward_no}</p>
+            <p><strong>Date of Receipt:</strong> ${formatDate(data.date_of_receipt)}</p>
+            <p><strong>Month:</strong> ${data.month || "-"}</p>
+            <p><strong>Year:</strong> ${data.year || "-"}</p>
+            <p><strong>Office:</strong> ${data.received_in}</p>
+
+            <hr>
+
+            <p><strong>Sender Name:</strong> ${data.name_of_sender || "-"}</p>
+            <p><strong>Address:</strong> ${data.address_of_sender || "-"}</p>
+            <p><strong>City:</strong> ${data.sender_city || "-"}</p>
+            <p><strong>State:</strong> ${data.sender_state || "-"}</p>
+            <p><strong>PIN:</strong> ${data.sender_pin || "-"}</p>
+            <p><strong>Region:</strong> ${data.sender_region || "-"}</p>
+            <p><strong>Organisation Type:</strong> ${data.sender_org_type || "-"}</p>
+
+            <hr>
+
+            <p><strong>Document Type:</strong> ${data.type_of_document}</p>
+            <p><strong>Language:</strong> ${data.language_of_document}</p>
+            <p><strong>Document Count:</strong> ${data.count}</p>
+            <p><strong>Remarks:</strong> ${data.remarks || "-"}</p>
+            <p><strong>Issued To:</strong> ${data.issued_to || "-"}</p>
+
+            <hr>
+
+            <p><strong>Reply Required:</strong> ${data.reply_required}</p>
+            <p><strong>Reply Sent Date:</strong> ${
+              data.reply_sent_date
+                ? new Date(data.reply_sent_date).toLocaleDateString("en-IN")
+                : "-"
+            }</p>
+            <p><strong>Reply Reference No:</strong> ${data.reply_ref_no || "-"}</p>
+            <p><strong>Reply Sent By:</strong> ${data.reply_sent_by || "-"}</p>
+            <p><strong>Reply Language:</strong> ${data.reply_sent_in || "-"}</p>
+            <p><strong>Reply Count:</strong> ${data.reply_count || 0}</p>
+          `;
+
+          document.getElementById("inwardModal").style.display = "flex";
+        }
+
+      } catch (err) {
+        console.error("Modal error:", err);
+      }
+    });
+
+    document.getElementById("closeInwardModal")?.addEventListener("click", () => {
+    document.getElementById("inwardModal").style.display = "none";
+    });
+
+    // Close when clicking outside modal
+    document.getElementById("inwardModal")?.addEventListener("click", (e) => {
+      if (e.target.id === "inwardModal") {
+        document.getElementById("inwardModal").style.display = "none";
+      }
+    });
+
+  })();
 
 
 // Populate year dropdown
@@ -639,5 +720,10 @@ document.getElementById("dashClearBtn")?.addEventListener("click", () => {
   document.getElementById("dashFilterLabel").textContent = "";
   loadDashboard(); // back to global
 });
+
+
+
+
+
 
 
