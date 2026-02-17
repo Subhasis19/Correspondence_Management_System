@@ -196,18 +196,24 @@
         return;
       }
 
-      tbody.innerHTML = rows.slice(0, 5).map(r => `
-        <tr>
+      tbody.innerHTML = rows.slice(0, 5).map(r => {
+
+      const isPending =
+        r.reply_required === "Yes" && !r.reply_sent_date;
+
+      return `
+        <tr ${isPending ? 'style="background:#fff3cd;"' : ''}>
           <td>
             <strong>${r.inward_no}</strong>
             ${isPending ? `<span class="pending-badge">Pending</span>` : ''}
           </td>
-
           <td>${formatDate(r.date_of_receipt)}</td>
           <td>${r.name_of_sender}</td>
           <td>${r.received_in}</td>
         </tr>
-      `).join("");
+      `;
+    }).join("");
+
 
     } catch (err) {
       console.error("loadInwardRecords:", err);
