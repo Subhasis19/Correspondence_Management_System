@@ -723,6 +723,31 @@ app.get("/inward/details/:id", requireLogin, async (req, res) => {
   }
 });
 
+// =============================================
+// OUTWARD DETAILS
+// =============================================
+app.get("/outward/details/:id", requireLogin, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const rows = await dbQuery(
+      "SELECT * FROM outward_records WHERE s_no = ? LIMIT 1",
+      [id]
+    );
+
+    if (!rows.length) {
+      return res.status(404).json({ message: "Outward record not found" });
+    }
+
+    res.json(rows[0]);
+
+  } catch (err) {
+    console.error("Outward details error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+
 
 
 // OUTWARD: LIVE SEARCH BY inward_no + AUTO-FILL

@@ -488,6 +488,7 @@ if (emailsBackBtn) {
 
       try {
         if (type === "inward") {
+          document.getElementById("modalTitle").textContent = "Inward Details";
           const res = await fetch(`/inward/details/${id}`);
           const data = await res.json();
 
@@ -528,10 +529,64 @@ if (emailsBackBtn) {
             <p><strong>Reply Sent By:</strong> ${data.reply_sent_by || "-"}</p>
             <p><strong>Reply Language:</strong> ${data.reply_sent_in || "-"}</p>
             <p><strong>Reply Count:</strong> ${data.reply_count || 0}</p>
+            <p><strong>Created At:</strong> ${formatDate(data.created_at)}</p>
           `;
 
           document.getElementById("inwardModal").style.display = "flex";
         }
+
+        else if (type === "outward") {
+          document.getElementById("modalTitle").textContent = "Outward Details";
+          const res = await fetch(`/outward/details/${id}`);
+          const data = await res.json();
+
+          document.getElementById("inwardModalContent").innerHTML = `
+            <p><strong>Outward No:</strong> ${data.outward_no}</p>
+            <p><strong>Date of Despatch:</strong> ${formatDate(data.date_of_despatch)}</p>
+            <p><strong>Month:</strong> ${data.month || "-"}</p>
+            <p><strong>Year:</strong> ${data.year || "-"}</p>
+            <p><strong>Reply From (Office):</strong> ${data.reply_from || "-"}</p>
+
+            <hr>
+
+            <p><strong>Receiver Name:</strong> ${data.name_of_receiver || "-"}</p>
+            <p><strong>Address:</strong> ${data.address_of_receiver || "-"}</p>
+            <p><strong>City:</strong> ${data.receiver_city || "-"}</p>
+            <p><strong>State:</strong> ${data.receiver_state || "-"}</p>
+            <p><strong>PIN:</strong> ${data.receiver_pin || "-"}</p>
+            <p><strong>Region:</strong> ${data.receiver_region || "-"}</p>
+            <p><strong>Organisation Type:</strong> ${data.receiver_org_type || "-"}</p>
+
+            <hr>
+
+            <p><strong>Document Type:</strong> ${data.type_of_document || "-"}</p>
+            <p><strong>Language:</strong> ${data.language_of_document || "-"}</p>
+            <p><strong>Document Count:</strong> ${data.count || 0}</p>
+
+            <hr>
+
+            <p><strong>Linked Inward No:</strong> ${data.inward_no || "-"}</p>
+
+            <hr>
+
+            <p><strong>Reply Issued By:</strong> ${data.reply_issued_by || "-"}</p>
+            <p><strong>Reply Sent Date:</strong> ${
+              data.reply_sent_date ? formatDate(data.reply_sent_date) : "-"
+            }</p>
+            <p><strong>Reply Reference No:</strong> ${data.reply_ref_no || "-"}</p>
+            <p><strong>Reply Sent By:</strong> ${data.reply_sent_by || "-"}</p>
+            <p><strong>Reply Language:</strong> ${data.reply_sent_in || "-"}</p>
+            <p><strong>Reply Count:</strong> ${data.reply_count || 0}</p>
+
+            <hr>
+
+            <p><strong>Group Name:</strong> ${data.group_name || "-"}</p>
+            <p><strong>Created At:</strong> ${formatDate(data.created_at)}</p>
+          `;
+
+          document.getElementById("inwardModal").style.display = "flex";
+        }
+
 
       } catch (err) {
         console.error("Modal error:", err);
