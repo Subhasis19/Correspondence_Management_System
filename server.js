@@ -1158,7 +1158,12 @@ app.get("/dashboard/summary", requireLogin, async (req, res) => {
 
     // -------- INWARD QUERY --------
     let inwardSql = `
-      SELECT * FROM inward_records
+      SELECT 
+        i.*,
+        o.s_no AS has_outward
+      FROM inward_records i
+      LEFT JOIN outward_records o
+        ON i.s_no = o.inward_s_no
     `;
     let inwardParams = [];
 
@@ -1195,7 +1200,7 @@ app.get("/dashboard/summary", requireLogin, async (req, res) => {
     const totalOutwards = outwardRows.length;
 
     const repliesPending = inwardRows.filter(r =>
-      r.reply_required === "Yes" && !r.reply_sent_date
+        r.reply_required === "Yes" && !r.has_outward
     ).length;
 
     res.json({

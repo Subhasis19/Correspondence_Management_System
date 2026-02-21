@@ -207,7 +207,7 @@
       tbody.innerHTML = rows.slice(0, 5).map(r => {
 
       const isPending =
-        r.reply_required === "Yes" && !r.reply_sent_date;
+        r.reply_required === "Yes" && !r.has_outward;
 
       return `
           <tr data-id="${r.s_no}" class="inward-row"
