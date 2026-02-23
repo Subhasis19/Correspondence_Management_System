@@ -763,6 +763,7 @@ app.get("/api/inward/search", requireLogin, (req, res) => {
       date_of_receipt, received_in,
       type_of_document,
       language_of_document,
+      count,
       DATE_FORMAT(reply_sent_date, '%Y-%m-%d') AS reply_sent_date,  
       issued_to AS reply_issued_by
     FROM inward_records
@@ -878,7 +879,6 @@ if (data.reply_required === "No") {
               data.date_of_despatch, data.month, data.year, data.reply_from,
               data.name_of_receiver, data.address_of_receiver, data.receiver_city,
               data.receiver_state, data.receiver_pin, data.receiver_region, data.receiver_org_type,
-              // outward_no, data.type_of_document, data.language_of_document, safeCount,
               outward_no, finalDocumentType, data.language_of_document, safeCount,
               data.inward_no || null, inward_s_no, data.reply_issued_by,
               data.reply_sent_date || null, data.reply_ref_no, data.reply_sent_by,
@@ -945,6 +945,218 @@ app.get("/outward/all", requireLogin, (req, res) => {
   });
 });
 
+// =============================================
+// ADMIN — UPDATE INWARD
+// =============================================
+app.post("/inward/update/:id", requireAdmin, async (req, res) => {
+  try {
+    const id = req.params.id;
+    const data = req.body;
+
+    // Required validation (same as add)
+    const requiredFields = [
+      { key: "date_of_receipt", label: "Inward Date" },
+      { key: "received_in", label: "Office" },
+      { key: "name_of_sender", label: "Sender Name" },
+      { key: "type_of_document", label: "Document Type" },
+      { key: "reply_required", label: "Reply Required" }
+    ];
+
+    for (const field of requiredFields) {
+      if (!data[field.key] || String(data[field.key]).trim() === "") {
+        return res.status(400).send(`${field.label} is required`);
+      }
+    }
+
+    // Normalize document type
+    let finalDocumentType = data.type_of_document;
+    if (finalDocumentType === "Other Document") {
+      finalDocumentType = data.other_document?.trim();
+      if (!finalDocumentType) {
+        return res.status(400).send("Please specify Other Document type");
+      }
+    }
+
+    if (!/^\d{6}$/.test(data.sender_pin))
+      return res.status(400).send("Invalid PIN");
+
+    const safeCount = Math.max(0, Number(data.count) || 0);
+
+    await dbQuery(
+      `
+      UPDATE inward_records
+      SET
+        date_of_receipt = ?,
+        month = ?,
+        year = ?,
+        received_in = ?,
+        name_of_sender = ?,
+        address_of_sender = ?,
+        sender_city = ?,
+        sender_state = ?,
+        sender_pin = ?,
+        sender_region = ?,
+        sender_org_type = ?,
+        type_of_document = ?,
+        language_of_document = ?,
+        count = ?,
+        remarks = ?,
+        issued_to = ?,
+        reply_required = ?
+      WHERE s_no = ?
+      `,
+      [
+        data.date_of_receipt,
+        data.month,
+        data.year,
+        data.received_in,
+        data.name_of_sender,
+        data.address_of_sender,
+        data.sender_city,
+        data.sender_state,
+        data.sender_pin,
+        data.sender_region,
+        data.sender_org_type,
+        finalDocumentType,
+        data.language_of_document,
+        safeCount,
+        data.remarks,
+        data.issued_to,
+        data.reply_required,
+        id
+      ]
+    );
+
+    res.send(`
+      <h3 style="text-align:center;">Inward Entry Updated</h3>
+      <p style="text-align:center;"><a href="/dashboard.html">Back to Dashboard</a></p>
+    `);
+
+  } catch (err) {
+    console.error("Inward update error:", err);
+    res.status(500).send("Server error");
+  }
+});
+
+
+// =============================================
+// ADMIN — UPDATE OUTWARD
+// =============================================
+app.post("/outward/update/:id", requireAdmin, async (req, res) => {
+  try {
+    const id = req.params.id;
+    const data = req.body;
+
+    // Get existing outward
+    const existingRows = await dbQuery(
+      "SELECT inward_s_no FROM outward_records WHERE s_no = ? LIMIT 1",
+      [id]
+    );
+
+    if (!existingRows.length) {
+      return res.status(404).send("Outward record not found");
+    }
+
+    const inward_s_no = existingRows[0].inward_s_no;
+
+    // Normalize document type
+    let finalDocumentType = data.type_of_document;
+    if (finalDocumentType === "Other Document") {
+      finalDocumentType = data.other_document?.trim();
+      if (!finalDocumentType) {
+        return res.status(400).send("Please specify Other Document type");
+      }
+    }
+
+    const safeCount = Math.max(0, Number(data.count) || 0);
+    const safeReplyCount = Math.max(0, Number(data.reply_count) || 0);
+
+    // Update outward record
+    await dbQuery(
+      `
+      UPDATE outward_records
+      SET
+        date_of_despatch = ?,
+        month = ?,
+        year = ?,
+        reply_from = ?,
+        name_of_receiver = ?,
+        address_of_receiver = ?,
+        receiver_city = ?,
+        receiver_state = ?,
+        receiver_pin = ?,
+        receiver_region = ?,
+        receiver_org_type = ?,
+        type_of_document = ?,
+        language_of_document = ?,
+        count = ?,
+        reply_issued_by = ?,
+        reply_sent_date = ?,
+        reply_ref_no = ?,
+        reply_sent_by = ?,
+        reply_sent_in = ?,
+        reply_count = ?
+      WHERE s_no = ?
+      `,
+      [
+        data.date_of_despatch,
+        data.month,
+        data.year,
+        data.reply_from,
+        data.name_of_receiver,
+        data.address_of_receiver,
+        data.receiver_city,
+        data.receiver_state,
+        data.receiver_pin,
+        data.receiver_region,
+        data.receiver_org_type,
+        finalDocumentType,
+        data.language_of_document,
+        safeCount,
+        data.reply_issued_by,
+        data.reply_sent_date || null,
+        data.reply_ref_no,
+        data.reply_sent_by,
+        data.reply_sent_in,
+        safeReplyCount,
+        id
+      ]
+    );
+
+    // 🔁 AUTO-UPDATE LINKED INWARD (same logic as add)
+    if (inward_s_no) {
+      await dbQuery(
+        `
+        UPDATE inward_records
+        SET
+          reply_sent_date = ?,
+          reply_ref_no = ?,
+          reply_sent_by = ?,
+          reply_sent_in = ?,
+          reply_count = ?
+        WHERE s_no = ?
+        `,
+        [
+          data.reply_sent_date || null,
+          data.reply_ref_no || null,
+          data.reply_sent_by || null,
+          data.reply_sent_in || null,
+          safeReplyCount,
+          inward_s_no
+        ]
+      );
+    }
+
+    res.send(`
+      <h3 style="text-align:center;">Outward Entry Updated</h3>
+      <p style="text-align:center;"><a href="/dashboard.html">Back to Dashboard</a></p>
+    `);
+
+  } catch (err) {
+    console.error("Outward update error:", err);
+    res.status(500).send("Server error");
+  }
+});
 
 // =========================
 // NOTINGS: SAVE MONTHLY DATA

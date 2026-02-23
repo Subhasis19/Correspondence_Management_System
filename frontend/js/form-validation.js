@@ -621,6 +621,7 @@ window.addEventListener("DOMContentLoaded", () => {
       receiver_org_type: r.sender_org_type,
       type_of_document: r.type_of_document,
       language_of_document: r.language_of_document,
+      count: r.count, 
       reply_issued_by: r.reply_issued_by,
       // reply_sent_date: r.reply_sent_date 
       reply_sent_date: r.reply_sent_date
@@ -722,3 +723,27 @@ window.addEventListener("DOMContentLoaded", () => {
     }
   });
 });
+
+// ==================================================
+// APPLY DOCUMENT TYPE (USED IN EDIT MODE)
+// ==================================================
+function applyDocumentType(selectId, wrapperId, inputId, dbValue) {
+  const docSelect = document.getElementById(selectId);
+  const otherWrap = document.getElementById(wrapperId);
+  const otherInput = document.getElementById(inputId);
+
+  if (!docSelect || !otherWrap || !otherInput) return;
+  if (!dbValue) return;
+
+  if (["Letter", "Bill"].includes(dbValue)) {
+    docSelect.value = dbValue;
+    otherWrap.style.display = "none";
+    otherInput.value = "";
+    otherInput.removeAttribute("required");
+  } else {
+    docSelect.value = "Other Document";
+    otherWrap.style.display = "block";
+    otherInput.value = dbValue;
+    otherInput.setAttribute("required", "required");
+  }
+}

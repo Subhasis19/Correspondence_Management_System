@@ -289,5 +289,65 @@
     </script>
 
 
+    <script>
+        (function () {
+
+          const urlParams = new URLSearchParams(window.location.search);
+          const editId = urlParams.get("id");
+
+          if (!editId) return; // Normal add mode
+
+          const form = document.getElementById("outwardForm");
+          const submitBtn = form.querySelector("button[type='submit']");
+
+          // Change form action
+          form.action = `/outward/update/${editId}`;
+
+          // Change button text
+          submitBtn.textContent = "Update Outward Entry";
+
+          // Change title
+          document.getElementById("formTitle").textContent = "Edit Outward Entry";
+
+          // Fetch existing data
+          fetch(`/outward/details/${editId}`)
+            .then(res => res.json())
+            .then(data => {
+
+              Object.keys(data).forEach(key => {
+                const field = form.querySelector(`[name="${key}"]`);
+                if (!field) return;
+
+                // SPECIAL HANDLING FOR TYPE OF DOCUMENT
+                if (key === "type_of_document") {
+                  applyDocumentType(
+                    "type_of_document",
+                    "otherDocWrapperOutward",
+                    "other_document_outward",
+                    data[key]
+                  );
+                  return;
+                }
+
+                if (field.type === "date" && data[key]) {
+                  field.value = data[key].split("T")[0];
+                } else {
+                  field.value = data[key] ?? "";
+                }
+              });
+
+              // Month/Year auto-fill
+              const dateInput = document.getElementById("outwardDate");
+              if (dateInput && dateInput.value) {
+                dateInput.dispatchEvent(new Event("change"));
+              }
+
+            })
+            .catch(err => {
+              console.error("Edit load error:", err);
+            });
+
+        })();
+    </script>
   </body>
 </html>
