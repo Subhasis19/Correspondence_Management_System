@@ -346,8 +346,9 @@
     }
 
     // Public function connecting points: called by dashboard.js when admin panel opens
-    window.__adminPanelLoadUsers = loadUsers; // expose for dashboard to call
-
+    window.__adminPanelLoadUsers = function () {
+    loadUsers();
+};
     // Init
     document.addEventListener("DOMContentLoaded", () => {
         initAddUserBtn();
@@ -357,8 +358,175 @@
         if (document.getElementById("adminPanelView")?.style.display !== "none") {
             loadUsers();
         }
+
+        const searchBtn = document.getElementById("adminInwardSearchBtn");
+        const searchInput = document.getElementById("adminInwardSearchInput");
+
+        if (searchBtn && searchInput) {
+
+          searchBtn.addEventListener("click", () => {
+            searchAdminInwards(searchInput.value.trim());
+          });
+
+          searchInput.addEventListener("keypress", (e) => {
+            if (e.key === "Enter") {
+              searchAdminInwards(searchInput.value.trim());
+            }
+          });
+
+        }
+
+        const outwardSearchBtn = document.getElementById("adminOutwardSearchBtn");
+        const outwardSearchInput = document.getElementById("adminOutwardSearchInput");
+
+        if (outwardSearchBtn && outwardSearchInput) {
+
+          outwardSearchBtn.addEventListener("click", () => {
+            searchAdminOutwards(outwardSearchInput.value.trim());
+          });
+
+          outwardSearchInput.addEventListener("keypress", (e) => {
+            if (e.key === "Enter") {
+              searchAdminOutwards(outwardSearchInput.value.trim());
+            }
+          });
+
+        }
+
     });
 
     // Also try to automatically attach a click observer in case admin view is shown later
     // (Dashboard will call window.__adminPanelLoadUsers when it shows admin view)
 })();
+
+
+// ===============================
+// ADMIN EDIT BUTTON HANDLER
+// ===============================
+document.addEventListener("click", function (e) {
+
+    // Edit inward
+    const inwardBtn = e.target.closest(".edit-inward-btn");
+    if (inwardBtn) {
+        const id = inwardBtn.dataset.id;
+        document.getElementById("formFrame").src = `/inward?id=${id}`;
+        document.getElementById("iframeContainer").style.display = "block";
+        document.getElementById("dashboardView").style.display = "none";
+        document.getElementById("adminPanelView").style.display = "none";
+        return;
+    }
+
+    // Edit outward
+    const outwardBtn = e.target.closest(".edit-outward-btn");
+    if (outwardBtn) {
+        const id = outwardBtn.dataset.id;
+        document.getElementById("formFrame").src = `/outward?id=${id}`;
+        document.getElementById("iframeContainer").style.display = "block";
+        document.getElementById("dashboardView").style.display = "none";
+        document.getElementById("adminPanelView").style.display = "none";
+        return;
+    }
+
+});
+
+/* ===============================
+   ADMIN SEARCH INWARD
+================================ */
+async function searchAdminInwards(query) {
+  const tbody = document.querySelector("#adminInwardTable tbody");
+
+  if (!query) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="4" style="text-align:center; padding:20px; color:#999;">
+          Please enter an Inward No.
+        </td>
+      </tr>`;
+    return;
+  }
+
+  try {
+    const res = await fetch(`/admin/inward/search?q=${encodeURIComponent(query)}`, {
+      credentials: "same-origin"
+    });
+
+    const rows = await res.json();
+
+    if (!rows.length) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="4" style="text-align:center; padding:20px; color:#999;">
+            No matching records found.
+          </td>
+        </tr>`;
+      return;
+    }
+
+    tbody.innerHTML = rows.map(r => `
+      <tr>
+        <td>${r.inward_no}</td>
+        <td>${r.date_of_receipt.split("T")[0]}</td>
+        <td>${r.received_in}</td>
+        <td>
+          <button class="btn-small edit-inward-btn" data-id="${r.s_no}">
+            Edit
+          </button>
+        </td>
+      </tr>
+    `).join("");
+
+  } catch (err) {
+    console.error("Search error:", err);
+  }
+}
+
+/* ===============================
+   ADMIN SEARCH OUTWARD
+================================ */
+async function searchAdminOutwards(query) {
+  const tbody = document.querySelector("#adminOutwardTable tbody");
+
+  if (!query) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="4" style="text-align:center; padding:20px; color:#999;">
+          Please enter an Outward No.
+        </td>
+      </tr>`;
+    return;
+  }
+
+  try {
+    const res = await fetch(`/admin/outward/search?q=${encodeURIComponent(query)}`, {
+      credentials: "same-origin"
+    });
+
+    const rows = await res.json();
+
+    if (!rows.length) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="4" style="text-align:center; padding:20px; color:#999;">
+            No matching records found.
+          </td>
+        </tr>`;
+      return;
+    }
+
+    tbody.innerHTML = rows.map(r => `
+      <tr>
+        <td>${r.outward_no}</td>
+        <td>${r.date_of_despatch.split("T")[0]}</td>
+        <td>${r.reply_from}</td>
+        <td>
+          <button class="btn-small edit-outward-btn" data-id="${r.s_no}">
+            Edit
+          </button>
+        </td>
+      </tr>
+    `).join("");
+
+  } catch (err) {
+    console.error("Search error:", err);
+  }
+}

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard </title>
+    <title>Dashboard </title>
 
     <!-- Main dashboard CSS -->
     <link rel="stylesheet" href="css/admin-style.css">
@@ -256,6 +256,84 @@
         </table>
     </div>
 
+
+    <!-- ================================
+        SEARCH INWARD (ADMIN)
+    ================================ -->
+    <div class="card" style="margin-top:24px;">
+    <div class="card-header">
+        <h3>Search Inward Record</h3>
+    </div>
+
+    <div style="display:flex; gap:10px; margin-bottom:15px;">
+        <input 
+        type="text" 
+        id="adminInwardSearchInput" 
+        placeholder="Enter Inward No (e.g. INW/2026/123456)"
+        style="flex:1; padding:8px;"
+        >
+        <button class="btn-small" id="adminInwardSearchBtn">
+        Search
+        </button>
+    </div>
+
+    <table class="records-table" id="adminInwardTable">
+        <thead>
+        <tr>
+            <th>Inward No</th>
+            <th>Date</th>
+            <th>Office</th>
+            <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+            <td colspan="4" style="text-align:center; padding:20px; color:#999;">
+            No results. Please search.
+            </td>
+        </tr>
+        </tbody>
+    </table>
+    </div>
+
+    <!-- ================================
+        SEARCH OUTWARD (ADMIN)
+    ================================ -->
+    <div class="card" style="margin-top:24px;">
+    <div class="card-header">
+        <h3>Search Outward Record</h3>
+    </div>
+
+    <div style="display:flex; gap:10px; margin-bottom:15px;">
+        <input 
+        type="text" 
+        id="adminOutwardSearchInput" 
+        placeholder="Enter Outward No (e.g. OUTW/2026/123456)"
+        style="flex:1; padding:8px;"
+        >
+        <button class="btn-small" id="adminOutwardSearchBtn">
+        Search
+        </button>
+    </div>
+
+    <table class="records-table" id="adminOutwardTable">
+        <thead>
+        <tr>
+            <th>Outward No</th>
+            <th>Date</th>
+            <th>Office</th>
+            <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+            <td colspan="4" style="text-align:center; padding:20px; color:#999;">
+            No results. Please search.
+            </td>
+        </tr>
+        </tbody>
+    </table>
+    </div>
 
     
 <!-- Reports Card -->

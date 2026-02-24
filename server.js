@@ -699,6 +699,33 @@ app.get("/inward/all", requireLogin, (req, res) => {
   });
 });
 
+
+app.get("/admin/inward/search", requireAdmin, async (req, res) => {
+  try {
+    const q = (req.query.q || "").trim();
+
+    if (!q) {
+      return res.json([]);
+    }
+
+    const rows = await dbQuery(
+      `
+      SELECT *
+      FROM inward_records
+      WHERE inward_no LIKE ?
+      ORDER BY s_no DESC
+      LIMIT 50
+      `,
+      [`%${q}%`]
+    );
+
+    res.json(rows);
+
+  } catch (err) {
+    console.error("Admin inward search error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
 // =========================
 // INWARD DETAILS (FOR MODAL)
 // =========================
@@ -943,6 +970,34 @@ app.get("/outward/all", requireLogin, (req, res) => {
     if (err) return res.status(500).send("Error");
     res.json(rows);
   });
+});
+
+
+app.get("/admin/outward/search", requireAdmin, async (req, res) => {
+  try {
+    const q = (req.query.q || "").trim();
+
+    if (!q) {
+      return res.json([]);
+    }
+
+    const rows = await dbQuery(
+      `
+      SELECT *
+      FROM outward_records
+      WHERE outward_no LIKE ?
+      ORDER BY s_no DESC
+      LIMIT 50
+      `,
+      [`%${q}%`]
+    );
+
+    res.json(rows);
+
+  } catch (err) {
+    console.error("Admin outward search error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
 });
 
 // =============================================
