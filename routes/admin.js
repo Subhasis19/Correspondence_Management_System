@@ -4,7 +4,7 @@ const bcrypt = require("bcryptjs");
 const puppeteer = require("puppeteer");
 const fs = require("fs");
 const path = require("path");
-const db = require("../db");
+const { pool: db, dbQuery } = require("../db");
 const { requireAdmin } = require("../middlewares/authMiddleware");
 
 // =============================================
@@ -19,11 +19,6 @@ function getMonthDateRange(year, month) {
     };
 }
 
-function dbQuery(sql, params = []) {
-    return new Promise((resolve, reject) => {
-        db.query(sql, params, (err, rows) => (err ? reject(err) : resolve(rows)));
-    });
-}
 
 // =============================================
 // MASSIVE REPORT CALCULATION FUNCTION
@@ -146,6 +141,7 @@ router.post("/admin/report/data", requireAdmin, async (req, res) => {
 });
 
 router.post("/admin/report/pdf", requireAdmin, async (req, res) => {
+    let browser;
     try {
         const { html, filename } = req.body;
         if (!html || !filename) return res.status(400).json({ message: "Missing report HTML or filename" });
@@ -155,11 +151,10 @@ router.post("/admin/report/pdf", requireAdmin, async (req, res) => {
 
         const fullHtml = `<!DOCTYPE html><html><head><meta charset="UTF-8" /><style>${reportCss}</style></head><body>${html}</body></html>`;
 
-        const browser = await puppeteer.launch({ headless: "new", args: ["--no-sandbox", "--disable-setuid-sandbox"] });
+        browser = await puppeteer.launch({ headless: "new", args: ["--no-sandbox", "--disable-setuid-sandbox"] });
         const page = await browser.newPage();
         await page.setContent(fullHtml, { waitUntil: "networkidle0" });
         const pdfBuffer = await page.pdf({ format: "A4", printBackground: true, margin: { top: "20mm", bottom: "20mm", left: "15mm", right: "15mm" } });
-        await browser.close();
 
         res.setHeader("Content-Type", "application/pdf");
         res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
@@ -167,6 +162,11 @@ router.post("/admin/report/pdf", requireAdmin, async (req, res) => {
     } catch (err) {
         console.error("PDF generation error:", err);
         res.status(500).json({ message: "Failed to generate PDF" });
+    } finally {
+        // THIS ENSURES IT ALWAYS CLOSES, EVEN ON ERROR
+        if (browser) {
+            await browser.close();
+        }
     }
 });
 
@@ -193,7 +193,10 @@ router.post("/admin/users/add", requireAdmin, (req, res) => {
     if (!name || !email || !password) return res.status(400).json({ success: false, message: "Missing required fields" });
 
     bcrypt.hash(password, 10, (err, hash) => {
-        if (err) return res.status(500).json({ success: false, message: "Hash error" });
+        if (err) {
+            console.error("Bcrypt Error:", err);
+            return res.status(500).json({ success: false, message: "Hash error" });
+        }
         db.query(`INSERT INTO users (name, email, mobile, password, role, group_name) VALUES (?, ?, ?, ?, "user", ?)`, [name, email, mobile, hash, group_name], (err) => {
             if (err) return res.status(err.code === "ER_DUP_ENTRY" ? 400 : 500).json({ success: false, message: err.code === "ER_DUP_ENTRY" ? "Email already exists" : "DB Error" });
             res.json({ success: true });

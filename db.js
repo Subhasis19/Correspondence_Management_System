@@ -8,7 +8,7 @@ const pool = mysql.createPool({
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
-  dateStrings: true,   // Kept this from your original code!
+  dateStrings: true,   // Ensures DATE and DATETIME are returned as strings
 });
 
 // Test the pool connection on startup
@@ -21,4 +21,10 @@ pool.getConnection((err, connection) => {
   connection.release(); // Always release the connection back to the pool
 });
 
-module.exports = pool;
+function dbQuery(sql, params = []) {
+    return new Promise((resolve, reject) => {
+        pool.query(sql, params, (err, rows) => (err ? reject(err) : resolve(rows)));
+    });
+}
+
+module.exports = { pool, dbQuery };

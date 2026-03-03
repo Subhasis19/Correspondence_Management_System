@@ -3,7 +3,7 @@ const router = express.Router();
 const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
 const nodemailer = require("nodemailer");
-const db = require("../db"); // Points back to your root db.js
+const { pool: db } = require("../db");
 require("dotenv").config();
 
 // =========================
@@ -88,7 +88,7 @@ router.post("/register", (req, res) => {
   }
 
   bcrypt.hash(password, 10, (err, hash) => {
-    if (err) throw err;
+    if (err) return res.status(500).send("Error hashing password");
 
     db.query(
       "INSERT INTO users (name, email, mobile, password, role, group_name) VALUES (?, ?, ?, ?, ?, ?)",
@@ -109,13 +109,13 @@ router.post("/login", (req, res) => {
   const { email, password } = req.body;
 
   db.query("SELECT * FROM users WHERE email = ?", [email], (err, rows) => {
-    if (err) throw err;
+    if (err) return res.status(500).send("Error querying database");
     if (rows.length === 0) return res.send("User not found");
 
     const user = rows[0];
 
     bcrypt.compare(password, user.password, (err, match) => {
-      if (err) throw err;
+      if (err) return res.status(500).send("Error comparing passwords");
       if (!match) return res.send("Invalid password");
 
       req.session.user = {

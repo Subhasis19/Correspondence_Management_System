@@ -1,15 +1,9 @@
 const express = require("express");
 const router = express.Router();
 const path = require("path");
-const db = require("../db");
+const { pool: db, dbQuery } = require("../db");
 const { requireLogin } = require("../middlewares/authMiddleware");
 
-// Helper: Promisify db.query
-function dbQuery(sql, params = []) {
-  return new Promise((resolve, reject) => {
-    db.query(sql, params, (err, rows) => (err ? reject(err) : resolve(rows)));
-  });
-}
 
 // Helper: Get Month Date Range
 function getMonthDateRange(year, month) {
