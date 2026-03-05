@@ -605,3 +605,26 @@ body {
   margin-top: 24px;
 }
 
+.records-table thead th {
+  position: sticky;
+  top: 0;
+  background: #f8fafc;
+  z-index: 2;
+}
+
+.records-table tbody tr:hover {
+  background-color: #f1f5f9;
+}
+
+.records-table tbody tr:nth-child(even) {
+  background-color: #fafafa;
+}
+
+.records-table th,
+.records-table td {
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.table-scroll {
+  overflow-y: auto;
+}

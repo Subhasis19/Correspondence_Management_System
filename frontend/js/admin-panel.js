@@ -299,7 +299,7 @@
                     name: tr.children[0].textContent.trim(),
                     email: tr.children[1].textContent.trim(),
                     mobile: tr.children[2].textContent.trim(),
-                    group_name: tr.children[4].textContent.trim(),
+                    group_name: tr.children[3].textContent.trim(),
                 };
                 openUserModal({ mode: "edit", user });
                 return;
@@ -409,10 +409,15 @@ document.addEventListener("click", function (e) {
     const inwardBtn = e.target.closest(".edit-inward-btn");
     if (inwardBtn) {
         const id = inwardBtn.dataset.id;
-        document.getElementById("formFrame").src = `/inward?id=${id}`;
+        const frame = document.getElementById("formFrame");
+        frame.src = `/inward?id=${id}`;
+
         document.getElementById("iframeContainer").style.display = "block";
+
         document.getElementById("dashboardView").style.display = "none";
         document.getElementById("adminPanelView").style.display = "none";
+        document.getElementById("notingsView").style.display = "none";
+        document.getElementById("emailsView").style.display = "none";
         return;
     }
 
@@ -420,10 +425,15 @@ document.addEventListener("click", function (e) {
     const outwardBtn = e.target.closest(".edit-outward-btn");
     if (outwardBtn) {
         const id = outwardBtn.dataset.id;
-        document.getElementById("formFrame").src = `/outward?id=${id}`;
-        document.getElementById("iframeContainer").style.display = "block";
-        document.getElementById("dashboardView").style.display = "none";
-        document.getElementById("adminPanelView").style.display = "none";
+       const frame = document.getElementById("formFrame");
+      frame.src = `/outward?id=${id}`;
+
+      document.getElementById("iframeContainer").style.display = "block";
+
+      document.getElementById("dashboardView").style.display = "none";
+      document.getElementById("adminPanelView").style.display = "none";
+      document.getElementById("notingsView").style.display = "none";
+      document.getElementById("emailsView").style.display = "none";
         return;
     }
 

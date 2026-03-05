@@ -306,16 +306,13 @@
   }
 
 
-  function closeIframe() {
-    iframeContainer.style.display = "none";
-    dashboardView.style.display = "block";
+function closeIframe() {
 
-    formFrame.src = ""; 
+  formFrame.src = "";
 
-    setActiveMenuItem("dashboard");
-    loadInwardRecords();
-    loadOutwardRecords();
-  }
+  loadPage("dashboard");
+
+}
 
 
   // Close button action
@@ -460,6 +457,13 @@ if (notingsBackBtn) {
 const emailsBackBtn = document.getElementById("emailsBackBtn");
 if (emailsBackBtn) {
   emailsBackBtn.addEventListener("click", () => {
+    loadPage("dashboard");
+  });
+}
+
+const adminBackBtn = document.getElementById("adminBackBtn");
+if (adminBackBtn) {
+  adminBackBtn.addEventListener("click", () => {
     loadPage("dashboard");
   });
 }
