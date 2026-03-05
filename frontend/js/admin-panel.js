@@ -530,3 +530,271 @@ async function searchAdminOutwards(query) {
     console.error("Search error:", err);
   }
 }
+
+/* ==================================================
+   ADMIN PANEL — AUTOCOMPLETE SEARCH (INWARD)
+================================================== */
+
+window.addEventListener("DOMContentLoaded", () => {
+
+  const inwardInput = document.getElementById("adminInwardSearchInput");
+  if (!inwardInput) return;
+
+  const suggestBox = document.createElement("div");
+  suggestBox.className = "suggest-box";
+  suggestBox.style.position = "absolute";
+  suggestBox.style.top = inwardInput.offsetHeight + 6 + "px";
+  suggestBox.style.left = "0px";
+  suggestBox.style.width = Math.max(inwardInput.offsetWidth, 320) + "px";
+  suggestBox.style.background = "#fff";
+  suggestBox.style.border = "1px solid rgba(20,30,60,0.08)";
+  suggestBox.style.borderRadius = "8px";
+  suggestBox.style.boxShadow = "0 8px 24px rgba(20,30,60,0.08)";
+  suggestBox.style.maxHeight = "260px";
+  suggestBox.style.overflowY = "auto";
+  suggestBox.style.display = "none";
+  suggestBox.style.zIndex = "9999";
+  suggestBox.style.padding = "6px";
+
+  inwardInput.parentElement.style.position = "relative";
+  inwardInput.parentElement.appendChild(suggestBox);
+
+  let timeout = null;
+
+  inwardInput.addEventListener("input", () => {
+    const q = inwardInput.value.trim();
+
+    if (!q) {
+      suggestBox.style.display = "none";
+      suggestBox.innerHTML = "";
+      return;
+    }
+
+    if (timeout) clearTimeout(timeout);
+    timeout = setTimeout(() => fetchResults(q), 220);
+  });
+
+  async function fetchResults(q) {
+
+    const res = await fetch(`/admin/inward/search?q=${encodeURIComponent(q)}`, {
+      credentials: "same-origin"
+    });
+
+    const rows = await res.json();
+
+    suggestBox.innerHTML = "";
+
+    if (!rows.length) {
+
+      const noRes = document.createElement("div");
+      noRes.style.padding = "12px";
+      noRes.style.textAlign = "center";
+      noRes.style.color = "#666";
+      noRes.textContent = "No results found";
+
+      suggestBox.appendChild(noRes);
+      suggestBox.style.display = "block";
+      return;
+    }
+
+    rows.forEach(r => {
+
+      const item = document.createElement("div");
+      item.className = "suggest-item";
+
+      item.style.padding = "10px";
+      item.style.cursor = "pointer";
+      item.style.borderRadius = "6px";
+      item.style.marginBottom = "6px";
+
+      item.innerHTML = `
+        <div style="display:flex; justify-content:space-between;">
+          <div>
+            <div style="font-weight:600;color:#0b3b66;">${r.inward_no}</div>
+            <div style="font-size:13px;color:#334155;">
+              ${escapeHtml(r.name_of_sender || "")}
+              ${r.sender_city ? ` — ${escapeHtml(r.sender_city)}` : ""}
+            </div>
+          </div>
+          <div style="text-align:right;font-size:12px;color:#6b7280;">
+            ${formatDateShort(r.date_of_receipt)}
+            <div style="margin-top:6px;font-weight:600;color:#0b3b66;">
+              ${r.received_in || ""}
+            </div>
+          </div>
+        </div>
+      `;
+
+      item.addEventListener("mouseenter", () => item.style.background = "#f6f9ff");
+      item.addEventListener("mouseleave", () => item.style.background = "transparent");
+
+      item.addEventListener("click", () => {
+
+        inwardInput.value = r.inward_no;
+        suggestBox.style.display = "none";
+
+        searchAdminInwards(r.inward_no);
+
+      });
+
+      suggestBox.appendChild(item);
+
+    });
+
+    suggestBox.style.display = "block";
+  }
+
+  document.addEventListener("click", e => {
+    if (!suggestBox.contains(e.target) && e.target !== inwardInput) {
+      suggestBox.style.display = "none";
+    }
+  });
+
+});
+
+function formatDateShort(d) {
+  if (!d) return "";
+  const parts = String(d).split("T")[0].split("-");
+  if (parts.length === 3) return `${parts[2]}-${parts[1]}-${parts[0]}`;
+  return d;
+}
+
+function escapeHtml(str) {
+  if (!str) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+/* ==================================================
+   ADMIN PANEL — AUTOCOMPLETE SEARCH (OUTWARD)
+================================================== */
+
+window.addEventListener("DOMContentLoaded", () => {
+
+  const outwardInput = document.getElementById("adminOutwardSearchInput");
+  if (!outwardInput) return;
+
+  const suggestBox = document.createElement("div");
+
+  suggestBox.className = "suggest-box";
+  suggestBox.style.position = "absolute";
+  suggestBox.style.top = outwardInput.offsetHeight + 6 + "px";
+  suggestBox.style.left = "0px";
+  suggestBox.style.width = Math.max(outwardInput.offsetWidth, 320) + "px";
+  suggestBox.style.background = "#fff";
+  suggestBox.style.border = "1px solid rgba(20,30,60,0.08)";
+  suggestBox.style.borderRadius = "8px";
+  suggestBox.style.boxShadow = "0 8px 24px rgba(20,30,60,0.08)";
+  suggestBox.style.maxHeight = "260px";
+  suggestBox.style.overflowY = "auto";
+  suggestBox.style.display = "none";
+  suggestBox.style.zIndex = "9999";
+  suggestBox.style.padding = "6px";
+
+  outwardInput.parentElement.style.position = "relative";
+  outwardInput.parentElement.appendChild(suggestBox);
+
+  let timeout = null;
+
+  outwardInput.addEventListener("input", () => {
+
+    const q = outwardInput.value.trim();
+
+    if (!q) {
+      suggestBox.style.display = "none";
+      suggestBox.innerHTML = "";
+      return;
+    }
+
+    if (timeout) clearTimeout(timeout);
+    timeout = setTimeout(() => fetchResults(q), 220);
+
+  });
+
+  async function fetchResults(q) {
+
+    const res = await fetch(`/admin/outward/search?q=${encodeURIComponent(q)}`, {
+      credentials: "same-origin"
+    });
+
+    const rows = await res.json();
+
+    suggestBox.innerHTML = "";
+
+    if (!rows.length) {
+
+      const noRes = document.createElement("div");
+      noRes.style.padding = "12px";
+      noRes.style.textAlign = "center";
+      noRes.style.color = "#666";
+      noRes.textContent = "No results found";
+
+      suggestBox.appendChild(noRes);
+      suggestBox.style.display = "block";
+      return;
+
+    }
+
+    rows.forEach(r => {
+
+      const item = document.createElement("div");
+
+      item.className = "suggest-item";
+      item.style.padding = "10px";
+      item.style.cursor = "pointer";
+      item.style.borderRadius = "6px";
+      item.style.marginBottom = "6px";
+
+      item.innerHTML = `
+        <div style="display:flex; justify-content:space-between;">
+          <div>
+            <div style="font-weight:600;color:#0b3b66;">${r.outward_no}</div>
+            <div style="font-size:13px;color:#334155;">
+              ${escapeHtml(r.name_of_receiver || "")}
+              ${r.receiver_city ? ` — ${escapeHtml(r.receiver_city)}` : ""}
+            </div>
+          </div>
+
+          <div style="text-align:right;font-size:12px;color:#6b7280;">
+            ${formatDateShort(r.date_of_despatch)}
+            <div style="margin-top:6px;font-weight:600;color:#0b3b66;">
+              ${r.reply_from || ""}
+            </div>
+          </div>
+        </div>
+      `;
+
+      item.addEventListener("mouseenter", () => item.style.background = "#f6f9ff");
+      item.addEventListener("mouseleave", () => item.style.background = "transparent");
+
+      item.addEventListener("click", () => {
+
+        outwardInput.value = r.outward_no;
+        suggestBox.style.display = "none";
+
+        searchAdminOutwards(r.outward_no);
+
+      });
+
+      suggestBox.appendChild(item);
+
+    });
+
+    suggestBox.style.display = "block";
+
+  }
+
+  document.addEventListener("click", (e) => {
+
+    if (!suggestBox.contains(e.target) && e.target !== outwardInput) {
+      suggestBox.style.display = "none";
+    }
+
+  });
+
+});
+
