@@ -277,46 +277,24 @@
 
   function openIframe(page) {
     hideAllViews(); 
-    // let file = "";
 
     if (page === "inward") {
-      // file = "inward.html";
       formFrame.src = "/inward";
       iframeTitle.textContent = window.currentUserGroup
         ? `Inward Entry Form (${window.currentUserGroup})`
         : "Inward Entry Form";
-    }
-
-    if (page === "outward") {
-      // file = "outward.html";
+    } else if (page === "outward") {
       formFrame.src = "/outward";
       iframeTitle.textContent = window.currentUserGroup
         ? `Outward Entry Form (${window.currentUserGroup})`
         : "Outward Entry Form";
     }
 
-
-    // if (!file) return;
-
-    // formFrame.src = file;
     iframeContainer.style.display = "block";
-    dashboardView.style.display = "none";
 
     setActiveMenuItem(page);
   }
 
-
-function closeIframe() {
-
-  formFrame.src = "";
-
-  loadPage("dashboard");
-
-}
-
-
-  // Close button action
-  document.getElementById("iframeClose").addEventListener("click", closeIframe);
 
 
   function hideAllViews() {
@@ -333,6 +311,12 @@ function closeIframe() {
   if (emailsView) emailsView.style.display = "none";
 
 }
+
+   function goBackToDashboard() {
+      if (formFrame) formFrame.src = "";
+      loadPage("dashboard");
+    }
+
 
 
   /* ============================================================
@@ -355,29 +339,21 @@ function closeIframe() {
       return;
     }
 
-     if (page === "admin-panel") {
-        dashboardView.style.display = "none";
-        iframeContainer.style.display = "none";
-        document.getElementById("adminPanelView").style.display = "block";
+      if (page === "admin-panel") {
 
-        setActiveMenuItem("admin-panel");
+      document.getElementById("adminPanelView").style.display = "block";
 
-        document.getElementById("adminBackBtn").onclick = () => loadPage("dashboard");
+      setActiveMenuItem("admin-panel");
 
-         if (typeof window.__adminPanelLoadUsers === "function") {
+      if (typeof window.__adminPanelLoadUsers === "function") {
         window.__adminPanelLoadUsers();
-    }
+      }
 
-        return;
+      return;
     }
 
     if (page === "notings") {
-        dashboardView.style.display = "none";
-        iframeContainer.style.display = "none";
-
-        const adminPanel = document.getElementById("adminPanelView");
-        if (adminPanel) adminPanel.style.display = "none";
-
+        
         document.getElementById("notingsView").style.display = "block";
         setActiveMenuItem("notings");
         document.getElementById("notingsHindi").value = 0;
@@ -446,27 +422,6 @@ if (et) {
    loadReportGroups();
   // Notings back button
 
-const notingsBackBtn = document.getElementById("notingsBackBtn");
-if (notingsBackBtn) {
-  notingsBackBtn.addEventListener("click", () => {
-  loadPage("dashboard");
-});
-
-}
-// Emails back button
-const emailsBackBtn = document.getElementById("emailsBackBtn");
-if (emailsBackBtn) {
-  emailsBackBtn.addEventListener("click", () => {
-    loadPage("dashboard");
-  });
-}
-
-const adminBackBtn = document.getElementById("adminBackBtn");
-if (adminBackBtn) {
-  adminBackBtn.addEventListener("click", () => {
-    loadPage("dashboard");
-  });
-}
 
 
   // Sidebar click handlers
@@ -477,9 +432,18 @@ if (adminBackBtn) {
     });
   });
 
-  // First load = dashboard
-  loadPage("dashboard");
-  setActiveMenuItem("dashboard");
+
+    document.querySelectorAll(".dashboard-back-btn").forEach(btn => {
+      btn.addEventListener("click", goBackToDashboard);
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        goBackToDashboard();
+      }
+    });
+
+    loadPage("dashboard");
 
     document.addEventListener("click", async (e) => {
       const row = e.target.closest(".record-row");

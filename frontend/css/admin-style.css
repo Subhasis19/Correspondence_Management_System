@@ -616,9 +616,6 @@ body {
   background-color: #f1f5f9;
 }
 
-.records-table tbody tr:nth-child(even) {
-  background-color: #fafafa;
-}
 
 .records-table th,
 .records-table td {
