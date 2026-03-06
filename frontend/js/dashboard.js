@@ -76,6 +76,7 @@
     LOAD DASHBOARD (GLOBAL / MONTHLY)
   --------------------------- */
   async function loadDashboard(month = null, year = null) {
+    setActiveCard(null);
     try {
 
       let url = "/dashboard/summary";
@@ -317,6 +318,24 @@
       loadPage("dashboard");
     }
 
+    /* ===============================
+      DASHBOARD CARD ACTIVE STATE
+    ================================ */
+
+    function setActiveCard(cardId) {
+
+      document.querySelectorAll(".stat-card").forEach(card => {
+        card.classList.remove("active-card");
+      });
+
+      const activeCard = document.getElementById(cardId);
+      if (activeCard) {
+        activeCard.classList.add("active-card");
+      }
+
+    }
+
+
 
 
   /* ============================================================
@@ -436,6 +455,59 @@ if (et) {
     document.querySelectorAll(".dashboard-back-btn").forEach(btn => {
       btn.addEventListener("click", goBackToDashboard);
     });
+
+    /* ===============================
+          DASHBOARD CARD CLICK FILTERS
+      ================================ */
+
+        document.getElementById("cardInwards")?.addEventListener("click", () => {
+
+          setActiveCard("cardInwards");
+
+          const month = document.getElementById("dashMonth").value;
+          const year = document.getElementById("dashYear").value;
+
+          loadDashboard(month || null, year || null);
+
+          document.getElementById("inwardsTable")
+            ?.scrollIntoView({ behavior: "smooth" });
+
+        });
+
+        document.getElementById("cardOutwards")?.addEventListener("click", () => {
+
+            setActiveCard("cardOutwards");
+
+            const month = document.getElementById("dashMonth").value;
+            const year = document.getElementById("dashYear").value;
+
+            loadDashboard(month || null, year || null);
+
+            document.getElementById("outwardsTable")
+              ?.scrollIntoView({ behavior: "smooth" });
+
+          });
+
+        document.getElementById("cardPending")?.addEventListener("click", () => {
+
+          setActiveCard("cardPending");
+
+          const rows = document.querySelectorAll("#inwardsTbody tr");
+
+          rows.forEach(row => {
+            if (!row.classList.contains("pending-row")) {
+              row.style.display = "none";
+            } else {
+              row.style.display = "";
+            }
+          });
+
+          document.getElementById("inwardsTable")
+            ?.scrollIntoView({ behavior: "smooth" });
+
+        });
+
+
 
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape") {

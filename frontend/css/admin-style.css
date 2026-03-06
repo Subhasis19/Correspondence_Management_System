@@ -625,3 +625,23 @@ body {
 .table-scroll {
   overflow-y: auto;
 }
+
+
+.stat-card {
+  cursor: pointer;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.stat-card.active-card {
+  border: 2px solid #2d7fbd;
+  background: #f3f8ff;
+}
+
+.stat-card.active-card i {
+  color: #2d7fbd;
+}
+
