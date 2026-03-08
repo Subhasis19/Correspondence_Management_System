@@ -37,6 +37,7 @@ app.use("/", require("./routes/notings"));
 app.use("/", require("./routes/emails"));
 app.use("/", require("./routes/dashboard"));
 app.use("/", require("./routes/admin"));
+app.use("/", require("./routes/import"));
 
 
 app.get("/", (req, res) => {
