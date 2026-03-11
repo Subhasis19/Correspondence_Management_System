@@ -264,6 +264,35 @@ router.post("/admin/import-inward-validate", requireAdmin, async (req, res) => {
                 return;
             }
 
+            // Validate language_of_document
+            const language = String(r.language_of_document || "").trim();
+
+            if (!language) {
+
+                skippedRows.push({
+                    row: index + 2,
+                    inward_no: r.inward_no || "",
+                    reason: "Missing Language of Document"
+                });
+
+                return;
+            }
+
+            // Validate reply_required
+            const replyRequired = String(r.reply_required || "").trim();
+
+            if (!replyRequired) {
+
+                skippedRows.push({
+                    row: index + 2,
+                    inward_no: r.inward_no || "",
+                    reason: "Missing Reply Required"
+                });
+
+                return;
+            }
+
+
             const inwardNo = String(r.inward_no).trim();
 
             if (seen.has(inwardNo)) {

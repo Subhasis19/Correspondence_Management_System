@@ -863,8 +863,11 @@ function renderExcelPreview(rows, totalRows, fileName) {
   <h4>Preview (${totalRows} rows in file)</h4>
 
     <div style="margin-bottom:8px;font-size:13px;">
-    <span style="background:#ffe4e6;padding:3px 8px;border-radius:4px;">Duplicate in Excel</span>
-    <span style="background:#fff7ed;padding:3px 8px;border-radius:4px;margin-left:8px;">Duplicate in Database</span>
+    <span style="background:#ffe4e6;padding:3px 8px;border-radius:4px;margin-left:8px;">Duplicate in Database</span>
+    <span style="background:#fcb761;padding:3px 8px;border-radius:4px;">Duplicate in Excel</span>
+    <span style="background:#fef3c7;padding:3px 8px;border-radius:4px;">Missing Language</span>
+    <span style="background:#fef3c7;padding:3px 8px;border-radius:4px;">Missing Reply Required</span>
+    
     </div>
   <div style="max-height:500px; overflow:auto; border:1px solid #ddd;">
 
@@ -903,9 +906,10 @@ function renderExcelPreview(rows, totalRows, fileName) {
   </button>
 
   <button id="confirmImportBtn"
-  style="padding:8px 14px; background:#0b3b66; color:white; border:none; border-radius:4px; cursor:pointer;"
-  data-file="${fileName}">
-  Import Data
+  style="padding:8px 14px; background:#9ca3af; color:white; border:none; border-radius:4px; cursor:not-allowed;"
+  data-file="${fileName}"
+  disabled>
+  Validate Excel to Enable Import
   </button>
 
   </div>
@@ -994,7 +998,35 @@ async function confirmInwardImport(e) {
 
       renderImportResult(data);
 
+
+      const importBtn = document.getElementById("confirmImportBtn");
+      if (!importBtn) return;
+
+      /* Count REAL errors (not duplicates) */
+
+      const realErrors = data.skippedRows?.filter(r =>
+        r.reason.includes("Missing") ||
+        r.reason.includes("Invalid")
+      ).length || 0;
+
+      if (realErrors > 0) {
+
+        importBtn.disabled = true;
+        importBtn.style.background = "#9ca3af";
+        importBtn.style.cursor = "not-allowed";
+        importBtn.innerText = "Fix Excel Errors First";
+
+      } else {
+
+        importBtn.disabled = false;
+        importBtn.style.background = "#0b3b66";
+        importBtn.style.cursor = "pointer";
+        importBtn.innerText = "Import Data";
+
+      }
     }
+
+
 
     function highlightPreviewErrors(skippedRows) {
 
@@ -1016,17 +1048,31 @@ async function confirmInwardImport(e) {
 
         if (error.reason.includes("Excel")) {
 
-          tr.style.background = "#ffe4e6"; // light red
+          tr.style.background = "#fcb761 "; // light orange
           tr.title = "Duplicate inside Excel";
 
         }
 
         if (error.reason.includes("database")) {
 
-          tr.style.background = "#fff7ed"; // light orange
+          tr.style.background = "#ffe4e6"; // light red
           tr.title = "Duplicate in database";
 
         }
+        if (error.reason.includes("Missing Language")) {
+
+          tr.style.background = "#fef3c7";
+          tr.title = "Missing Language of Document";
+
+        }
+
+      if (error.reason.includes("Missing Reply")) {
+
+        tr.style.background = "#fef3c7";
+        tr.title = "Missing Reply Required";
+
+      }
+
 
       });
 
@@ -1034,6 +1080,15 @@ async function confirmInwardImport(e) {
 
 
     function renderImportResult(data) {
+
+      const missingLanguage = data.skippedRows?.filter(r =>
+        r.reason.includes("Missing Language")
+      ).length || 0;
+
+      const missingReply = data.skippedRows?.filter(r =>
+        r.reason.includes("Missing Reply")
+      ).length || 0;
+
 
       const container = document.getElementById("excelImportResult");
 
@@ -1050,7 +1105,9 @@ async function confirmInwardImport(e) {
         <strong>Inserted:</strong> ${data.inserted ?? 0} <br>
         <strong>Skipped:</strong> ${data.skipped ?? 0} <br>
         <strong>Duplicate in Database:</strong> ${data.dbDuplicates?.length ?? 0} <br>
-        <strong>Duplicate inside Excel:</strong> ${data.excelDuplicates?.length ?? 0}
+        <strong>Duplicate inside Excel:</strong> ${data.excelDuplicates?.length ?? 0} <br>
+        <strong>Missing Language:</strong> ${missingLanguage} <br>
+        <strong>Missing Reply Required:</strong> ${missingReply}
       </p>
       `;
 
