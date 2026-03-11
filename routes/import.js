@@ -3,6 +3,7 @@ const fs = require("fs");
 const express = require("express");
 const router = express.Router();
 const path = require("path");
+const { dbQuery } = require("../db");
 const multer = require("multer");
 const { requireAdmin } = require("../middlewares/authMiddleware");
 
@@ -78,8 +79,8 @@ router.post(
 
                 return cleaned;
             });
-            // LIMIT PREVIEW (only first 20 rows)
-            const preview = rows.slice(0, 20);
+            // PREVIEW ALL ROWS (files usually <200 rows)
+            const preview = rows;
 
             res.json({
                 success: true,
@@ -123,5 +124,235 @@ router.post(
         }
     }
 );
+
+function normalizeLanguage(value) {
+
+    if (!value) return "English"; // default to English if empty
+
+    const v = String(value).toUpperCase();
+
+    if (v.includes("BI")) return "Bilingual";
+    if (v.includes("HI")) return "Hindi";
+    if (v.includes("H")) return "Hindi";
+
+    return "English";
+}
+
+
+function normalizeReplyRequired(value) {
+
+    if (!value) return "No"; // if empty, treat as "No"
+
+    const v = String(value).toUpperCase();
+
+    if (v === "Y") return "Yes";
+    if (v === "YES") return "Yes";
+
+    return "No";
+}
+
+
+function parseExcelDate(value) {
+
+    if (!value) return null;
+
+    // Excel numeric date
+    if (typeof value === "number") {
+
+        const date = new Date(
+            Math.round((value - 25569) * 86400 * 1000)
+        );
+
+        return date.toISOString().split("T")[0];
+    }
+
+    // String format: DD.MM.YY
+    if (typeof value === "string") {
+
+        const parts = value.split(".");
+
+        if (parts.length === 3) {
+
+            let [d, m, y] = parts;
+
+            if (y.length === 2) {
+                y = "20" + y;
+            }
+
+            return `${y}-${m}-${d}`;
+        }
+    }
+
+    return null;
+}
+
+router.post("/admin/import-inward-confirm", requireAdmin, async (req, res) => {
+
+    try {
+
+        const { file } = req.body;
+
+        if (!file) {
+            return res.status(400).json({
+                success: false,
+                message: "Missing file name"
+            });
+        }
+
+        const filePath = path.join(
+            __dirname,
+            "../uploads/excel/inward",
+            file
+        );
+
+        if (!fs.existsSync(filePath)) {
+            return res.status(404).json({
+                success: false,
+                message: "File not found"
+            });
+        }
+
+        // READ EXCEL AGAIN
+        const workbook = XLSX.readFile(filePath);
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+
+        let rawRows = XLSX.utils.sheet_to_json(sheet);
+
+        // CLEAN HEADERS
+        const rows = rawRows.map(row => {
+
+            const cleaned = {};
+
+            Object.keys(row).forEach(key => {
+
+                const cleanKey = key
+                    .replace(/\n/g, "")
+                    .replace(/\r/g, "")
+                    .trim();
+
+                cleaned[cleanKey] = row[key];
+
+            });
+
+            return cleaned;
+
+        });
+
+        // COLLECT inward numbers
+        
+        const inwardNos = rows.map(r => String(r.inward_no).trim());
+
+        const existing = await dbQuery(
+            "SELECT inward_no FROM inward_records WHERE inward_no IN (?)",
+            [inwardNos]
+        );
+
+        const existingSet = new Set(
+            existing.map(r => String(r.inward_no).trim())
+        );
+
+        const dbDuplicates = [];
+        const excelDuplicates = [];
+
+        const seen = new Set();
+
+        const rowsToInsert = [];
+
+        rows.forEach(r => {
+
+            if (!r.inward_no) return; // skip empty rows
+
+            const inwardNo = String(r.inward_no).trim();
+
+            if (seen.has(inwardNo)) {
+                excelDuplicates.push(inwardNo);
+                return;
+            }
+
+                seen.add(inwardNo);
+
+                if (existingSet.has(inwardNo)) {
+                dbDuplicates.push(inwardNo);
+                return;
+            }
+            r.inward_no = inwardNo;
+            rowsToInsert.push(r);
+
+        });
+
+        // PREPARE BULK INSERT
+        const values = rowsToInsert.map(r => [
+
+            parseExcelDate(r.date_of_receipt),
+            r.inward_no,
+            r.month,
+            r.year,
+            r.received_in,
+            r.name_of_sender,
+            r.address_of_sender,
+            r.sender_city,
+            r.sender_state,
+            r.sender_pin,
+            r.sender_region,
+            r.sender_org_type,
+            r.type_of_document,
+            normalizeLanguage(r.language_of_document),
+            r.count,
+            r.remarks,
+            r.issued_to,
+            normalizeReplyRequired(r.reply_required),
+            req.session?.user?.group_name || null
+        ]);
+
+        if (values.length) {
+
+            await dbQuery(
+                `INSERT INTO inward_records (
+                    date_of_receipt,
+                    inward_no,
+                    month,
+                    year,
+                    received_in,
+                    name_of_sender,
+                    address_of_sender,
+                    sender_city,
+                    sender_state,
+                    sender_pin,
+                    sender_region,
+                    sender_org_type,
+                    type_of_document,
+                    language_of_document,
+                    count,
+                    remarks,
+                    issued_to,
+                    reply_required,
+                    group_name
+                    ) VALUES ?`,
+                [values]
+            );
+        }
+
+        res.json({
+            success: true,
+            inserted: values.length,
+            dbDuplicates,
+            excelDuplicates
+            
+        });
+
+    } catch (err) {
+
+        console.error("IMPORT ERROR >>>", err);
+
+        res.status(500).json({
+            success: false,
+            message: err.message
+        });
+
+    }
+
+});
+
+
 
 module.exports = router;

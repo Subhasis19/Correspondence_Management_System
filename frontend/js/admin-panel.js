@@ -808,13 +808,22 @@ window.addEventListener("DOMContentLoaded", () => {
 
 });
 
+document.addEventListener("DOMContentLoaded", () => {
 
-async function uploadTest() {
+  const uploadBtn = document.getElementById("uploadInwardExcelBtn");
 
-  const fileInput = document.getElementById("excelFile");
+  if (!uploadBtn) return;
+
+  uploadBtn.addEventListener("click", uploadInwardExcel);
+
+});
+
+async function uploadInwardExcel() {
+
+  const fileInput = document.getElementById("inwardExcelFile");
 
   if (!fileInput.files.length) {
-    alert("Select a file first");
+    alert("Please select an Excel file");
     return;
   }
 
@@ -829,7 +838,105 @@ async function uploadTest() {
 
   const data = await res.json();
 
-  console.log(data);
-  alert(JSON.stringify(data));
+  if (!data.success) {
+    alert(data.message || "Upload failed");
+    return;
+  }
+
+  renderExcelPreview(data.preview, data.totalRows, data.file);
+
+}
+
+
+function renderExcelPreview(rows, totalRows, fileName) {
+
+  const container = document.getElementById("excelPreviewContainer");
+
+  if (!rows || rows.length === 0) {
+    container.innerHTML = "<p>No data found</p>";
+    return;
+  }
+
+  const columns = Object.keys(rows[0]);
+
+  let table = `
+  <h4>Preview (${totalRows} rows in file)</h4>
+  <div style="max-height:500px; overflow:auto; border:1px solid #ddd;">
+
+  <table border="1" cellpadding="6" style="border-collapse:collapse; width:100%; font-size:13px;">
+  <thead>
+  <tr>
+  ${columns.map(c => `<th>${c}</th>`).join("")}
+  </tr>
+  </thead>
+  <tbody>
+  `;
+
+  rows.forEach(row => {
+
+    table += "<tr>";
+
+    columns.forEach(col => {
+      table += `<td>${row[col] ?? ""}</td>`;
+    });
+
+    table += "</tr>";
+
+  });
+
+  table += `
+  </tbody>
+  </table>
+  </div>
+
+  <br>
+  <button id="confirmImportBtn" data-file="${fileName}">
+  Confirm Import
+  </button>
+  `;
+
+  container.innerHTML = table;
+
+  // attach click handler
+  document.getElementById("confirmImportBtn")
+    .addEventListener("click", confirmInwardImport);
+}
+
+
+async function confirmInwardImport(e) {
+
+  const fileName = e.target.dataset.file;
+
+  if (!fileName) {
+    alert("File reference missing");
+    return;
+  }
+
+  if (!confirm("Start importing this Excel file?")) {
+    return;
+  }
+
+  const res = await fetch("/admin/import-inward-confirm", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "same-origin",
+    body: JSON.stringify({ file: fileName })
+  });
+
+  const data = await res.json();
+
+  if (!data.success) {
+    alert(data.message || "Import failed");
+    return;
+  }
+
+  alert(
+`Import Complete
+
+Inserted: ${data.inserted}
+DB duplicates: ${data.dbDuplicates.length}
+Excel duplicates: ${data.excelDuplicates.length}`
+  );
+
 }
 
