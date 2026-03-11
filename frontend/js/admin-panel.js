@@ -808,3 +808,291 @@ window.addEventListener("DOMContentLoaded", () => {
 
 });
 
+document.addEventListener("DOMContentLoaded", () => {
+
+  const uploadBtn = document.getElementById("uploadInwardExcelBtn");
+
+  if (!uploadBtn) return;
+
+  uploadBtn.addEventListener("click", uploadInwardExcel);
+
+});
+
+async function uploadInwardExcel() {
+
+  const fileInput = document.getElementById("inwardExcelFile");
+
+  if (!fileInput.files.length) {
+    alert("Please select an Excel file");
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append("file", fileInput.files[0]);
+
+  const res = await fetch("/admin/import-inward-upload", {
+    method: "POST",
+    body: formData,
+    credentials: "same-origin"
+  });
+
+  const data = await res.json();
+
+  if (!data.success) {
+    alert(data.message || "Upload failed");
+    return;
+  }
+
+  renderExcelPreview(data.preview, data.totalRows, data.file);
+
+}
+
+
+function renderExcelPreview(rows, totalRows, fileName) {
+
+  const container = document.getElementById("excelPreviewContainer");
+
+  if (!rows || rows.length === 0) {
+    container.innerHTML = "<p>No data found</p>";
+    return;
+  }
+
+  const columns = Object.keys(rows[0]);
+
+  let table = `
+  <h4>Preview (${totalRows} rows in file)</h4>
+
+    <div style="margin-bottom:8px;font-size:13px;">
+    <span style="background:#ffe4e6;padding:3px 8px;border-radius:4px;">Duplicate in Excel</span>
+    <span style="background:#fff7ed;padding:3px 8px;border-radius:4px;margin-left:8px;">Duplicate in Database</span>
+    </div>
+  <div style="max-height:500px; overflow:auto; border:1px solid #ddd;">
+
+  <table border="1" cellpadding="6" style="border-collapse:collapse; width:100%; font-size:13px;">
+  <thead>
+  <tr>
+  ${columns.map(c => `<th>${c}</th>`).join("")}
+  </tr>
+  </thead>
+  <tbody>
+  `;
+
+  rows.forEach(row => {
+
+    table += "<tr>";
+
+    columns.forEach(col => {
+      table += `<td>${row[col] ?? ""}</td>`;
+    });
+
+    table += "</tr>";
+
+  });
+
+  table += `
+  </tbody>
+  </table>
+  </div>
+
+ <div style="margin-top:12px; display:flex; gap:10px;">
+
+  <button id="validateImportBtn"
+  style="padding:8px 14px; background:#f1f5f9; border:1px solid #ccc; border-radius:4px; cursor:pointer;"
+  data-file="${fileName}">
+  Validate Excel
+  </button>
+
+  <button id="confirmImportBtn"
+  style="padding:8px 14px; background:#0b3b66; color:white; border:none; border-radius:4px; cursor:pointer;"
+  data-file="${fileName}">
+  Import Data
+  </button>
+
+  </div>
+  `;
+
+  container.innerHTML = table;
+
+  document.getElementById("confirmImportBtn")
+    .addEventListener("click", confirmInwardImport);
+
+  document.getElementById("validateImportBtn")
+    .addEventListener("click", validateInwardImport);
+}
+
+
+async function confirmInwardImport(e) {
+
+  const fileName = e.target.dataset.file;
+
+  if (!fileName) {
+    alert("File reference missing");
+    return;
+  }
+
+  if (!confirm("Start importing this Excel file?")) {
+    return;
+  }
+
+  const res = await fetch("/admin/import-inward-confirm", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "same-origin",
+    body: JSON.stringify({ file: fileName })
+  });
+
+  const data = await res.json();
+
+  if (!data.success) {
+    alert(data.message || "Import failed");
+    return;
+  }
+
+      let message =
+      `Import Complete
+
+      Inserted: ${data.inserted}
+      Skipped: ${data.skipped}`;
+
+      if (data.skippedRows && data.skippedRows.length) {
+
+        message += "\n\nSkipped Rows:\n";
+
+        data.skippedRows.forEach(r => {
+          message += `Row ${r.row} (Inward ${r.inward_no}) → ${r.reason}\n`;
+        });
+
+      }
+
+      renderImportResult(data);
+    }
+
+
+    async function validateInwardImport(e) {
+
+      const fileName = e.target.dataset.file;
+
+      const res = await fetch("/admin/import-inward-validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ file: fileName })
+      });
+
+      const data = await res.json();
+
+      if (!data.success) {
+        alert(data.message || "Validation failed");
+        return;
+      }
+
+      // Store validation results globally
+      window.__excelValidation = data;
+
+      // Highlight rows
+      highlightPreviewErrors(data.skippedRows);
+
+      renderImportResult(data);
+
+    }
+
+    function highlightPreviewErrors(skippedRows) {
+
+      if (!skippedRows || !skippedRows.length) return;
+
+      const table = document.querySelector("#excelPreviewContainer table");
+
+      if (!table) return;
+
+      const rows = table.querySelectorAll("tbody tr");
+
+      skippedRows.forEach(error => {
+
+        const rowIndex = error.row - 2; // convert Excel row → table row
+
+        const tr = rows[rowIndex];
+
+        if (!tr) return;
+
+        if (error.reason.includes("Excel")) {
+
+          tr.style.background = "#ffe4e6"; // light red
+          tr.title = "Duplicate inside Excel";
+
+        }
+
+        if (error.reason.includes("database")) {
+
+          tr.style.background = "#fff7ed"; // light orange
+          tr.title = "Duplicate in database";
+
+        }
+
+      });
+
+    }
+
+
+    function renderImportResult(data) {
+
+      const container = document.getElementById("excelImportResult");
+
+      let html = `
+      <div style="
+          border:1px solid #ddd;
+          border-radius:6px;
+          padding:15px;
+          background:#fafafa;
+      ">
+      <h4>Import Result</h4>
+
+      <p>
+        <strong>Inserted:</strong> ${data.inserted ?? 0} <br>
+        <strong>Skipped:</strong> ${data.skipped ?? 0} <br>
+        <strong>Duplicate in Database:</strong> ${data.dbDuplicates?.length ?? 0} <br>
+        <strong>Duplicate inside Excel:</strong> ${data.excelDuplicates?.length ?? 0}
+      </p>
+      `;
+
+      if (data.skippedRows && data.skippedRows.length) {
+
+        html += `
+        <h5>Skipped Rows</h5>
+
+        <div style="max-height:300px; overflow:auto; border:1px solid #ddd;">
+        <table style="width:100%; border-collapse:collapse; font-size:13px;">
+          <thead style="background:#f0f0f0;">
+            <tr>
+              <th style="padding:6px;border:1px solid #ddd;">Row</th>
+              <th style="padding:6px;border:1px solid #ddd;">Inward No</th>
+              <th style="padding:6px;border:1px solid #ddd;">Reason</th>
+            </tr>
+          </thead>
+          <tbody>
+        `;
+
+        data.skippedRows.forEach(r => {
+
+          html += `
+          <tr>
+            <td style="padding:6px;border:1px solid #ddd;">${r.row}</td>
+            <td style="padding:6px;border:1px solid #ddd;">${r.inward_no}</td>
+            <td style="padding:6px;border:1px solid #ddd;">${r.reason}</td>
+          </tr>
+          `;
+
+        });
+
+        html += `
+          </tbody>
+        </table>
+        </div>
+        `;
+      }
+
+      html += `</div>`;
+
+      container.innerHTML = html;
+      container.scrollIntoView({ behavior: "smooth" });
+
+    }

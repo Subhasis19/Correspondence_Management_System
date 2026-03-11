@@ -330,3 +330,21 @@ Troubleshooting tips
 - For duplicate `inward_no` errors the code retries generation, but if you run into insert failures check server logs printed by `server.js`.
 
 ---
+
+
+---
+```
+Upload Excel
+↓
+Preview
+↓
+Dry Run Validation
+↓
+Show error report
+↓
+Admin confirms
+↓
+Transaction Import
+↓
+Final Report
+```
