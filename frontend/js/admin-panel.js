@@ -861,6 +861,11 @@ function renderExcelPreview(rows, totalRows, fileName) {
 
   let table = `
   <h4>Preview (${totalRows} rows in file)</h4>
+
+    <div style="margin-bottom:8px;font-size:13px;">
+    <span style="background:#ffe4e6;padding:3px 8px;border-radius:4px;">Duplicate in Excel</span>
+    <span style="background:#fff7ed;padding:3px 8px;border-radius:4px;margin-left:8px;">Duplicate in Database</span>
+    </div>
   <div style="max-height:500px; overflow:auto; border:1px solid #ddd;">
 
   <table border="1" cellpadding="6" style="border-collapse:collapse; width:100%; font-size:13px;">
@@ -889,17 +894,30 @@ function renderExcelPreview(rows, totalRows, fileName) {
   </table>
   </div>
 
-  <br>
-  <button id="confirmImportBtn" data-file="${fileName}">
-  Confirm Import
+ <div style="margin-top:12px; display:flex; gap:10px;">
+
+  <button id="validateImportBtn"
+  style="padding:8px 14px; background:#f1f5f9; border:1px solid #ccc; border-radius:4px; cursor:pointer;"
+  data-file="${fileName}">
+  Validate Excel
   </button>
+
+  <button id="confirmImportBtn"
+  style="padding:8px 14px; background:#0b3b66; color:white; border:none; border-radius:4px; cursor:pointer;"
+  data-file="${fileName}">
+  Import Data
+  </button>
+
+  </div>
   `;
 
   container.innerHTML = table;
 
-  // attach click handler
   document.getElementById("confirmImportBtn")
     .addEventListener("click", confirmInwardImport);
+
+  document.getElementById("validateImportBtn")
+    .addEventListener("click", validateInwardImport);
 }
 
 
@@ -950,6 +968,70 @@ async function confirmInwardImport(e) {
     }
 
 
+    async function validateInwardImport(e) {
+
+      const fileName = e.target.dataset.file;
+
+      const res = await fetch("/admin/import-inward-validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ file: fileName })
+      });
+
+      const data = await res.json();
+
+      if (!data.success) {
+        alert(data.message || "Validation failed");
+        return;
+      }
+
+      // Store validation results globally
+      window.__excelValidation = data;
+
+      // Highlight rows
+      highlightPreviewErrors(data.skippedRows);
+
+      renderImportResult(data);
+
+    }
+
+    function highlightPreviewErrors(skippedRows) {
+
+      if (!skippedRows || !skippedRows.length) return;
+
+      const table = document.querySelector("#excelPreviewContainer table");
+
+      if (!table) return;
+
+      const rows = table.querySelectorAll("tbody tr");
+
+      skippedRows.forEach(error => {
+
+        const rowIndex = error.row - 2; // convert Excel row → table row
+
+        const tr = rows[rowIndex];
+
+        if (!tr) return;
+
+        if (error.reason.includes("Excel")) {
+
+          tr.style.background = "#ffe4e6"; // light red
+          tr.title = "Duplicate inside Excel";
+
+        }
+
+        if (error.reason.includes("database")) {
+
+          tr.style.background = "#fff7ed"; // light orange
+          tr.title = "Duplicate in database";
+
+        }
+
+      });
+
+    }
+
 
     function renderImportResult(data) {
 
@@ -965,10 +1047,10 @@ async function confirmInwardImport(e) {
       <h4>Import Result</h4>
 
       <p>
-        <strong>Inserted:</strong> ${data.inserted} <br>
-        <strong>Skipped:</strong> ${data.skipped} <br>
-        <strong>Duplicate in Database:</strong> ${data.dbDuplicates?.length || 0} <br>
-        <strong>Duplicate inside Excel:</strong> ${data.excelDuplicates?.length || 0}
+        <strong>Inserted:</strong> ${data.inserted ?? 0} <br>
+        <strong>Skipped:</strong> ${data.skipped ?? 0} <br>
+        <strong>Duplicate in Database:</strong> ${data.dbDuplicates?.length ?? 0} <br>
+        <strong>Duplicate inside Excel:</strong> ${data.excelDuplicates?.length ?? 0}
       </p>
       `;
 

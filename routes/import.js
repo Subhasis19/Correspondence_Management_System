@@ -186,6 +186,138 @@ function parseExcelDate(value) {
     return null;
 }
 
+router.post("/admin/import-inward-validate", requireAdmin, async (req, res) => {
+
+    try {
+
+        const { file } = req.body;
+
+        if (!file) {
+            return res.status(400).json({
+                success: false,
+                message: "Missing file name"
+            });
+        }
+
+        const filePath = path.join(
+            __dirname,
+            "../uploads/excel/inward",
+            file
+        );
+
+        if (!fs.existsSync(filePath)) {
+            return res.status(404).json({
+                success: false,
+                message: "File not found"
+            });
+        }
+
+        const workbook = XLSX.readFile(filePath);
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const rawRows = XLSX.utils.sheet_to_json(sheet);
+
+        const rows = rawRows.map(row => {
+
+            const cleaned = {};
+
+            Object.keys(row).forEach(key => {
+
+                const cleanKey = key
+                    .replace(/\n/g, "")
+                    .replace(/\r/g, "")
+                    .trim();
+
+                cleaned[cleanKey] = row[key];
+
+            });
+
+            return cleaned;
+
+        });
+
+        const inwardNos = rows.map(r => String(r.inward_no).trim());
+
+        const existing = await dbQuery(
+            "SELECT inward_no FROM inward_records WHERE inward_no IN (?)",
+            [inwardNos]
+        );
+
+        const existingSet = new Set(
+            existing.map(r => String(r.inward_no).trim())
+        );
+
+        const skippedRows = [];
+        const dbDuplicates = [];
+        const excelDuplicates = [];
+        const seen = new Set();
+
+        rows.forEach((r, index) => {
+
+            if (!r.inward_no) {
+
+                skippedRows.push({
+                    row: index + 2,
+                    inward_no: "",
+                    reason: "Missing inward number"
+                });
+
+                return;
+            }
+
+            const inwardNo = String(r.inward_no).trim();
+
+            if (seen.has(inwardNo)) {
+
+                excelDuplicates.push(inwardNo);
+
+                skippedRows.push({
+                    row: index + 2,
+                    inward_no: inwardNo,
+                    reason: "Duplicate inside Excel"
+                });
+
+                return;
+            }
+
+            seen.add(inwardNo);
+
+            if (existingSet.has(inwardNo)) {
+
+                dbDuplicates.push(inwardNo);
+
+                skippedRows.push({
+                    row: index + 2,
+                    inward_no: inwardNo,
+                    reason: "Duplicate in database"
+                });
+
+            }
+
+        });
+
+        res.json({
+            success: true,
+            inserted: rows.length - skippedRows.length,
+            skipped: skippedRows.length,
+            dbDuplicates: dbDuplicates || [],
+            excelDuplicates: excelDuplicates || [],
+            skippedRows: skippedRows || []
+        });
+
+    } catch (err) {
+
+        console.error("VALIDATION ERROR >>>", err);
+
+        res.status(500).json({
+            success: false,
+            message: err.message
+        });
+
+    }
+
+});
+
+
 router.post("/admin/import-inward-confirm", requireAdmin, async (req, res) => {
 
     try {
