@@ -3,7 +3,7 @@ const fs = require("fs");
 const express = require("express");
 const router = express.Router();
 const path = require("path");
-const { dbQuery } = require("../db");
+const { dbQuery, pool } = require("../db");
 const multer = require("multer");
 const { requireAdmin } = require("../middlewares/authMiddleware");
 
@@ -319,30 +319,50 @@ router.post("/admin/import-inward-confirm", requireAdmin, async (req, res) => {
 
         if (values.length) {
 
-            await dbQuery(
-                `INSERT INTO inward_records (
-                    date_of_receipt,
-                    inward_no,
-                    month,
-                    year,
-                    received_in,
-                    name_of_sender,
-                    address_of_sender,
-                    sender_city,
-                    sender_state,
-                    sender_pin,
-                    sender_region,
-                    sender_org_type,
-                    type_of_document,
-                    language_of_document,
-                    count,
-                    remarks,
-                    issued_to,
-                    reply_required,
-                    group_name
+            const connection = await pool.promise().getConnection();
+
+            try {
+
+                await connection.beginTransaction();
+
+                await connection.query(
+                    `INSERT INTO inward_records (
+                        date_of_receipt,
+                        inward_no,
+                        month,
+                        year,
+                        received_in,
+                        name_of_sender,
+                        address_of_sender,
+                        sender_city,
+                        sender_state,
+                        sender_pin,
+                        sender_region,
+                        sender_org_type,
+                        type_of_document,
+                        language_of_document,
+                        count,
+                        remarks,
+                        issued_to,
+                        reply_required,
+                        group_name
                     ) VALUES ?`,
-                [values]
-            );
+                    [values]
+                );
+
+                await connection.commit();
+
+            } catch (err) {
+
+                await connection.rollback();
+                throw err;
+
+            } finally {
+
+                connection.release();
+
+            }
+
         }
 
         res.json({
