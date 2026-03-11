@@ -253,28 +253,41 @@ router.post("/admin/import-inward-confirm", requireAdmin, async (req, res) => {
 
         const dbDuplicates = [];
         const excelDuplicates = [];
-
+        const skippedRows = [];
         const seen = new Set();
-
         const rowsToInsert = [];
 
-        rows.forEach(r => {
-
+        rows.forEach((r, index) => {
             if (!r.inward_no) return; // skip empty rows
 
             const inwardNo = String(r.inward_no).trim();
 
             if (seen.has(inwardNo)) {
                 excelDuplicates.push(inwardNo);
+
+                skippedRows.push({
+                    row: index + 2, // +2 because Excel header + 0 index
+                    inward_no: inwardNo,
+                    reason: "Duplicate inside Excel"
+                });
+
                 return;
             }
 
                 seen.add(inwardNo);
 
                 if (existingSet.has(inwardNo)) {
-                dbDuplicates.push(inwardNo);
-                return;
-            }
+
+                    dbDuplicates.push(inwardNo);
+
+                    skippedRows.push({
+                        row: index + 2,
+                        inward_no: inwardNo,
+                        reason: "Duplicate in database"
+                    });
+
+                    return;
+                }
             r.inward_no = inwardNo;
             rowsToInsert.push(r);
 
@@ -335,9 +348,10 @@ router.post("/admin/import-inward-confirm", requireAdmin, async (req, res) => {
         res.json({
             success: true,
             inserted: values.length,
+            skipped: skippedRows.length,
             dbDuplicates,
-            excelDuplicates
-            
+            excelDuplicates,
+            skippedRows
         });
 
     } catch (err) {

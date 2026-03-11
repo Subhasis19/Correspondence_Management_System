@@ -930,13 +930,87 @@ async function confirmInwardImport(e) {
     return;
   }
 
-  alert(
-`Import Complete
+      let message =
+      `Import Complete
 
-Inserted: ${data.inserted}
-DB duplicates: ${data.dbDuplicates.length}
-Excel duplicates: ${data.excelDuplicates.length}`
-  );
+      Inserted: ${data.inserted}
+      Skipped: ${data.skipped}`;
 
-}
+      if (data.skippedRows && data.skippedRows.length) {
 
+        message += "\n\nSkipped Rows:\n";
+
+        data.skippedRows.forEach(r => {
+          message += `Row ${r.row} (Inward ${r.inward_no}) → ${r.reason}\n`;
+        });
+
+      }
+
+      renderImportResult(data);
+    }
+
+
+
+    function renderImportResult(data) {
+
+      const container = document.getElementById("excelImportResult");
+
+      let html = `
+      <div style="
+          border:1px solid #ddd;
+          border-radius:6px;
+          padding:15px;
+          background:#fafafa;
+      ">
+      <h4>Import Result</h4>
+
+      <p>
+        <strong>Inserted:</strong> ${data.inserted} <br>
+        <strong>Skipped:</strong> ${data.skipped} <br>
+        <strong>Duplicate in Database:</strong> ${data.dbDuplicates?.length || 0} <br>
+        <strong>Duplicate inside Excel:</strong> ${data.excelDuplicates?.length || 0}
+      </p>
+      `;
+
+      if (data.skippedRows && data.skippedRows.length) {
+
+        html += `
+        <h5>Skipped Rows</h5>
+
+        <div style="max-height:300px; overflow:auto; border:1px solid #ddd;">
+        <table style="width:100%; border-collapse:collapse; font-size:13px;">
+          <thead style="background:#f0f0f0;">
+            <tr>
+              <th style="padding:6px;border:1px solid #ddd;">Row</th>
+              <th style="padding:6px;border:1px solid #ddd;">Inward No</th>
+              <th style="padding:6px;border:1px solid #ddd;">Reason</th>
+            </tr>
+          </thead>
+          <tbody>
+        `;
+
+        data.skippedRows.forEach(r => {
+
+          html += `
+          <tr>
+            <td style="padding:6px;border:1px solid #ddd;">${r.row}</td>
+            <td style="padding:6px;border:1px solid #ddd;">${r.inward_no}</td>
+            <td style="padding:6px;border:1px solid #ddd;">${r.reason}</td>
+          </tr>
+          `;
+
+        });
+
+        html += `
+          </tbody>
+        </table>
+        </div>
+        `;
+      }
+
+      html += `</div>`;
+
+      container.innerHTML = html;
+      container.scrollIntoView({ behavior: "smooth" });
+
+    }
