@@ -36,6 +36,30 @@ const outwardStorage = multer.diskStorage({
 const uploadInward = multer({ storage: inwardStorage });
 const uploadOutward = multer({ storage: outwardStorage });
 
+function cleanExcelRows(rawRows) {
+  return rawRows.map(row => {
+    const cleaned = {};
+
+    Object.keys(row).forEach(key => {
+      const cleanKey = key
+        .replace(/\n/g, "")
+        .replace(/\r/g, "")
+        .trim();
+
+      cleaned[cleanKey] = row[key];
+    });
+
+    return cleaned;
+  });
+}
+
+function readExcel(filePath) {
+  const workbook = XLSX.readFile(filePath);
+  const sheet = workbook.Sheets[workbook.SheetNames[0]];
+  const rawRows = XLSX.utils.sheet_to_json(sheet);
+  return cleanExcelRows(rawRows);
+}
+
 // ================================
 // ROUTE: UPLOAD INWARD EXCEL
 // ================================
@@ -53,32 +77,8 @@ router.post(
 
             const filePath = req.file.path;
 
-            // READ EXCEL FILE
-            const workbook = XLSX.readFile(filePath);
+            const rows = readExcel(filePath);
 
-            const sheetName = workbook.SheetNames[0];
-
-            const sheet = workbook.Sheets[sheetName];
-
-            // CONVERT TO JSON
-            let rawRows = XLSX.utils.sheet_to_json(sheet);
-
-            let rows = rawRows.map(row => {
-                const cleaned = {};
-
-                Object.keys(row).forEach(key => {
-
-                    const cleanKey = key
-                        .replace(/\n/g, "")   // remove newline
-                        .replace(/\r/g, "")
-                        .trim();              // remove spaces
-
-                    cleaned[cleanKey] = row[key];
-
-                });
-
-                return cleaned;
-            });
             // PREVIEW ALL ROWS (files usually <200 rows)
             const preview = rows;
 
@@ -127,8 +127,6 @@ router.post(
 
 function normalizeLanguage(value) {
 
-    if (!value) return "English"; // default to English if empty
-
     const v = String(value).toUpperCase();
 
     if (v.includes("BI")) return "Bilingual";
@@ -141,12 +139,10 @@ function normalizeLanguage(value) {
 
 function normalizeReplyRequired(value) {
 
-    if (!value) return "No"; // if empty, treat as "No"
 
     const v = String(value).toUpperCase();
 
-    if (v === "Y") return "Yes";
-    if (v === "YES") return "Yes";
+    if (v === "Y" || v === "YES") return "Yes";
 
     return "No";
 }
@@ -212,30 +208,13 @@ router.post("/admin/import-inward-validate", requireAdmin, async (req, res) => {
             });
         }
 
-        const workbook = XLSX.readFile(filePath);
-        const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        const rawRows = XLSX.utils.sheet_to_json(sheet);
+        const rows = readExcel(filePath);
 
-        const rows = rawRows.map(row => {
-
-            const cleaned = {};
-
-            Object.keys(row).forEach(key => {
-
-                const cleanKey = key
-                    .replace(/\n/g, "")
-                    .replace(/\r/g, "")
-                    .trim();
-
-                cleaned[cleanKey] = row[key];
-
-            });
-
-            return cleaned;
-
-        });
-
-        const inwardNos = rows.map(r => String(r.inward_no).trim());
+        
+        const inwardNos = rows
+        .map(r => r.inward_no)
+        .filter(Boolean)
+        .map(n => String(n).trim());
 
         const existing = await dbQuery(
             "SELECT inward_no FROM inward_records WHERE inward_no IN (?)",
@@ -373,35 +352,15 @@ router.post("/admin/import-inward-confirm", requireAdmin, async (req, res) => {
             });
         }
 
-        // READ EXCEL AGAIN
-        const workbook = XLSX.readFile(filePath);
-        const sheet = workbook.Sheets[workbook.SheetNames[0]];
-
-        let rawRows = XLSX.utils.sheet_to_json(sheet);
-
-        // CLEAN HEADERS
-        const rows = rawRows.map(row => {
-
-            const cleaned = {};
-
-            Object.keys(row).forEach(key => {
-
-                const cleanKey = key
-                    .replace(/\n/g, "")
-                    .replace(/\r/g, "")
-                    .trim();
-
-                cleaned[cleanKey] = row[key];
-
-            });
-
-            return cleaned;
-
-        });
+        const rows = readExcel(filePath);
 
         // COLLECT inward numbers
         
-        const inwardNos = rows.map(r => String(r.inward_no).trim());
+        
+        const inwardNos = rows
+        .map(r => r.inward_no)
+        .filter(Boolean)
+        .map(n => String(n).trim());
 
         const existing = await dbQuery(
             "SELECT inward_no FROM inward_records WHERE inward_no IN (?)",

@@ -71,21 +71,6 @@
             .join("");
     }
 
-    // Simple HTML escaper
-    function escapeHtml(s) {
-        return String(s || "").replace(/[&<>"'`=\/]/g, function (c) {
-            return {
-                "&": "&amp;",
-                "<": "&lt;",
-                ">": "&gt;",
-                '"': "&quot;",
-                "'": "&#39;",
-                "/": "&#x2F;",
-                "`": "&#x60;",
-                "=": "&#x3D;",
-            }[c];
-        });
-    }
 
     // Open modal for Add or Edit
     function openUserModal({ mode = "add", user = {} } = {}) {
@@ -1048,7 +1033,7 @@ async function confirmInwardImport(e) {
 
         if (error.reason.includes("Excel")) {
 
-          tr.style.background = "#fcb761 "; // light orange
+          tr.style.background = "#fcb761"; // light orange
           tr.title = "Duplicate inside Excel";
 
         }
