@@ -56,7 +56,9 @@ function cleanExcelRows(rawRows) {
 function readExcel(filePath) {
   const workbook = XLSX.readFile(filePath);
   const sheet = workbook.Sheets[workbook.SheetNames[0]];
-  const rawRows = XLSX.utils.sheet_to_json(sheet);
+  const rawRows = XLSX.utils.sheet_to_json(sheet, {
+    defval: ""   
+  });
   return cleanExcelRows(rawRows);
 }
 
@@ -127,24 +129,41 @@ router.post(
 
 function normalizeLanguage(value) {
 
-    const v = String(value).toUpperCase();
+    const v = String(value)
+        .toUpperCase()
+        .replace(/\s/g, "");
 
-    if (v.includes("BI")) return "Bilingual";
-    if (v.includes("HI")) return "Hindi";
-    if (v.includes("H")) return "Hindi";
+    if (v === "E" || v === "ENGLISH") return "English";
 
-    return "English";
+    if (v === "H" || v === "HINDI" || v === "HI") return "Hindi";
+
+    if (
+        v === "BI" ||
+        v === "BI,H" ||
+        v === "H,BI" ||
+        v === "BI,E" ||
+        v === "E,BI" ||
+        v === "E,H"  ||
+        v === "H,E"
+    ) {
+        return "Bilingual";
+    }
+
+    return null; // invalid value
 }
 
 
 function normalizeReplyRequired(value) {
 
+    const v = String(value)
+        .toUpperCase()
+        .trim();
 
-    const v = String(value).toUpperCase();
+    if (v === "Y") return "Yes";
 
-    if (v === "Y" || v === "YES") return "Yes";
+    if (v === "N") return "No";
 
-    return "No";
+    return null; // invalid
 }
 
 
@@ -244,32 +263,32 @@ router.post("/admin/import-inward-validate", requireAdmin, async (req, res) => {
             }
 
             // Validate language_of_document
-            const language = String(r.language_of_document || "").trim();
+            const language = normalizeLanguage(r.language_of_document);
 
             if (!language) {
 
                 skippedRows.push({
                     row: index + 2,
                     inward_no: r.inward_no || "",
-                    reason: "Missing Language of Document"
+                    reason: "Invalid Language of Document"
                 });
 
                 return;
             }
 
             // Validate reply_required
-            const replyRequired = String(r.reply_required || "").trim();
+            const replyRequired = normalizeReplyRequired(r.reply_required);
 
-            if (!replyRequired) {
+                if (!replyRequired) {
 
-                skippedRows.push({
-                    row: index + 2,
-                    inward_no: r.inward_no || "",
-                    reason: "Missing Reply Required"
-                });
+                    skippedRows.push({
+                        row: index + 2,
+                        inward_no: r.inward_no || "",
+                        reason: "Invalid Reply Required value"
+                    });
 
-                return;
-            }
+                    return;
+                }
 
 
             const inwardNo = String(r.inward_no).trim();

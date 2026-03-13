@@ -2,6 +2,43 @@
 // Handles loading users, add/edit/delete from Admin Panel
 // Requires: dashboard.js shows #adminPanelView and has a button #addUserBtn
 
+
+    const INWARD_SCHEMA = [
+      "date_of_receipt",
+      "inward_no",
+      "month",
+      "year",
+      "received_in",
+      "name_of_sender",
+      "address_of_sender",
+      "sender_city",
+      "sender_state",
+      "sender_pin",
+      "sender_region",
+      "sender_org_type",
+      "type_of_document",
+      "language_of_document",
+      "count",
+      "remarks",
+      "issued_to",
+      "reply_required"
+    ];
+
+
+    function validateExcelSchema(rows) {
+
+      if (!rows.length) return [];
+
+      const firstRowKeys = Object.keys(rows[0]).map(k => k.trim());
+
+      const missingColumns = INWARD_SCHEMA.filter(col =>
+        !firstRowKeys.includes(col)
+      );
+
+      return missingColumns;
+
+}
+
 (async function () {
     // Utility: create element from HTML string
     function createEl(html) {
@@ -821,14 +858,32 @@ async function uploadInwardExcel() {
     credentials: "same-origin"
   });
 
-  const data = await res.json();
+  
+      if (!res.ok) {
+      alert("Upload request failed");
+      return;
+    }
+
+    const data = await res.json();
 
   if (!data.success) {
     alert(data.message || "Upload failed");
     return;
   }
 
-  renderExcelPreview(data.preview, data.totalRows, data.file);
+  const missingColumns = validateExcelSchema(data.preview);
+
+    if (missingColumns.length) {
+
+      alert(
+        "Excel format incorrect.\n\nMissing columns:\n\n" +
+        missingColumns.join("\n")
+      );
+
+      return;
+    }
+
+    renderExcelPreview(data.preview, data.totalRows, data.file);
 
 }
 
@@ -842,24 +897,24 @@ function renderExcelPreview(rows, totalRows, fileName) {
     return;
   }
 
-  const columns = Object.keys(rows[0]);
+  const columns = INWARD_SCHEMA;
 
   let table = `
   <h4>Preview (${totalRows} rows in file)</h4>
 
     <div style="margin-bottom:8px;font-size:13px;">
-    <span style="background:#ffe4e6;padding:3px 8px;border-radius:4px;margin-left:8px;">Duplicate in Database</span>
+    <span style="background:#fa9ca3;padding:3px 8px;border-radius:4px;margin-left:8px;">Duplicate in Database</span>
     <span style="background:#fcb761;padding:3px 8px;border-radius:4px;">Duplicate in Excel</span>
-    <span style="background:#fef3c7;padding:3px 8px;border-radius:4px;">Missing Language</span>
-    <span style="background:#fef3c7;padding:3px 8px;border-radius:4px;">Missing Reply Required</span>
+    <span style="background:#fef3c7;padding:3px 8px;border-radius:4px;">Invalid Language</span>
+    <span style="background:#fef3c7;padding:3px 8px;border-radius:4px;">Invalid Reply Required</span>
     
     </div>
   <div style="max-height:500px; overflow:auto; border:1px solid #ddd;">
 
   <table border="1" cellpadding="6" style="border-collapse:collapse; width:100%; font-size:13px;">
-  <thead>
+  <thead style="position:sticky; top:0; background:#f8fafc; z-index:2;">
   <tr>
-  ${columns.map(c => `<th>${c}</th>`).join("")}
+  ${columns.map(c => `<th style="position:sticky; top:0; background:#f8fafc;">${c}</th>`).join("")}
   </tr>
   </thead>
   <tbody>
@@ -930,7 +985,13 @@ async function confirmInwardImport(e) {
     body: JSON.stringify({ file: fileName })
   });
 
-  const data = await res.json();
+  
+      if (!res.ok) {
+      alert("Upload request failed");
+      return;
+    }
+
+    const data = await res.json();
 
   if (!data.success) {
     alert(data.message || "Import failed");
@@ -953,6 +1014,16 @@ async function confirmInwardImport(e) {
 
       }
 
+      alert(
+        `✅ Import Successful
+
+      Inserted: ${data.inserted}
+      Skipped: ${data.skipped}`
+      );
+
+      document.getElementById("inwardExcelFile").value = "";
+      document.getElementById("excelPreviewContainer").innerHTML = "";
+
       renderImportResult(data);
     }
 
@@ -968,7 +1039,12 @@ async function confirmInwardImport(e) {
         body: JSON.stringify({ file: fileName })
       });
 
+      if (!res.ok) {
+        alert("Upload request failed");
+        return;
+      }
       const data = await res.json();
+
 
       if (!data.success) {
         alert(data.message || "Validation failed");
@@ -990,7 +1066,6 @@ async function confirmInwardImport(e) {
       /* Count REAL errors (not duplicates) */
 
       const realErrors = data.skippedRows?.filter(r =>
-        r.reason.includes("Missing") ||
         r.reason.includes("Invalid")
       ).length || 0;
 
@@ -1040,23 +1115,34 @@ async function confirmInwardImport(e) {
 
         if (error.reason.includes("database")) {
 
-          tr.style.background = "#ffe4e6"; // light red
+          tr.style.background = "#fa9ca3"; // light red
           tr.title = "Duplicate in database";
 
         }
-        if (error.reason.includes("Missing Language")) {
 
-          tr.style.background = "#fef3c7";
-          tr.title = "Missing Language of Document";
+        const cells = tr.querySelectorAll("td");
+
+        if (error.reason.includes("Language")) {
+
+          const colIndex = INWARD_SCHEMA.indexOf("language_of_document");
+
+          if (cells[colIndex]) {
+            cells[colIndex].style.background = "#fef3c7";
+            cells[colIndex].title = "Invalid Language";
+          }
 
         }
 
-      if (error.reason.includes("Missing Reply")) {
+        if (error.reason.includes("Reply")) {
 
-        tr.style.background = "#fef3c7";
-        tr.title = "Missing Reply Required";
+          const colIndex = INWARD_SCHEMA.indexOf("reply_required");
 
-      }
+          if (cells[colIndex]) {
+            cells[colIndex].style.background = "#fef3c7";
+            cells[colIndex].title = "Invalid Reply Required";
+          }
+
+        }
 
 
       });
@@ -1066,12 +1152,12 @@ async function confirmInwardImport(e) {
 
     function renderImportResult(data) {
 
-      const missingLanguage = data.skippedRows?.filter(r =>
-        r.reason.includes("Missing Language")
+      const invalidLanguage = data.skippedRows?.filter(r =>
+        r.reason.includes("Language")
       ).length || 0;
 
-      const missingReply = data.skippedRows?.filter(r =>
-        r.reason.includes("Missing Reply")
+      const invalidReply = data.skippedRows?.filter(r =>
+        r.reason.includes("Reply")
       ).length || 0;
 
 
@@ -1091,8 +1177,8 @@ async function confirmInwardImport(e) {
         <strong>Skipped:</strong> ${data.skipped ?? 0} <br>
         <strong>Duplicate in Database:</strong> ${data.dbDuplicates?.length ?? 0} <br>
         <strong>Duplicate inside Excel:</strong> ${data.excelDuplicates?.length ?? 0} <br>
-        <strong>Missing Language:</strong> ${missingLanguage} <br>
-        <strong>Missing Reply Required:</strong> ${missingReply}
+        <strong>Invalid Language:</strong> ${invalidLanguage} <br>
+        <strong>Invalid Reply Required:</strong> ${invalidReply}
       </p>
       `;
 
@@ -1103,11 +1189,11 @@ async function confirmInwardImport(e) {
 
         <div style="max-height:300px; overflow:auto; border:1px solid #ddd;">
         <table style="width:100%; border-collapse:collapse; font-size:13px;">
-          <thead style="background:#f0f0f0;">
+          <thead style="background:#f0f0f0; position:sticky; top:0; z-index:2;">
             <tr>
-              <th style="padding:6px;border:1px solid #ddd;">Row</th>
-              <th style="padding:6px;border:1px solid #ddd;">Inward No</th>
-              <th style="padding:6px;border:1px solid #ddd;">Reason</th>
+              <th style="padding:6px;border:1px solid #ddd; position:sticky; top:0; background:#f0f0f0;">Row</th>
+              <th style="padding:6px;border:1px solid #ddd; position:sticky; top:0; background:#f0f0f0;">Inward No</th>
+              <th style="padding:6px;border:1px solid #ddd; position:sticky; top:0; background:#f0f0f0;">Reason</th>
             </tr>
           </thead>
           <tbody>
