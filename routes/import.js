@@ -37,29 +37,29 @@ const uploadInward = multer({ storage: inwardStorage });
 const uploadOutward = multer({ storage: outwardStorage });
 
 function cleanExcelRows(rawRows) {
-  return rawRows.map(row => {
-    const cleaned = {};
+    return rawRows.map(row => {
+        const cleaned = {};
 
-    Object.keys(row).forEach(key => {
-      const cleanKey = key
-        .replace(/\n/g, "")
-        .replace(/\r/g, "")
-        .trim();
+        Object.keys(row).forEach(key => {
+            const cleanKey = key
+                .replace(/\n/g, "")
+                .replace(/\r/g, "")
+                .trim();
 
-      cleaned[cleanKey] = row[key];
+            cleaned[cleanKey] = row[key];
+        });
+
+        return cleaned;
     });
-
-    return cleaned;
-  });
 }
 
 function readExcel(filePath) {
-  const workbook = XLSX.readFile(filePath);
-  const sheet = workbook.Sheets[workbook.SheetNames[0]];
-  const rawRows = XLSX.utils.sheet_to_json(sheet, {
-    defval: ""   
-  });
-  return cleanExcelRows(rawRows);
+    const workbook = XLSX.readFile(filePath);
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    const rawRows = XLSX.utils.sheet_to_json(sheet, {
+        defval: ""
+    });
+    return cleanExcelRows(rawRows);
 }
 
 // ================================
@@ -102,27 +102,34 @@ router.post(
 // ================================
 // ROUTE: UPLOAD OUTWARD EXCEL
 // ================================
-
 router.post(
     "/admin/import-outward-upload",
     requireAdmin,
     uploadOutward.single("file"),
     async (req, res) => {
         try {
+
             if (!req.file) {
                 return res.status(400).json({ message: "No file uploaded" });
             }
 
+            const filePath = req.file.path;
+
+            const rows = readExcel(filePath);
+
+            const preview = rows;
+
             res.json({
                 success: true,
-                message: "File uploaded successfully",
+                message: "File uploaded and parsed",
                 file: req.file.filename,
-                path: req.file.path
+                totalRows: rows.length,
+                preview: preview
             });
 
         } catch (err) {
-            console.error("Upload error:", err);
-            res.status(500).json({ message: "Upload failed" });
+            console.error("Excel parse error:", err);
+            res.status(500).json({ message: "Failed to parse Excel file" });
         }
     }
 );
@@ -143,7 +150,7 @@ function normalizeLanguage(value) {
         v === "H,BI" ||
         v === "BI,E" ||
         v === "E,BI" ||
-        v === "E,H"  ||
+        v === "E,H" ||
         v === "H,E"
     ) {
         return "Bilingual";
@@ -229,11 +236,11 @@ router.post("/admin/import-inward-validate", requireAdmin, async (req, res) => {
 
         const rows = readExcel(filePath);
 
-        
+
         const inwardNos = rows
-        .map(r => r.inward_no)
-        .filter(Boolean)
-        .map(n => String(n).trim());
+            .map(r => r.inward_no)
+            .filter(Boolean)
+            .map(n => String(n).trim());
 
         const existing = await dbQuery(
             "SELECT inward_no FROM inward_records WHERE inward_no IN (?)",
@@ -279,16 +286,16 @@ router.post("/admin/import-inward-validate", requireAdmin, async (req, res) => {
             // Validate reply_required
             const replyRequired = normalizeReplyRequired(r.reply_required);
 
-                if (!replyRequired) {
+            if (!replyRequired) {
 
-                    skippedRows.push({
-                        row: index + 2,
-                        inward_no: r.inward_no || "",
-                        reason: "Invalid Reply Required value"
-                    });
+                skippedRows.push({
+                    row: index + 2,
+                    inward_no: r.inward_no || "",
+                    reason: "Invalid Reply Required value"
+                });
 
-                    return;
-                }
+                return;
+            }
 
 
             const inwardNo = String(r.inward_no).trim();
@@ -374,12 +381,12 @@ router.post("/admin/import-inward-confirm", requireAdmin, async (req, res) => {
         const rows = readExcel(filePath);
 
         // COLLECT inward numbers
-        
-        
+
+
         const inwardNos = rows
-        .map(r => r.inward_no)
-        .filter(Boolean)
-        .map(n => String(n).trim());
+            .map(r => r.inward_no)
+            .filter(Boolean)
+            .map(n => String(n).trim());
 
         const existing = await dbQuery(
             "SELECT inward_no FROM inward_records WHERE inward_no IN (?)",
@@ -413,20 +420,20 @@ router.post("/admin/import-inward-confirm", requireAdmin, async (req, res) => {
                 return;
             }
 
-                seen.add(inwardNo);
+            seen.add(inwardNo);
 
-                if (existingSet.has(inwardNo)) {
+            if (existingSet.has(inwardNo)) {
 
-                    dbDuplicates.push(inwardNo);
+                dbDuplicates.push(inwardNo);
 
-                    skippedRows.push({
-                        row: index + 2,
-                        inward_no: inwardNo,
-                        reason: "Duplicate in database"
-                    });
+                skippedRows.push({
+                    row: index + 2,
+                    inward_no: inwardNo,
+                    reason: "Duplicate in database"
+                });
 
-                    return;
-                }
+                return;
+            }
             r.inward_no = inwardNo;
             rowsToInsert.push(r);
 

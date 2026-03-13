@@ -1,92 +1,409 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard </title>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard</title>
 
     <!-- Main dashboard CSS -->
-    <link rel="stylesheet" href="css/admin-style.css">
+    <link rel="stylesheet" href="css/admin-style.css" />
 
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
 
     <!-- Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-</head>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
+  </head>
 
-<body>
-  
+  <body>
     <div class="sidebar">
-        <div class="sidebar-header">
-            <h2>C-DAC</h2>
-            <p>Rajbhasha Report Entry</p>
+      <div class="sidebar-header">
+        <h2>C-DAC</h2>
+        <p>Rajbhasha Report Entry</p>
+      </div>
+
+      <div class="sidebar-menu">
+        <a href="#" class="menu-item" data-page="dashboard">
+          <!-- <i class="fa-solid fa-grid-2-plus"></i> -->
+          <i class="fa-solid fa-table-columns"></i>
+          <span>Dashboard</span>
+        </a>
+
+        <a href="#" class="menu-item" data-page="inward">
+          <i class="fa-solid fa-file-import"></i>
+          <span>Inward Entry</span>
+        </a>
+
+        <a href="#" class="menu-item" data-page="outward">
+          <i class="fa-solid fa-file-export"></i>
+          <span>Outward Entry</span>
+        </a>
+
+        <a href="#" class="menu-item" data-page="notings">
+          <i class="fa-solid fa-square-poll-horizontal"></i>
+          <span>Notings</span>
+        </a>
+
+        <a href="#" class="menu-item" data-page="emails">
+          <i class="fa-solid fa-envelope-open"></i>
+          <span>Emails</span>
+        </a>
+
+        <a href="#" class="menu-item" data-page="admin-panel">
+          <i class="fa-solid fa-users-gear"></i>
+          <span>Admin Panel</span>
+        </a>
+      </div>
+
+      <div class="sidebar-footer">
+        <div class="user-profile">
+          <div class="avatar">👤</div>
+          <div class="user-info">
+            <span class="username" id="adminName">admin</span>
+          </div>
         </div>
 
-        <div class="sidebar-menu">
-            <a href="#" class="menu-item" data-page="dashboard">
-                <!-- <i class="fa-solid fa-grid-2-plus"></i> -->
-                <i class="fa-solid fa-table-columns"></i>
-                <span>Dashboard</span>
-            </a>
-
-            <a href="#" class="menu-item" data-page="inward">
-                <i class="fa-solid fa-file-import"></i>
-                <span>Inward Entry</span>
-            </a>
-
-            <a href="#" class="menu-item" data-page="outward">
-                <i class="fa-solid fa-file-export"></i>
-                <span>Outward Entry</span>
-            </a>
-
-            <a href="#" class="menu-item" data-page="notings">
-                <i class="fa-solid fa-square-poll-horizontal"></i>
-                <span>Notings</span>
-            </a>
-
-
-            <a href="#" class="menu-item" data-page="emails">
-                <i class="fa-solid fa-envelope-open"></i>
-                <span>Emails</span>
-            </a>  
-        
-            <a href="#" class="menu-item" data-page="admin-panel">
-                <i class="fa-solid fa-users-gear"></i>
-                <span>Admin Panel</span>
-            </a>
-        </div>
-
-        <div class="sidebar-footer">
-            <div class="user-profile">
-                <div class="avatar">👤</div>
-                <div class="user-info">
-                    <span class="username" id="adminName">admin</span>
-                </div>
-            </div>
-
-            <a href="/logout" class="logout-link">
-                <i class="fa-solid fa-sign-out-alt"></i> Logout
-            </a>
-        </div>
+        <a href="/logout" class="logout-link">
+          <i class="fa-solid fa-sign-out-alt"></i> Logout
+        </a>
+      </div>
     </div>
 
     <div class="content">
-
-        <!-- -------------------------
+      <!-- -------------------------
              DASHBOARD VIEW lettersReceivedHindi
         --------------------------- -->
-        <div id="dashboardView">
-            <div class="header-section">
-                <div class="welcome-header">
-                    <h1>Welcome, <span id="welcomeName">admin</span></h1>
-                    <p class="subtitle">Manage inward and outward correspondence</p>
-                </div>
+      <div id="dashboardView">
+        <div class="header-section">
+          <div class="welcome-header">
+            <h1>Welcome, <span id="welcomeName">admin</span></h1>
+            <p class="subtitle">Manage inward and outward correspondence</p>
+          </div>
 
-        <!-- Dashboard Filter -->
-        <div style="display:flex; gap:10px; margin-top:15px; align-items:center;">
-            
-            <select id="dashMonth" style="padding:6px;">
+          <!-- Dashboard Filter -->
+          <div
+            style="
+              display: flex;
+              gap: 10px;
+              margin-top: 15px;
+              align-items: center;
+            "
+          >
+            <select id="dashMonth" style="padding: 6px">
+              <option value="">Select Month</option>
+              <option value="1">January</option>
+              <option value="2">February</option>
+              <option value="3">March</option>
+              <option value="4">April</option>
+              <option value="5">May</option>
+              <option value="6">June</option>
+              <option value="7">July</option>
+              <option value="8">August</option>
+              <option value="9">September</option>
+              <option value="10">October</option>
+              <option value="11">November</option>
+              <option value="12">December</option>
+            </select>
+
+            <select id="dashYear" style="padding: 6px">
+              <option value="">Select Year</option>
+            </select>
+
+            <button id="dashFilterBtn" class="btn-small">Apply</button>
+            <button
+              id="dashClearBtn"
+              class="btn-small"
+              style="background: #888"
+            >
+              Clear
+            </button>
+
+            <span
+              id="dashFilterLabel"
+              style="margin-left: 10px; font-weight: 600; color: #444"
+            ></span>
+          </div>
+
+          <div class="quick-stats">
+            <div class="stat-card" id="cardInwards">
+              <i class="fa-solid fa-file-import"></i>
+              <div>
+                <p class="stat-label">Total Inwards</p>
+                <p class="stat-value" id="totalInwards">0</p>
+              </div>
+            </div>
+
+            <div class="stat-card" id="cardOutwards">
+              <i class="fa-solid fa-file-export"></i>
+              <div>
+                <p class="stat-label">Total Outwards</p>
+                <p class="stat-value" id="totalOutwards">0</p>
+              </div>
+            </div>
+
+            <div class="stat-card" id="cardPending">
+              <i class="fa-solid fa-clock"></i>
+              <div>
+                <p class="stat-label">Replies Pending</p>
+                <p class="stat-value" id="repliesPending">0</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="dashboard-cards">
+          <!-- Recent Inwards -->
+          <div class="card">
+            <div class="card-header">
+              <h3>Recent Inwards</h3>
+            </div>
+
+            <div class="card-body">
+              <div class="table-scroll">
+                <table class="records-table" id="inwardsTable">
+                  <thead>
+                    <tr>
+                      <th>No</th>
+                      <th>Date</th>
+                      <th>From</th>
+                      <th>Office</th>
+                    </tr>
+                  </thead>
+                  <tbody id="inwardsTbody">
+                    <tr class="empty-state">
+                      <td colspan="4" style="text-align: center; padding: 20px">
+                        <p style="color: #999">No recent inward records.</p>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Recent Outwards -->
+          <div class="card">
+            <div class="card-header">
+              <h3>Recent Outwards</h3>
+            </div>
+
+            <div class="card-body">
+              <div class="table-scroll">
+                <table class="records-table" id="outwardsTable">
+                  <thead>
+                    <tr>
+                      <th>No</th>
+                      <th>Date</th>
+                      <th>To</th>
+                      <th>Office</th>
+                    </tr>
+                  </thead>
+                  <tbody id="outwardsTbody">
+                    <tr class="empty-state">
+                      <td colspan="4" style="text-align: center; padding: 20px">
+                        <p style="color: #999">No recent outward records.</p>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================================
+      IFRAME FORM VIEW
+================================ -->
+      <div id="iframeContainer" style="display: none">
+        <div class="iframe-toolbar">
+          <button class="back-btn dashboard-back-btn">
+            ← Back to Dashboard
+          </button>
+          <span
+            id="iframeTitle"
+            class="iframe-title"
+            style="margin-left: 10px; color: #555; font-weight: 600"
+          ></span>
+        </div>
+
+        <iframe id="formFrame" src="" frameborder="0"></iframe>
+      </div>
+
+      <!-- ================================
+      ADMIN PANEL VIEW
+================================ -->
+      <div id="adminPanelView" style="display: none">
+        <div class="admin-header">
+          <button class="back-btn dashboard-back-btn">
+            ← Back to Dashboard
+          </button>
+          <h2 style="margin-left: 10px; color: #333">User Management</h2>
+        </div>
+
+        <div class="card" style="margin-top: 20px">
+          <div class="card-header">
+            <h3>All Users</h3>
+            <button class="btn-small" id="addUserBtn">+ Add User</button>
+          </div>
+
+          <table class="records-table" id="usersTable">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Mobile</th>
+                <th>Group</th>
+                <th style="width: 130px">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td
+                  colspan="5"
+                  style="text-align: center; padding: 20px; color: #999"
+                >
+                  Loading users…
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- ================================
+        SEARCH INWARD (ADMIN)
+    ================================ -->
+        <div class="admin-search-grid">
+          <div class="card" style="margin-top: 24px">
+            <div class="card-header">
+              <h3>Search Inward Record</h3>
+            </div>
+
+            <div style="display: flex; gap: 10px; margin-bottom: 15px">
+              <input
+                type="text"
+                id="adminInwardSearchInput"
+                placeholder="Enter Inward No (e.g. INW/2026/123456)"
+                style="flex: 1; padding: 8px"
+              />
+              <button class="btn-small" id="adminInwardSearchBtn">
+                Search
+              </button>
+            </div>
+
+            <table class="records-table" id="adminInwardTable">
+              <thead>
+                <tr>
+                  <th>Inward No</th>
+                  <th>Date</th>
+                  <th>Office</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td
+                    colspan="4"
+                    style="text-align: center; padding: 20px; color: #999"
+                  >
+                    No results. Please search.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- ================================
+        SEARCH OUTWARD (ADMIN)
+    ================================ -->
+          <div class="card" style="margin-top: 24px">
+            <div class="card-header">
+              <h3>Search Outward Record</h3>
+            </div>
+
+            <div style="display: flex; gap: 10px; margin-bottom: 15px">
+              <input
+                type="text"
+                id="adminOutwardSearchInput"
+                placeholder="Enter Outward No (e.g. OUTW/2026/123456)"
+                style="flex: 1; padding: 8px"
+              />
+              <button class="btn-small" id="adminOutwardSearchBtn">
+                Search
+              </button>
+            </div>
+
+            <table class="records-table" id="adminOutwardTable">
+              <thead>
+                <tr>
+                  <th>Outward No</th>
+                  <th>Date</th>
+                  <th>Office</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td
+                    colspan="4"
+                    style="text-align: center; padding: 20px; color: #999"
+                  >
+                    No results. Please search.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div>
+          <div
+            id="excelImportBox"
+            style="
+              margin-top: 20px;
+              padding: 20px;
+              border: 1px solid #ddd;
+              border-radius: 8px;
+            "
+          >
+            <h3>Import Inward Excel</h3>
+            <input type="file" id="inwardExcelFile" accept=".xlsx,.csv" />
+            <button id="uploadInwardExcelBtn">Upload & Preview</button>
+            <div id="excelPreviewContainer" style="margin-top: 20px"></div>
+            <div id="excelImportResult" style="margin-top: 20px"></div>
+          </div>
+
+          <div
+            id="excelImportBox"
+            style="
+              margin-top: 20px;
+              padding: 20px;
+              border: 1px solid #ddd;
+              border-radius: 8px;
+            "
+          >
+            <h3>Import Outward Excel</h3>
+            <input type="file" id="outwardExcelFile" accept=".xlsx,.csv" />
+            <button id="uploadOutwardExcelBtn">Upload Outward Excel</button>
+            <div
+              id="outwardExcelPreviewContainer"
+              style="margin-top: 20px"
+            ></div>
+          </div>
+        </div>
+
+        <!-- Reports Card -->
+        <div class="card" style="margin-top: 24px" id="reportsCard">
+          <div class="card-header">
+            <h3>Generate Monthly Rajbhasha Report</h3>
+            <div style="display: flex; gap: 8px; align-items: center">
+              <select id="reportMonth" style="padding: 6px">
                 <option value="">Select Month</option>
                 <option value="1">January</option>
                 <option value="2">February</option>
@@ -100,470 +417,212 @@
                 <option value="10">October</option>
                 <option value="11">November</option>
                 <option value="12">December</option>
-            </select>
+              </select>
 
-            <select id="dashYear" style="padding:6px;">
+              <select id="reportYear" style="padding: 6px">
                 <option value="">Select Year</option>
-            </select>
+              </select>
 
-            <button id="dashFilterBtn" class="btn-small">Apply</button>
-            <button id="dashClearBtn" class="btn-small" style="background:#888;">Clear</button>
+              <select id="reportOffice" style="padding: 6px">
+                <option value="">All Offices</option>
+                <option value="Silchar">Silchar</option>
+                <option value="Guwahati">Guwahati</option>
+              </select>
 
-            <span id="dashFilterLabel" style="margin-left:10px; font-weight:600; color:#444;"></span>
+              <select id="reportGroup" style="padding: 6px">
+                <option value="">All Groups</option>
+              </select>
 
-        </div>
-
-
-                <div class="quick-stats">
-                    <div class="stat-card" id="cardInwards">
-                        <i class="fa-solid fa-file-import"></i>
-                        <div>
-                            <p class="stat-label">Total Inwards</p>
-                            <p class="stat-value" id="totalInwards">0</p>
-                        </div>
-                    </div>
-
-                    <div class="stat-card" id="cardOutwards">
-                        <i class="fa-solid fa-file-export"></i>
-                        <div>
-                            <p class="stat-label">Total Outwards</p>
-                            <p class="stat-value" id="totalOutwards">0</p>
-                        </div>
-                    </div>
-
-                    <div class="stat-card" id="cardPending">
-                        <i class="fa-solid fa-clock"></i>
-                        <div>
-                            <p class="stat-label">Replies Pending</p>
-                            <p class="stat-value" id="repliesPending">0</p>
-                        </div>
-                    </div>
-
-                </div>
+              <button id="viewReportBtn" class="btn-small">View Report</button>
+              <button
+                id="downloadPdfBtn"
+                class="btn-small"
+                style="background: #2d7fbd"
+              >
+                Generate PDF
+              </button>
             </div>
+          </div>
 
-            <div class="dashboard-cards">
-
-                <!-- Recent Inwards -->
-                <div class="card">
-                    <div class="card-header">
-                        <h3>Recent Inwards</h3>
-                    </div>
-
-                    <div class="card-body">
-                        <div class="table-scroll">
-                        <table class="records-table" id="inwardsTable">
-                            <thead>
-                                <tr>
-                                    <th>No</th>
-                                    <th>Date</th>
-                                    <th>From</th>
-                                    <th>Office</th>
-                                </tr>
-                            </thead>
-                            <tbody id="inwardsTbody">
-                                <tr class="empty-state">
-                                    <td colspan="4" style="text-align:center; padding:20px;">
-                                        <p style="color:#999;">No recent inward records.</p>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Recent Outwards -->
-                <div class="card">
-                    <div class="card-header">
-                        <h3>Recent Outwards</h3>
-                    </div>
-
-                    <div class="card-body">
-                        <div class="table-scroll">
-                        <table class="records-table" id="outwardsTable">
-                            <thead>
-                                <tr>
-                                    <th>No</th>
-                                    <th>Date</th>
-                                    <th>To</th>
-                                    <th>Office</th>
-                                </tr>
-                            </thead>
-                            <tbody id="outwardsTbody">
-                                <tr class="empty-state">
-                                    <td colspan="4" style="text-align:center; padding:20px;">
-                                        <p style="color:#999;">No recent outward records.</p>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                        </div>
-                    </div>
-                </div>
-
+          <div
+            class="card-body"
+            id="reportPreviewContainer"
+            style="padding: 18px"
+          >
+            <!-- Preview gets injected here -->
+            <div
+              id="reportPlaceholder"
+              style="color: #777; text-align: center; padding: 40px"
+            >
+              Select month & year then click <strong>View Report</strong>.
             </div>
+          </div>
         </div>
+      </div>
 
-
-<!-- ================================
-      IFRAME FORM VIEW
-================================ -->
-        <div id="iframeContainer" style="display:none;">
-            <div class="iframe-toolbar">
-                <button class="back-btn dashboard-back-btn">← Back to Dashboard</button>
-                <span id="iframeTitle" class="iframe-title" style="margin-left:10px;color:#555;font-weight:600"></span>
-            </div>
-
-            <iframe id="formFrame" src="" frameborder="0"></iframe>
-        </div>
-
-<!-- ================================
-      ADMIN PANEL VIEW
-================================ -->
-<div id="adminPanelView" style="display: none;">
-
-    <div class="admin-header">
-        <button class="back-btn dashboard-back-btn">
-            ← Back to Dashboard
-        </button>
-        <h2 style="margin-left: 10px; color:#333;">User Management</h2>
-    </div>
-
-    <div class="card" style="margin-top:20px;">
-        <div class="card-header">
-            <h3>All Users</h3>
-            <button class="btn-small" id="addUserBtn">+ Add User</button>
-        </div>
-
-        <table class="records-table" id="usersTable">
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Email</th>
-                    <th>Mobile</th>
-                    <th>Group</th>
-                    <th style="width: 130px;">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td colspan="5" style="text-align:center; padding:20px; color:#999;">
-                        Loading users…
-                    </td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
-
-
-    <!-- ================================
-        SEARCH INWARD (ADMIN)
-    ================================ -->
-    <div class="admin-search-grid">
-    <div class="card" style="margin-top:24px;">
-    <div class="card-header">
-        <h3>Search Inward Record</h3>
-    </div>
-
-    <div style="display:flex; gap:10px; margin-bottom:15px;">
-        <input 
-        type="text" 
-        id="adminInwardSearchInput" 
-        placeholder="Enter Inward No (e.g. INW/2026/123456)"
-        style="flex:1; padding:8px;"
-        >
-        <button class="btn-small" id="adminInwardSearchBtn">
-        Search
-        </button>
-    </div>
-
-    <table class="records-table" id="adminInwardTable">
-        <thead>
-        <tr>
-            <th>Inward No</th>
-            <th>Date</th>
-            <th>Office</th>
-            <th>Actions</th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr>
-            <td colspan="4" style="text-align:center; padding:20px; color:#999;">
-            No results. Please search.
-            </td>
-        </tr>
-        </tbody>
-    </table>
-    </div>
-
-    <!-- ================================
-        SEARCH OUTWARD (ADMIN)
-    ================================ -->
-    <div class="card" style="margin-top:24px;">
-    <div class="card-header">
-        <h3>Search Outward Record</h3>
-    </div>
-
-    <div style="display:flex; gap:10px; margin-bottom:15px;">
-        <input 
-        type="text" 
-        id="adminOutwardSearchInput" 
-        placeholder="Enter Outward No (e.g. OUTW/2026/123456)"
-        style="flex:1; padding:8px;"
-        >
-        <button class="btn-small" id="adminOutwardSearchBtn">
-        Search
-        </button>
-    </div>
-
-    <table class="records-table" id="adminOutwardTable">
-        <thead>
-        <tr>
-            <th>Outward No</th>
-            <th>Date</th>
-            <th>Office</th>
-            <th>Actions</th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr>
-            <td colspan="4" style="text-align:center; padding:20px; color:#999;">
-            No results. Please search.
-            </td>
-        </tr>
-        </tbody>
-    </table>
-    </div>
-    </div>
-
-    <div id="excelImportBox" style="margin-top:20px; padding:20px; border:1px solid #ddd; border-radius:8px;">
-
-    <h3>Import Inward Excel</h3>
-
-    <input type="file" id="inwardExcelFile" accept=".xlsx,.csv">
-
-    <button id="uploadInwardExcelBtn">Upload & Preview</button>
-
-    <div id="excelPreviewContainer" style="margin-top:20px;"></div>
-
-    <div id="excelImportResult" style="margin-top:20px;"></div>
-
-    </div>
-
-    
-<!-- Reports Card -->
-<div class="card" style="margin-top:24px;" id="reportsCard">
-  <div class="card-header">
-    <h3>Generate Monthly Rajbhasha Report</h3>
-    <div style="display:flex; gap:8px; align-items:center;">
-      <select id="reportMonth" style="padding:6px;">
-        <option value="">Select Month</option>
-        <option value="1">January</option><option value="2">February</option>
-        <option value="3">March</option><option value="4">April</option>
-        <option value="5">May</option><option value="6">June</option>
-        <option value="7">July</option><option value="8">August</option>
-        <option value="9">September</option><option value="10">October</option>
-        <option value="11">November</option><option value="12">December</option>
-      </select>
-
-
-        <select id="reportYear" style="padding:6px;">
-            <option value="">Select Year</option>
-        </select>
- 
-
-      <select id="reportOffice" style="padding:6px;">
-        <option value="">All Offices</option>
-        <option value="Silchar">Silchar</option>
-        <option value="Guwahati">Guwahati</option>
-      </select>
-
-      <select id="reportGroup" style="padding:6px;">
-        <option value="">All Groups</option>
-      </select>
-
-
-      <button id="viewReportBtn" class="btn-small">View Report</button>
-      <button id="downloadPdfBtn" class="btn-small" style="background:#2d7fbd">Generate PDF</button>
-    </div>
-  </div>
-
-  <div class="card-body" id="reportPreviewContainer" style="padding:18px;">
-    <!-- Preview gets injected here -->
-    <div id="reportPlaceholder" style="color:#777; text-align:center; padding:40px;">
-      Select month & year then click <strong>View Report</strong>.
-    </div>
-  </div>
-</div> 
-
-</div>
-
-
-<!-- ================================
+      <!-- ================================
       NOTINGS FORM
 ================================ -->
-  <div id="notingsView" style="display:none;" class="form-page">
-
-    <div class="iframe-toolbar">
-        <button class="back-btn dashboard-back-btn">← Back to Dashboard</button>
-        <span class="iframe-title" id="notingsTitle"></span>
-    </div>
-
-  <div class="form-card">
-
-
-      <!-- Month / Year -->
-      <div style="display:flex; gap:12px; margin-bottom:16px;">
-        <select id="notingsMonth" style="padding:8px; width:160px;">
-          <option value="">Select Month</option>
-          <option value="1">January</option><option value="2">February</option>
-          <option value="3">March</option><option value="4">April</option>
-          <option value="5">May</option><option value="6">June</option>
-          <option value="7">July</option><option value="8">August</option>
-          <option value="9">September</option><option value="10">October</option>
-          <option value="11">November</option><option value="12">December</option>
-        </select>
-
-        <select id="notingsYear" style="padding:8px; width:140px;">
-          <option value="">Select Year</option>
-        </select>
-      </div>
-
-
-    <div>
-        <label>Type of Entry</label>
-        <select id="entryType" required>
-            <option value="">Select Type</option>
-            <option value="Noting">Noting</option>
-            <option value="Comment">Comment</option>
-        </select>
-    </div>
-
-
-      <!-- Inputs -->
-        <div class="form-grid">
-        <div>
-          <label>Total Notings in Hindi </label>
-          <input type="number" id="notingsHindi" min="0" value="0">
+      <div id="notingsView" style="display: none" class="form-page">
+        <div class="iframe-toolbar">
+          <button class="back-btn dashboard-back-btn">
+            ← Back to Dashboard
+          </button>
+          <span class="iframe-title" id="notingsTitle"></span>
         </div>
 
-        <div>
-          <label>Total Notings in English </label>
-          <input type="number" id="notingsEnglish" min="0" value="0">
-        </div>
+        <div class="form-card">
+          <!-- Month / Year -->
+          <div style="display: flex; gap: 12px; margin-bottom: 16px">
+            <select id="notingsMonth" style="padding: 8px; width: 160px">
+              <option value="">Select Month</option>
+              <option value="1">January</option>
+              <option value="2">February</option>
+              <option value="3">March</option>
+              <option value="4">April</option>
+              <option value="5">May</option>
+              <option value="6">June</option>
+              <option value="7">July</option>
+              <option value="8">August</option>
+              <option value="9">September</option>
+              <option value="10">October</option>
+              <option value="11">November</option>
+              <option value="12">December</option>
+            </select>
 
+            <select id="notingsYear" style="padding: 8px; width: 140px">
+              <option value="">Select Year</option>
+            </select>
+          </div>
 
-        <div>
-          <label>Comments sent through e-Office</label>
-          <input type="number" id="notingsEoffice" min="0" value="0">
+          <div>
+            <label>Type of Entry</label>
+            <select id="entryType" required>
+              <option value="">Select Type</option>
+              <option value="Noting">Noting</option>
+              <option value="Comment">Comment</option>
+            </select>
+          </div>
+
+          <!-- Inputs -->
+          <div class="form-grid">
+            <div>
+              <label>Total Notings in Hindi </label>
+              <input type="number" id="notingsHindi" min="0" value="0" />
+            </div>
+
+            <div>
+              <label>Total Notings in English </label>
+              <input type="number" id="notingsEnglish" min="0" value="0" />
+            </div>
+
+            <div>
+              <label>Comments sent through e-Office</label>
+              <input type="number" id="notingsEoffice" min="0" value="0" />
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button class="btn-small" id="saveNotingsBtn">Save</button>
+            <span id="notingsMsg" style="margin-left: 10px; color: #777"></span>
+          </div>
         </div>
       </div>
 
-      <div class="form-actions">
-        <button class="btn-small" id="saveNotingsBtn">Save</button>
-        <span id="notingsMsg" style="margin-left:10px;color:#777;"></span>
-      </div>
-
-    </div>
-  </div>
-
-<!-- ================================
+      <!-- ================================
       EMAILS Form 
 ================================ -->
-  <div id="emailsView" style="display:none;" class="form-page">
-    <div class="iframe-toolbar">
-      <button class="back-btn dashboard-back-btn">← Back to Dashboard</button>
-      <span class="iframe-title" id="emailsTitle"></span>
+      <div id="emailsView" style="display: none" class="form-page">
+        <div class="iframe-toolbar">
+          <button class="back-btn dashboard-back-btn">
+            ← Back to Dashboard
+          </button>
+          <span class="iframe-title" id="emailsTitle"></span>
+        </div>
 
-    </div>
+        <div class="form-card">
+          <!-- <button class="back-btn" id="emailsBackBtn">← Back to Dashboard</button> -->
+          <!-- <h2>Emails – Monthly Entry</h2> -->
 
-  <div class="form-card">
+          <!-- Month / Year -->
+          <div style="display: flex; gap: 12px; margin-bottom: 16px">
+            <select id="emailsMonth" style="padding: 8px; width: 160px">
+              <option value="">Select Month</option>
+              <option value="1">January</option>
+              <option value="2">February</option>
+              <option value="3">March</option>
+              <option value="4">April</option>
+              <option value="5">May</option>
+              <option value="6">June</option>
+              <option value="7">July</option>
+              <option value="8">August</option>
+              <option value="9">September</option>
+              <option value="10">October</option>
+              <option value="11">November</option>
+              <option value="12">December</option>
+            </select>
 
-    <!-- <button class="back-btn" id="emailsBackBtn">← Back to Dashboard</button> -->
-    <!-- <h2>Emails – Monthly Entry</h2> -->
+            <select id="emailsYear" style="padding: 8px; width: 140px">
+              <option value="">Select Year</option>
+            </select>
+          </div>
 
-    <!-- Month / Year -->
-    <div style="display:flex; gap:12px; margin-bottom:16px;">
-      <select id="emailsMonth" style="padding:8px; width:160px;">
-        <option value="">Select Month</option>
-        <option value="1">January</option><option value="2">February</option>
-        <option value="3">March</option><option value="4">April</option>
-        <option value="5">May</option><option value="6">June</option>
-        <option value="7">July</option><option value="8">August</option>
-        <option value="9">September</option><option value="10">October</option>
-        <option value="11">November</option><option value="12">December</option>
-      </select>
+          <!-- Entry Type -->
+          <div>
+            <label>Type of Entry</label>
+            <select id="emailsEntryType">
+              <option value="">Select Type</option>
+              <option value="Received">Received</option>
+              <option value="Replied">Replied</option>
+            </select>
+          </div>
 
-      <select id="emailsYear" style="padding:8px; width:140px;">
-        <option value="">Select Year</option>
-      </select>
-    </div>
+          <!-- Region -->
+          <div>
+            <label>Region</label>
+            <select id="emailsRegion">
+              <option value="">Select Region</option>
+              <option value="A">Region A</option>
+              <option value="B">Region B</option>
+              <option value="C">Region C</option>
+            </select>
+          </div>
 
-    <!-- Entry Type -->
-    <div>
-      <label>Type of Entry</label>
-      <select id="emailsEntryType">
-        <option value="">Select Type</option>
-        <option value="Received">Received</option>
-        <option value="Replied">Replied</option>
-      </select>
-    </div>
+          <div class="form-grid">
+            <div>
+              <label>Total Emails in English</label>
+              <input type="number" id="emailsEnglish" min="0" value="0" />
+            </div>
 
-    <!-- Region -->
-    <div>
-      <label>Region</label>
-      <select id="emailsRegion">
-        <option value="">Select Region</option>
-        <option value="A">Region A</option>
-        <option value="B">Region B</option>
-        <option value="C">Region C</option>
-      </select>
-    </div>
+            <div>
+              <label>Total Emails in Hindi</label>
+              <input type="number" id="emailsHindi" min="0" value="0" />
+            </div>
+          </div>
 
-        <div class="form-grid">
-      <div>
-        <label>Total Emails in English</label>
-        <input type="number" id="emailsEnglish" min="0" value="0">
+          <div class="form-actions">
+            <button class="btn-small" id="saveEmailsBtn">Save</button>
+            <span id="emailsMsg" style="margin-left: 10px; color: #777"></span>
+          </div>
+        </div>
       </div>
-
-      <div>
-        <label>Total Emails in Hindi</label>
-        <input type="number" id="emailsHindi" min="0" value="0">
-      </div>
     </div>
 
-    <div class="form-actions">
-      <button class="btn-small" id="saveEmailsBtn">Save</button>
-      <span id="emailsMsg" style="margin-left:10px;color:#777;"></span>
-    </div>
-
-  </div>
-</div>
-
-</div>
-
-    
-
-        <!-- =========================
+    <!-- =========================
             INWARD DETAILS MODAL
         ========================= -->
-        <div id="inwardModal" class="modal-overlay" style="display:none;">
-        <div class="modal-box">
-            <div class="modal-header">
-            <h3 id="modalTitle">Details</h3>
-            <button id="closeInwardModal">✖</button>
-            </div>
-            <div id="inwardModalContent" class="modal-content">
-            Loading...
-            </div>
+    <div id="inwardModal" class="modal-overlay" style="display: none">
+      <div class="modal-box">
+        <div class="modal-header">
+          <h3 id="modalTitle">Details</h3>
+          <button id="closeInwardModal">✖</button>
         </div>
-        </div>
+        <div id="inwardModalContent" class="modal-content">Loading...</div>
+      </div>
+    </div>
 
     <script src="js/dashboard.js"></script>
     <script src="js/admin-panel.js"></script>
     <script src="js/report.js"></script>
-
-
-</body>
+  </body>
 </html>
