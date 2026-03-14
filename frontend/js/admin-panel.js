@@ -1127,6 +1127,213 @@ async function validateInwardImport(e) {
 
 
 
+async function validateOutwardImport(e) {
+
+  const fileName = e.target.dataset.file;
+
+  const res = await fetch("/admin/import-outward-validate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "same-origin",
+    body: JSON.stringify({ file: fileName })
+  });
+
+  if (!res.ok) {
+    alert("Validation request failed");
+    return;
+  }
+
+  const data = await res.json();
+
+  if (!data.success) {
+    alert(data.message || "Validation failed");
+    return;
+  }
+
+  highlightOutwardPreviewErrors(data.skippedRows);
+
+  renderOutwardImportResult(data);
+
+  const importBtn = document.getElementById("confirmOutwardImportBtn");
+
+  if (!importBtn) return;
+
+  const realErrors = data.skippedRows?.filter(r =>
+  r.reason.includes("Invalid")
+).length || 0;
+
+if (realErrors > 0) {
+
+  importBtn.disabled = true;
+  importBtn.style.background = "#9ca3af";
+  importBtn.style.cursor = "not-allowed";
+  importBtn.innerText = "Fix Excel Errors First";
+
+} else {
+
+  importBtn.disabled = false;
+  importBtn.style.background = "#0b3b66";
+  importBtn.style.cursor = "pointer";
+  importBtn.innerText = "Import Data";
+
+}
+
+}
+
+async function confirmOutwardImport(e) {
+
+  const fileName = e.target.dataset.file;
+
+  if (!fileName) {
+    alert("File reference missing");
+    return;
+  }
+
+  if (!confirm("Start importing this Excel file?")) {
+    return;
+  }
+
+  const res = await fetch("/admin/import-outward-confirm", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "same-origin",
+    body: JSON.stringify({ file: fileName })
+  });
+
+  if (!res.ok) {
+    alert("Import request failed");
+    return;
+  }
+
+  const data = await res.json();
+
+  if (!data.success) {
+    alert(data.message || "Import failed");
+    return;
+  }
+
+  alert(
+`✅ Outward Import Successful
+
+Inserted: ${data.inserted}
+Skipped: ${data.skipped}`
+  );
+
+  document.getElementById("outwardExcelFile").value = "";
+  document.getElementById("outwardExcelPreviewContainer").innerHTML = "";
+
+  renderOutwardImportResult(data);
+
+}
+
+function highlightOutwardPreviewErrors(skippedRows) {
+
+  if (!skippedRows || !skippedRows.length) return;
+
+  const table = document.querySelector("#outwardExcelPreviewContainer table");
+
+  if (!table) return;
+
+  const rows = table.querySelectorAll("tbody tr");
+
+  skippedRows.forEach(error => {
+
+    const rowIndex = error.row - 2;
+
+    const tr = rows[rowIndex];
+
+    if (!tr) return;
+
+    const cells = tr.querySelectorAll("td");
+
+    if (error.reason.includes("Excel")) {
+      tr.style.background = "#fcb761";
+    }
+
+    if (error.reason.includes("database")) {
+      tr.style.background = "#fa9ca3";
+    }
+
+    if (error.reason.includes("Language")) {
+
+      const colIndex = OUTWARD_SCHEMA.indexOf("language_of_document");
+
+      if (cells[colIndex]) {
+        cells[colIndex].style.background = "#fef3c7";
+        cells[colIndex].title = "Invalid Language";
+      }
+
+    }
+
+  });
+
+}
+
+
+function renderOutwardImportResult(data) {
+
+  const container = document.getElementById("outwardExcelImportResult");
+
+  let html = `
+  <div style="
+      border:1px solid #ddd;
+      border-radius:6px;
+      padding:15px;
+      background:#fafafa;
+  ">
+  <h4>Outward Import Result</h4>
+
+  <p>
+    <strong>Inserted:</strong> ${data.inserted ?? 0} <br>
+    <strong>Skipped:</strong> ${data.skipped ?? 0} <br>
+    <strong>Duplicate in Database:</strong> ${data.dbDuplicates?.length ?? 0} <br>
+    <strong>Duplicate inside Excel:</strong> ${data.excelDuplicates?.length ?? 0} <br>
+    <strong>Invalid Language:</strong> ${data.skippedRows?.filter(r => r.reason.includes("Language")).length ?? 0} <br>
+  </p>
+  `;
+
+  if (data.skippedRows?.length) {
+
+    html += `
+    <h5>Skipped Rows</h5>
+
+    <table style="width:100%; border-collapse:collapse; font-size:13px;">
+    <thead style="background:#f0f0f0;">
+      <tr>
+        <th style="padding:6px;border:1px solid #ddd;">Row</th>
+        <th style="padding:6px;border:1px solid #ddd;">Outward No</th>
+        <th style="padding:6px;border:1px solid #ddd;">Reason</th>
+      </tr>
+    </thead>
+    <tbody>
+    `;
+
+    data.skippedRows.forEach(r => {
+
+      html += `
+      <tr>
+        <td style="padding:6px;border:1px solid #ddd;">${r.row}</td>
+        <td style="padding:6px;border:1px solid #ddd;">${r.outward_no}</td>
+        <td style="padding:6px;border:1px solid #ddd;">${r.reason}</td>
+      </tr>
+      `;
+
+    });
+
+    html += "</tbody></table>";
+  }
+
+  html += "</div>";
+
+  container.innerHTML = html;
+  container.scrollIntoView({ behavior: "smooth" });
+
+}
+
+
+
+
+
 function highlightPreviewErrors(skippedRows) {
 
   if (!skippedRows || !skippedRows.length) return;
@@ -1267,6 +1474,7 @@ function renderImportResult(data) {
 async function uploadOutwardExcel() {
 
   const fileInput = document.getElementById("outwardExcelFile");
+  document.getElementById("outwardExcelImportResult").innerHTML = "";
 
   if (!fileInput.files.length) {
     alert("Please select an Excel file");
@@ -1320,7 +1528,13 @@ function renderOutwardExcelPreview(rows, totalRows, fileName) {
   }
 
   let table = `
-  <h4>Preview (${totalRows} rows)</h4>
+  <h4>Preview (${totalRows} rows in file)</h4>
+
+  <div style="margin-bottom:8px;font-size:13px;">
+  <span style="background:#fa9ca3;padding:3px 8px;border-radius:4px;">Duplicate in Database</span>
+  <span style="background:#fcb761;padding:3px 8px;border-radius:4px;margin-left:8px;">Duplicate in Excel</span>
+  <span style="background:#fef3c7;padding:3px 8px;border-radius:4px;margin-left:8px;">Invalid Language</span>
+  </div>
 
   <div style="max-height:500px; overflow:auto; border:1px solid #ddd;">
 

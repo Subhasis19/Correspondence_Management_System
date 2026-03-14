@@ -351,6 +351,137 @@ router.post("/admin/import-inward-validate", requireAdmin, async (req, res) => {
 
 });
 
+router.post("/admin/import-outward-validate", requireAdmin, async (req, res) => {
+
+    try {
+
+        const { file } = req.body;
+
+        if (!file) {
+            return res.status(400).json({
+                success: false,
+                message: "Missing file name"
+            });
+        }
+
+        const filePath = path.join(
+            __dirname,
+            "../uploads/excel/outward",
+            file
+        );
+
+        if (!fs.existsSync(filePath)) {
+            return res.status(404).json({
+                success: false,
+                message: "File not found"
+            });
+        }
+
+        const rows = readExcel(filePath);
+
+        const outwardNos = rows
+            .map(r => r.outward_no)
+            .filter(Boolean)
+            .map(n => String(n).trim());
+
+        const existing = await dbQuery(
+            "SELECT outward_no FROM outward_records WHERE outward_no IN (?)",
+            [outwardNos]
+        );
+
+        const existingSet = new Set(
+            existing.map(r => String(r.outward_no).trim())
+        );
+
+        const skippedRows = [];
+        const dbDuplicates = [];
+        const excelDuplicates = [];
+        const seen = new Set();
+
+        rows.forEach((r, index) => {
+
+            if (!r.outward_no) {
+
+                skippedRows.push({
+                    row: index + 2,
+                    outward_no: "",
+                    reason: "Missing outward number"
+                });
+
+                return;
+            }
+
+            // Validate language_of_document
+            const language = normalizeLanguage(r.language_of_document);
+
+            if (!language) {
+
+                skippedRows.push({
+                    row: index + 2,
+                    outward_no: r.outward_no || "",
+                    reason: "Invalid Language of Document"
+                });
+
+                return;
+            }
+
+            const outwardNo = String(r.outward_no).trim();
+
+
+
+            if (seen.has(outwardNo)) {
+
+                excelDuplicates.push(outwardNo);
+
+                skippedRows.push({
+                    row: index + 2,
+                    outward_no: outwardNo,
+                    reason: "Duplicate inside Excel"
+                });
+
+                return;
+            }
+
+            seen.add(outwardNo);
+
+            if (existingSet.has(outwardNo)) {
+
+                dbDuplicates.push(outwardNo);
+
+                skippedRows.push({
+                    row: index + 2,
+                    outward_no: outwardNo,
+                    reason: "Duplicate in database"
+                });
+
+            }
+
+        });
+
+        res.json({
+            success: true,
+            inserted: rows.length - skippedRows.length,
+            skipped: skippedRows.length,
+            dbDuplicates,
+            excelDuplicates,
+            skippedRows
+        });
+
+    } catch (err) {
+
+        console.error("OUTWARD VALIDATION ERROR >>>", err);
+
+        res.status(500).json({
+            success: false,
+            message: err.message
+        });
+
+    }
+
+});
+
+
+
 
 router.post("/admin/import-inward-confirm", requireAdmin, async (req, res) => {
 
@@ -533,6 +664,215 @@ router.post("/admin/import-inward-confirm", requireAdmin, async (req, res) => {
 
 });
 
+
+// ================================
+// ROUTE: CONFIRM OUTWARD IMPORT
+// ================================
+router.post("/admin/import-outward-confirm", requireAdmin, async (req, res) => {
+
+    try {
+
+        const { file } = req.body;
+
+        if (!file) {
+            return res.status(400).json({
+                success: false,
+                message: "Missing file name"
+            });
+        }
+
+        const filePath = path.join(
+            __dirname,
+            "../uploads/excel/outward",
+            file
+        );
+
+        if (!fs.existsSync(filePath)) {
+            return res.status(404).json({
+                success: false,
+                message: "File not found"
+            });
+        }
+
+        const rows = readExcel(filePath);
+
+        const outwardNos = rows
+            .map(r => r.outward_no)
+            .filter(Boolean)
+            .map(n => String(n).trim());
+
+        const existing = await dbQuery(
+            "SELECT outward_no FROM outward_records WHERE outward_no IN (?)",
+            [outwardNos]
+        );
+
+        const existingSet = new Set(
+            existing.map(r => String(r.outward_no).trim())
+        );
+
+        const seen = new Set();
+        const skippedRows = [];
+        const dbDuplicates = [];
+        const excelDuplicates = [];
+        const rowsToInsert = [];
+
+        rows.forEach((r, index) => {
+
+            if (!r.outward_no) return;
+
+            const language = normalizeLanguage(r.language_of_document);
+
+            if (!language) {
+
+                skippedRows.push({
+                    row: index + 2,
+                    outward_no: r.outward_no || "",
+                    reason: "Invalid Language of Document"
+                });
+
+                return;
+            }
+
+            const outwardNo = String(r.outward_no).trim();
+
+            if (seen.has(outwardNo)) {
+
+                excelDuplicates.push(outwardNo);
+
+                skippedRows.push({
+                    row: index + 2,
+                    outward_no: outwardNo,
+                    reason: "Duplicate inside Excel"
+                });
+
+                return;
+
+            }
+
+            seen.add(outwardNo);
+
+            if (existingSet.has(outwardNo)) {
+
+                dbDuplicates.push(outwardNo);
+
+                skippedRows.push({
+                    row: index + 2,
+                    outward_no: outwardNo,
+                    reason: "Duplicate in database"
+                });
+
+                return;
+
+            }
+
+            r.outward_no = outwardNo;
+            rowsToInsert.push(r);
+
+        });
+
+        const values = rowsToInsert.map(r => [
+
+            parseExcelDate(r.date_of_despatch),
+            r.outward_no,
+            r.month,
+            r.year,
+            r.reply_from,
+            r.name_of_receiver,
+            r.address_of_receiver,
+            r.receiver_city,
+            r.receiver_state,
+            r.receiver_pin,
+            r.receiver_region,
+            r.receiver_org_type,
+            r.type_of_document,
+            normalizeLanguage(r.language_of_document),
+            r.count,
+            r.inward_no || null,
+            r.inward_s_no ? Number(r.inward_s_no) : null,
+            r.reply_issued_by || null,
+            parseExcelDate(r.reply_sent_date),
+            r.reply_ref_no || null,
+            r.reply_sent_by || null,
+            r.reply_sent_in || null,
+            r.reply_count || 0,
+            req.session?.user?.group_name || null
+
+        ]);
+
+        if (values.length) {
+
+            const connection = await pool.promise().getConnection();
+
+            try {
+
+                await connection.beginTransaction();
+
+                await connection.query(
+                    `INSERT INTO outward_records (
+            date_of_despatch,
+            outward_no,
+            month,
+            year,
+            reply_from,
+            name_of_receiver,
+            address_of_receiver,
+            receiver_city,
+            receiver_state,
+            receiver_pin,
+            receiver_region,
+            receiver_org_type,
+            type_of_document,
+            language_of_document,
+            count,
+            inward_no,
+            inward_s_no,
+            reply_issued_by,
+            reply_sent_date,
+            reply_ref_no,
+            reply_sent_by,
+            reply_sent_in,
+            reply_count,
+            group_name
+          ) VALUES ?`,
+                    [values]
+                );
+
+                await connection.commit();
+
+            } catch (err) {
+
+                await connection.rollback();
+                throw err;
+
+            } finally {
+
+                connection.release();
+
+            }
+
+        }
+
+        res.json({
+            success: true,
+            inserted: values.length,
+            skipped: skippedRows.length,
+            dbDuplicates,
+            excelDuplicates,
+            skippedRows
+        });
+
+    } catch (err) {
+
+        console.error("OUTWARD IMPORT ERROR >>>", err);
+
+        res.status(500).json({
+            success: false,
+            message: err.message
+        });
+
+    }
+
+});
 
 
 module.exports = router;
