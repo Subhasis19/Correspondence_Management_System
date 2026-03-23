@@ -50,6 +50,134 @@ const OUTWARD_SCHEMA = [
   "reply_count"
 ];
 
+// ===============================
+// COMMON IMPORT RESULT UI
+// ===============================
+function renderImportResultUI({
+  containerId,
+  title,
+  data,
+  type
+}) {
+  const container = document.getElementById(containerId);
+
+  const invalidLanguage = data.skippedRows?.filter(r =>
+    r.reason.includes("Language")
+  ).length || 0;
+
+  const invalidReply = data.skippedRows?.filter(r =>
+    r.reason.includes("Reply")
+  ).length || 0;
+
+  let html = `
+    <div style="
+      border:1px solid #ddd;
+      border-radius:6px;
+      padding:15px;
+      background:#fafafa;
+    ">
+    <h4>${title}</h4>
+
+    <p>
+      <strong>Inserted:</strong> ${data.inserted ?? 0} <br>
+      <strong>Skipped:</strong> ${data.skipped ?? 0} <br>
+      <strong>Duplicate in Database:</strong> ${data.dbDuplicates?.length ?? 0} <br>
+      <strong>Duplicate inside Excel:</strong> ${data.excelDuplicates?.length ?? 0} <br>
+      <strong>Invalid Language:</strong> ${invalidLanguage} <br>
+      ${type === "inward" ? `<strong>Invalid Reply Required:</strong> ${invalidReply}` : ""}
+    </p>
+  `;
+
+  if (data.skippedRows?.length) {
+    html += `
+      <h5>Skipped Rows</h5>
+
+      <div style="max-height:300px; overflow:auto; border:1px solid #ddd;">
+      <table style="width:100%; border-collapse:collapse; font-size:13px;">
+      <thead style="background:#f0f0f0; position:sticky; top:0;">
+        <tr>
+          <th style="padding:6px;border:1px solid #ddd;">Row</th>
+          <th style="padding:6px;border:1px solid #ddd;">
+            ${type === "inward" ? "Inward No" : "Outward No"}
+          </th>
+          <th style="padding:6px;border:1px solid #ddd;">Reason</th>
+        </tr>
+      </thead>
+      <tbody>
+    `;
+
+    data.skippedRows.forEach(r => {
+      html += `
+        <tr>
+          <td style="padding:6px;border:1px solid #ddd;">${r.row}</td>
+          <td style="padding:6px;border:1px solid #ddd;">
+            ${type === "inward" ? r.inward_no : r.outward_no}
+          </td>
+          <td style="padding:6px;border:1px solid #ddd;">${r.reason}</td>
+        </tr>
+      `;
+    });
+
+    html += `
+      </tbody>
+      </table>
+      </div>
+    `;
+  }
+
+  html += `</div>`;
+
+  container.innerHTML = html;
+}
+
+function highlightPreviewRows({
+  containerSelector,
+  schema,
+  skippedRows,
+  type
+}) {
+  if (!skippedRows?.length) return;
+
+  const table = document.querySelector(containerSelector + " table");
+  if (!table) return;
+
+  const rows = table.querySelectorAll("tbody tr");
+
+  skippedRows.forEach(error => {
+
+    const rowIndex = error.row - 2;
+    const tr = rows[rowIndex];
+    if (!tr) return;
+
+    const cells = tr.querySelectorAll("td");
+
+    if (error.reason.includes("Excel")) {
+      tr.style.background = "#fcb761";
+    }
+
+    if (error.reason.includes("database")) {
+      tr.style.background = "#fa9ca3";
+    }
+
+    if (error.reason.includes("Language")) {
+      const colIndex = schema.indexOf("language_of_document");
+      if (cells[colIndex]) {
+        cells[colIndex].style.background = "#fef3c7";
+      }
+    }
+
+    if (type === "inward" && error.reason.includes("Reply")) {
+      const colIndex = schema.indexOf("reply_required");
+      if (cells[colIndex]) {
+        cells[colIndex].style.background = "#fef3c7";
+      }
+    }
+
+  });
+}
+
+
+
 
 function validateExcelSchema(rows) {
 
@@ -1094,9 +1222,20 @@ async function validateInwardImport(e) {
   window.__excelValidation = data;
 
   // Highlight rows
-  highlightPreviewErrors(data.skippedRows);
+  highlightPreviewRows({
+    containerSelector: "#excelPreviewContainer",
+    schema: INWARD_SCHEMA,
+    skippedRows: data.skippedRows,
+    type: "inward"
+  });
 
-  renderImportResult(data);
+
+  renderImportResultUI({
+    containerId: "excelImportResult",
+    title: "Inward Import Result",
+    data,
+    type: "inward"
+  });
 
 
   const importBtn = document.getElementById("confirmImportBtn");
@@ -1150,9 +1289,19 @@ async function validateOutwardImport(e) {
     return;
   }
 
-  highlightOutwardPreviewErrors(data.skippedRows);
+  highlightPreviewRows({
+    containerSelector: "#outwardExcelPreviewContainer",
+    schema: OUTWARD_SCHEMA,
+    skippedRows: data.skippedRows,
+    type: "outward"
+  });
 
-  renderOutwardImportResult(data);
+  renderImportResultUI({
+    containerId: "outwardExcelImportResult",
+    title: "Outward Import Result",
+    data,
+    type: "outward"
+  });
 
   const importBtn = document.getElementById("confirmOutwardImportBtn");
 
@@ -1226,250 +1375,6 @@ Skipped: ${data.skipped}`
 
 }
 
-function highlightOutwardPreviewErrors(skippedRows) {
-
-  if (!skippedRows || !skippedRows.length) return;
-
-  const table = document.querySelector("#outwardExcelPreviewContainer table");
-
-  if (!table) return;
-
-  const rows = table.querySelectorAll("tbody tr");
-
-  skippedRows.forEach(error => {
-
-    const rowIndex = error.row - 2;
-
-    const tr = rows[rowIndex];
-
-    if (!tr) return;
-
-    const cells = tr.querySelectorAll("td");
-
-    if (error.reason.includes("Excel")) {
-      tr.style.background = "#fcb761";
-    }
-
-    if (error.reason.includes("database")) {
-      tr.style.background = "#fa9ca3";
-    }
-
-    if (error.reason.includes("Language")) {
-
-      const colIndex = OUTWARD_SCHEMA.indexOf("language_of_document");
-
-      if (cells[colIndex]) {
-        cells[colIndex].style.background = "#fef3c7";
-        cells[colIndex].title = "Invalid Language";
-      }
-
-    }
-
-  });
-
-}
-
-
-function renderOutwardImportResult(data) {
-
-  const container = document.getElementById("outwardExcelImportResult");
-
-  let html = `
-  <div style="
-      border:1px solid #ddd;
-      border-radius:6px;
-      padding:15px;
-      background:#fafafa;
-  ">
-  <h4>Outward Import Result</h4>
-
-  <p>
-    <strong>Inserted:</strong> ${data.inserted ?? 0} <br>
-    <strong>Skipped:</strong> ${data.skipped ?? 0} <br>
-    <strong>Duplicate in Database:</strong> ${data.dbDuplicates?.length ?? 0} <br>
-    <strong>Duplicate inside Excel:</strong> ${data.excelDuplicates?.length ?? 0} <br>
-    <strong>Invalid Language:</strong> ${data.skippedRows?.filter(r => r.reason.includes("Language")).length ?? 0} <br>
-  </p>
-  `;
-
-  if (data.skippedRows?.length) {
-
-    html += `
-    <h5>Skipped Rows</h5>
-
-    <table style="width:100%; border-collapse:collapse; font-size:13px;">
-    <thead style="background:#f0f0f0;">
-      <tr>
-        <th style="padding:6px;border:1px solid #ddd;">Row</th>
-        <th style="padding:6px;border:1px solid #ddd;">Outward No</th>
-        <th style="padding:6px;border:1px solid #ddd;">Reason</th>
-      </tr>
-    </thead>
-    <tbody>
-    `;
-
-    data.skippedRows.forEach(r => {
-
-      html += `
-      <tr>
-        <td style="padding:6px;border:1px solid #ddd;">${r.row}</td>
-        <td style="padding:6px;border:1px solid #ddd;">${r.outward_no}</td>
-        <td style="padding:6px;border:1px solid #ddd;">${r.reason}</td>
-      </tr>
-      `;
-
-    });
-
-    html += "</tbody></table>";
-  }
-
-  html += "</div>";
-
-  container.innerHTML = html;
-  container.scrollIntoView({ behavior: "smooth" });
-
-}
-
-
-
-
-
-function highlightPreviewErrors(skippedRows) {
-
-  if (!skippedRows || !skippedRows.length) return;
-
-  const table = document.querySelector("#excelPreviewContainer table");
-
-  if (!table) return;
-
-  const rows = table.querySelectorAll("tbody tr");
-
-  skippedRows.forEach(error => {
-
-    const rowIndex = error.row - 2; // convert Excel row → table row
-
-    const tr = rows[rowIndex];
-
-    if (!tr) return;
-
-    if (error.reason.includes("Excel")) {
-
-      tr.style.background = "#fcb761"; // light orange
-      tr.title = "Duplicate inside Excel";
-
-    }
-
-    if (error.reason.includes("database")) {
-
-      tr.style.background = "#fa9ca3"; // light red
-      tr.title = "Duplicate in database";
-
-    }
-
-    const cells = tr.querySelectorAll("td");
-
-    if (error.reason.includes("Language")) {
-
-      const colIndex = INWARD_SCHEMA.indexOf("language_of_document");
-
-      if (cells[colIndex]) {
-        cells[colIndex].style.background = "#fef3c7";
-        cells[colIndex].title = "Invalid Language";
-      }
-
-    }
-
-    if (error.reason.includes("Reply")) {
-
-      const colIndex = INWARD_SCHEMA.indexOf("reply_required");
-
-      if (cells[colIndex]) {
-        cells[colIndex].style.background = "#fef3c7";
-        cells[colIndex].title = "Invalid Reply Required";
-      }
-
-    }
-
-
-  });
-
-}
-
-
-function renderImportResult(data) {
-
-  const invalidLanguage = data.skippedRows?.filter(r =>
-    r.reason.includes("Language")
-  ).length || 0;
-
-  const invalidReply = data.skippedRows?.filter(r =>
-    r.reason.includes("Reply")
-  ).length || 0;
-
-
-  const container = document.getElementById("excelImportResult");
-
-  let html = `
-      <div style="
-          border:1px solid #ddd;
-          border-radius:6px;
-          padding:15px;
-          background:#fafafa;
-      ">
-      <h4>Import Result</h4>
-
-      <p>
-        <strong>Inserted:</strong> ${data.inserted ?? 0} <br>
-        <strong>Skipped:</strong> ${data.skipped ?? 0} <br>
-        <strong>Duplicate in Database:</strong> ${data.dbDuplicates?.length ?? 0} <br>
-        <strong>Duplicate inside Excel:</strong> ${data.excelDuplicates?.length ?? 0} <br>
-        <strong>Invalid Language:</strong> ${invalidLanguage} <br>
-        <strong>Invalid Reply Required:</strong> ${invalidReply}
-      </p>
-      `;
-
-  if (data.skippedRows && data.skippedRows.length) {
-
-    html += `
-        <h5>Skipped Rows</h5>
-
-        <div style="max-height:300px; overflow:auto; border:1px solid #ddd;">
-        <table style="width:100%; border-collapse:collapse; font-size:13px;">
-          <thead style="background:#f0f0f0; position:sticky; top:0; z-index:2;">
-            <tr>
-              <th style="padding:6px;border:1px solid #ddd; position:sticky; top:0; background:#f0f0f0;">Row</th>
-              <th style="padding:6px;border:1px solid #ddd; position:sticky; top:0; background:#f0f0f0;">Inward No</th>
-              <th style="padding:6px;border:1px solid #ddd; position:sticky; top:0; background:#f0f0f0;">Reason</th>
-            </tr>
-          </thead>
-          <tbody>
-        `;
-
-    data.skippedRows.forEach(r => {
-
-      html += `
-          <tr>
-            <td style="padding:6px;border:1px solid #ddd;">${r.row}</td>
-            <td style="padding:6px;border:1px solid #ddd;">${r.inward_no}</td>
-            <td style="padding:6px;border:1px solid #ddd;">${r.reason}</td>
-          </tr>
-          `;
-
-    });
-
-    html += `
-          </tbody>
-        </table>
-        </div>
-        `;
-  }
-
-  html += `</div>`;
-
-  container.innerHTML = html;
-  container.scrollIntoView({ behavior: "smooth" });
-
-}
 
 async function uploadOutwardExcel() {
 
