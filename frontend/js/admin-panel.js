@@ -60,6 +60,7 @@ function renderImportResultUI({
   type
 }) {
   const container = document.getElementById(containerId);
+  if (!container) return;
 
   const invalidLanguage = data.skippedRows?.filter(r =>
     r.reason.includes("Language")
@@ -175,6 +176,13 @@ function highlightPreviewRows({
 
   });
 }
+
+function countRealErrors(skippedRows) {
+  return skippedRows?.filter(r =>
+    r.reason.includes("Invalid")
+  ).length || 0;
+}
+
 
 
 
@@ -1191,7 +1199,13 @@ async function confirmInwardImport(e) {
   document.getElementById("inwardExcelFile").value = "";
   document.getElementById("excelPreviewContainer").innerHTML = "";
 
-  renderImportResult(data);
+  renderImportResultUI({
+  containerId: "excelImportResult",
+  title: "Inward Import Result",
+  data,
+  type: "inward"
+});
+
 }
 
 
@@ -1243,9 +1257,7 @@ async function validateInwardImport(e) {
 
   /* Count REAL errors (not duplicates) */
 
-  const realErrors = data.skippedRows?.filter(r =>
-    r.reason.includes("Invalid")
-  ).length || 0;
+  const realErrors = countRealErrors(data.skippedRows);
 
   if (realErrors > 0) {
 
@@ -1307,9 +1319,7 @@ async function validateOutwardImport(e) {
 
   if (!importBtn) return;
 
-  const realErrors = data.skippedRows?.filter(r =>
-  r.reason.includes("Invalid")
-).length || 0;
+  const realErrors = countRealErrors(data.skippedRows);
 
 if (realErrors > 0) {
 
@@ -1371,8 +1381,12 @@ Skipped: ${data.skipped}`
   document.getElementById("outwardExcelFile").value = "";
   document.getElementById("outwardExcelPreviewContainer").innerHTML = "";
 
-  renderOutwardImportResult(data);
-
+  renderImportResultUI({
+  containerId: "outwardExcelImportResult",
+  title: "Outward Import Result",
+  data,
+  type: "outward"
+});
 }
 
 
