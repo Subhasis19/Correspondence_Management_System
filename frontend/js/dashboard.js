@@ -388,7 +388,7 @@
               ? `Notings – Monthly Report (${window.currentUserGroup})`
               : "Notings – Monthly Report";
           }
-
+          setTimeout(checkNotingsStatus, 100);
 
     return;
   }
@@ -688,6 +688,11 @@ if (et) {
 
 
 
+["notingsMonth", "notingsYear", "entryType"].forEach(id => {
+  document.getElementById(id)?.addEventListener("change", checkNotingsStatus);
+});
+
+
 
 
 // Save notings
@@ -729,8 +734,11 @@ document.getElementById("saveNotingsBtn")?.addEventListener("click", () => {
       return;
     }
 
-    msg.textContent = "Saved successfully";
+    msg.textContent = data.message || "Success";
     msg.style.color = "green";
+
+    //  Disable form after submit
+    document.getElementById("saveNotingsBtn").disabled = true;
   })
   .catch(err => {
     console.error("Save notings error:", err);
@@ -816,6 +824,40 @@ document.getElementById("dashClearBtn")?.addEventListener("click", () => {
   loadDashboard(); // back to global
 });
 
+
+    async function checkNotingsStatus() {
+      const month = document.getElementById("notingsMonth").value;
+      const year = document.getElementById("notingsYear").value;
+      const entry_type = document.getElementById("entryType").value;
+
+      if (!month || !year || !entry_type) return;
+
+      try {
+        const res = await fetch(`/notings/check?month=${month}&year=${year}&entry_type=${entry_type}`);
+        const data = await res.json();
+
+        const btn = document.getElementById("saveNotingsBtn");
+        const msg = document.getElementById("notingsMsg");
+
+        if (data.exists) {
+          btn.disabled = true;
+
+          if (data.status === "confirmed") {
+            msg.textContent = "Already confirmed by admin";
+            msg.style.color = "green";
+          } else {
+            msg.textContent = "Already submitted. Waiting for admin approval";
+            msg.style.color = "orange";
+          }
+        } else {
+          btn.disabled = false;
+          msg.textContent = "";
+        }
+
+      } catch (err) {
+        console.error("Check status error:", err);
+      }
+    }
 
 
 

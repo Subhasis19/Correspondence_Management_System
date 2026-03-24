@@ -545,6 +545,7 @@ function validateOutwardExcelSchema(rows) {
   // Public function connecting points: called by dashboard.js when admin panel opens
   window.__adminPanelLoadUsers = function () {
     loadUsers();
+    loadNotingsAdmin();
   };
   // Init
   document.addEventListener("DOMContentLoaded", () => {
@@ -589,6 +590,9 @@ function validateOutwardExcelSchema(rows) {
       });
 
     }
+    document.getElementById("adminNotingsFilterBtn")?.addEventListener("click", () => {
+      loadNotingsAdmin();
+    });
 
   });
 
@@ -633,6 +637,26 @@ document.addEventListener("click", function (e) {
     document.getElementById("emailsView").style.display = "none";
     return;
   }
+
+  
+  // NOTINGS EDIT
+  const notingBtn = e.target.closest(".edit-noting-btn");
+  if (notingBtn) {
+    const id = notingBtn.dataset.id;
+
+    const frame = document.getElementById("formFrame");
+    frame.src = `/notings?id=${id}`;
+
+    document.getElementById("iframeContainer").style.display = "block";
+
+    document.getElementById("dashboardView").style.display = "none";
+    document.getElementById("adminPanelView").style.display = "none";
+    document.getElementById("notingsView").style.display = "none";
+    document.getElementById("emailsView").style.display = "none";
+
+    return;
+  }
+
 
 });
 
@@ -1516,5 +1540,116 @@ Validate Excel to Enable Import
     ?.addEventListener("click", confirmOutwardImport);
 
 }
+
+
+// ===============================
+// ADMIN: LOAD NOTINGS
+// ===============================
+async function loadNotingsAdmin() {
+  const tbody = document.getElementById("notingsAdminTableBody");
+  if (!tbody) return;
+
+  const month = document.getElementById("adminNotingsMonth").value;
+  const year = document.getElementById("adminNotingsYear").value;
+  const group = document.getElementById("adminNotingsGroup").value;
+
+  // Prevent useless API call
+  if (!month || !year || !group) {
+    tbody.innerHTML = `<tr><td colspan="7">Select Month, Year and Group</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = `<tr><td colspan="7">Loading...</td></tr>`;
+
+  try {
+    const res = await fetch(
+      `/admin/notings?month=${month}&year=${year}&group=${encodeURIComponent(group)}`,
+      { credentials: "same-origin" }
+    );
+
+    const data = await res.json();
+
+    if (!data.length) {
+      tbody.innerHTML = `<tr><td colspan="7">No records found</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = data.map(r => `
+      <tr>
+        <td>${r.group_name}</td>
+        <td>${r.month}/${r.year}</td>
+        <td>${r.entry_type}</td>
+        <td>${r.notings_hindi_pages}</td>
+        <td>${r.notings_english_pages}</td>
+        <td>
+          ${r.status === "confirmed"
+            ? "<span style='color:green;font-weight:600'>Confirmed</span>"
+            : "<span style='color:orange'>Pending</span>"
+          }
+        </td>
+        <td>
+          ${r.status === "confirmed"
+            ? "-"
+            : `<button class="btn-small edit-noting-btn" data-id="${r.id}">Edit</button>
+               <button class="btn-small confirm-noting-btn" data-id="${r.id}">Confirm</button>`
+          }
+        </td>
+      </tr>
+    `).join("");
+
+  } catch (err) {
+    console.error("Notings load error:", err);
+  }
+}
+
+
+// ===============================
+// ADMIN: CONFIRM NOTING
+// ===============================
+document.addEventListener("click", async (e) => {
+
+  const btn = e.target.closest(".confirm-noting-btn");
+  if (!btn) return;
+
+  const id = btn.dataset.id;
+
+  if (!confirm("Confirm this noting? This cannot be undone.")) return;
+
+  try {
+    const res = await fetch("/admin/notings/confirm", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      credentials: "same-origin",
+      body: JSON.stringify({ id })
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+      alert("Confirmed successfully");
+      loadNotingsAdmin(); // reload table
+    }
+
+  } catch (err) {
+    console.error("Confirm error:", err);
+  }
+
+});
+
+
+(function initAdminNotingsYear() {
+  const sel = document.getElementById("adminNotingsYear");
+  if (!sel) return;
+  const now = new Date().getFullYear();
+
+  for (let y = now + 2; y >= now - 5; y--) {
+    const o = document.createElement("option");
+    o.value = y;
+    o.textContent = y;
+    sel.appendChild(o);
+  }
+})();
 
 

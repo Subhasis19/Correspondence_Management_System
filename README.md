@@ -211,6 +211,8 @@ CREATE TABLE notings_records (
   eoffice_comments INT UNSIGNED DEFAULT 0,
 
   group_name VARCHAR(50) ,
+  
+  status ENUM('pending', 'confirmed') DEFAULT 'pending',
 
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 

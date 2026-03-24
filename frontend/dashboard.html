@@ -362,6 +362,60 @@
           </div>
         </div>
 
+        <div class="card" style="margin-top: 24px">
+          <div class="card-header">
+            <h3>Notings Submissions</h3>
+          </div>
+          
+          <div style="display:flex; gap:10px; margin-bottom:12px;">
+
+          <select id="adminNotingsMonth" style="padding:6px;">
+            <option value="">Month</option>
+            <option value="1">Jan</option>
+            <option value="2">Feb</option>
+            <option value="3">Mar</option>
+            <option value="4">Apr</option>
+            <option value="5">May</option>
+            <option value="6">Jun</option>
+            <option value="7">Jul</option>
+            <option value="8">Aug</option>
+            <option value="9">Sep</option>
+            <option value="10">Oct</option>
+            <option value="11">Nov</option>
+            <option value="12">Dec</option>
+          </select>
+
+          <select id="adminNotingsYear" style="padding:6px;"></select>
+
+          <input id="adminNotingsGroup" placeholder="Group" style="padding:6px;" />
+
+          <button class="btn-small" id="adminNotingsFilterBtn">Apply</button>
+
+        </div>
+
+          <table class="records-table">
+            <thead>
+              <tr>
+                <th>Group</th>
+                <th>Month/Year</th>
+                <th>Type</th>
+                <th>Hindi</th>
+                <th>English</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="notingsAdminTableBody">
+              <tr>
+                <td colspan="7" style="text-align:center; padding:20px; color:#999;">
+                  Loading...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+
         <div>
           <div
             id="excelImportBox"
