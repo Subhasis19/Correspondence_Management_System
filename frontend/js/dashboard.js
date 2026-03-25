@@ -98,8 +98,7 @@
       }
 
 
-      const res = await fetch(url);
-      const data = await res.json();
+      const data = await apiFetch(url);
 
       // Update Cards
       document.getElementById("totalInwards").textContent = data.totalInwards;
@@ -177,6 +176,7 @@
 
     } catch (err) {
       console.error("loadDashboard error:", err);
+      alert("Failed to load dashboard data");
     }
   }
 
@@ -416,6 +416,142 @@ if (et) {
 
 }  
 
+  // ===============================
+  // COMMON YEAR DROPDOWN INITIALIZER
+  // ===============================
+  function populateYearDropdown(selectId) {
+    const sel = document.getElementById(selectId);
+    if (!sel) return;
+
+    const now = new Date().getFullYear();
+
+    for (let y = now + 2; y >= now - 5; y--) {
+      const o = document.createElement("option");
+      o.value = y;
+      o.textContent = y;
+      sel.appendChild(o);
+    }
+  }
+
+
+
+["notingsMonth", "notingsYear", "entryType"].forEach(id => {
+  document.getElementById(id)?.addEventListener("change", checkNotingsStatus);
+});
+
+
+
+// ===============================
+// COMMON FETCH HELPER
+// ===============================
+  async function apiFetch(url, options = {}) {
+    try {
+      const res = await fetch(url, options);
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message || "Request failed");
+      }
+
+      return data;
+
+    } catch (err) {
+      console.error("API error:", err);
+      throw err;
+    }
+  }
+
+  
+  // COMMON MESSAGE HELPER
+  // ===============================
+  function setMessage(el, text, color) {
+    if (!el) return;
+    el.textContent = text;
+    el.style.color = color;
+  }
+
+  // ===============================
+  // GET NOTINGS PAYLOAD
+  // ===============================
+  function getNotingsPayload() {
+    return {
+      month: document.getElementById("notingsMonth").value,
+      year: document.getElementById("notingsYear").value,
+      entry_type: document.getElementById("entryType").value,
+      hindi: Number(document.getElementById("notingsHindi").value) || 0,
+      english: Number(document.getElementById("notingsEnglish").value) || 0,
+      eoffice: Number(document.getElementById("notingsEoffice").value) || 0
+    };
+  }
+
+  
+    async function checkNotingsStatus() {
+      const month = document.getElementById("notingsMonth").value;
+      const year = document.getElementById("notingsYear").value;
+      const entry_type = document.getElementById("entryType").value;
+
+      if (!month || !year || !entry_type) return;
+
+      try {
+        const data = await apiFetch(`/notings/check?month=${month}&year=${year}&entry_type=${entry_type}`);
+
+        const btn = document.getElementById("saveNotingsBtn");
+        const msg = document.getElementById("notingsMsg");
+
+        if (data.exists) {
+          btn.disabled = true;
+
+          if (data.status === "confirmed") {
+       setMessage(msg, data.message || "Saved successfully", "green");          
+      } else {
+         setMessage(msg, "Already submitted. Waiting for admin approval", "orange");       
+        }
+        } else {
+          btn.disabled = false;
+          msg.textContent = "";
+        }
+
+          } catch (err) {
+      console.error("Check status error:", err);
+      setMessage(
+        document.getElementById("notingsMsg"),
+        "Failed to check status",
+        "red"
+      );
+    }
+    }
+
+    
+  // ===============================
+  // VALIDATE NOTINGS
+  // ===============================
+  function validateNotings(payload, msgEl) {
+    if (!payload.month || !payload.year || !payload.entry_type) {
+      setMessage(msgEl, "Please select Month, Year and Entry Type", "red");
+      return false;
+    }
+    return true;
+  }
+
+
+
+
+  // ===============================
+  // GET EMAILS PAYLOAD
+  // ===============================
+  function getEmailsPayload() {
+    return {
+      month: document.getElementById("emailsMonth").value,
+      year: document.getElementById("emailsYear").value,
+      entry_type: document.getElementById("emailsEntryType").value,
+      region: document.getElementById("emailsRegion").value,
+      total_english: Number(document.getElementById("emailsEnglish").value) || 0,
+      total_hindi: Number(document.getElementById("emailsHindi").value) || 0
+    };
+  }
+
+
+
 
   /* ============================================================
      INIT
@@ -439,7 +575,11 @@ if (et) {
   }
 
    loadReportGroups();
-  // Notings back button
+   
+  populateYearDropdown("notingsYear");
+  populateYearDropdown("emailsYear");
+  populateYearDropdown("dashYear");
+  
 
 
 
@@ -644,166 +784,74 @@ if (et) {
       }
     });
 
-  })();
-
-
-// Populate year dropdown
-(function initNotingsYear() {
-  const sel = document.getElementById("notingsYear");
-  if (!sel) return;
-  const now = new Date().getFullYear();
-  for (let y = now + 2; y >= now - 5; y--) {
-    const o = document.createElement("option");
-    o.value = y;
-    o.textContent = y;
-    sel.appendChild(o);
-  }
-})();
-
-(function initEmailsYear() {
-  const sel = document.getElementById("emailsYear");
-  if (!sel) return;
-  const now = new Date().getFullYear();
-  for (let y = now + 2; y >= now - 5; y--) {
-    const o = document.createElement("option");
-    o.value = y;
-    o.textContent = y;
-    sel.appendChild(o);
-  }
-})();
-
-
-// Populate dashboard year dropdown for dashboard report filtering 
-(function initDashboardYear() {
-  const sel = document.getElementById("dashYear");
-  if (!sel) return;
-  const now = new Date().getFullYear();
-  for (let y = now + 2; y >= now - 5; y--) {
-    const o = document.createElement("option");
-    o.value = y;
-    o.textContent = y;
-    sel.appendChild(o);
-  }
-})();
-
-
-
-["notingsMonth", "notingsYear", "entryType"].forEach(id => {
-  document.getElementById(id)?.addEventListener("change", checkNotingsStatus);
-});
-
-
-
-
-// Save notings
+// ===============================
+// SAVE NOTINGS
+// ===============================
 document.getElementById("saveNotingsBtn")?.addEventListener("click", () => {
 
   const msg = document.getElementById("notingsMsg");
   if (!msg) return;
 
+  const payload = getNotingsPayload();
+  if (!validateNotings(payload, msg)) return;
 
-  const payload = {
-  month: document.getElementById("notingsMonth").value,
-  year: document.getElementById("notingsYear").value,
-  entry_type: document.getElementById("entryType").value,
-  hindi: Number(document.getElementById("notingsHindi").value) || 0,
-  english: Number(document.getElementById("notingsEnglish").value) || 0,
-  eoffice: Number(document.getElementById("notingsEoffice").value) || 0
-};
-
-
-  if (!payload.month || !payload.year || !payload.entry_type) {
-    msg.textContent = "Please select Month, Year and Entry Type";
-    msg.style.color = "red";
-    return;
-  }
-
-
-  fetch("/notings/save", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json"
-  },
-  body: JSON.stringify(payload)
-})
-  .then(res => res.json())
-  .then(data => {
-    if (!data.success) {
-      msg.textContent = data.message || "Save failed";
-      msg.style.color = "red";
-      return;
-    }
-
-    msg.textContent = data.message || "Success";
-    msg.style.color = "green";
-
-    //  Disable form after submit
-    document.getElementById("saveNotingsBtn").disabled = true;
-  })
-  .catch(err => {
-    console.error("Save notings error:", err);
-    msg.textContent = "Server error";
-    msg.style.color = "red";
-  });
-
-
-});
-
-// =========================
-// EMAILS: SAVE
-// =========================
-document.getElementById("saveEmailsBtn")?.addEventListener("click", () => {
-  const msg = document.getElementById("emailsMsg");
-  if (!msg) return;
-
-  const payload = {
-    month: document.getElementById("emailsMonth").value,
-    year: document.getElementById("emailsYear").value,
-    entry_type: document.getElementById("emailsEntryType").value,
-    region: document.getElementById("emailsRegion").value,
-    total_english: Number(document.getElementById("emailsEnglish").value) || 0,
-    total_hindi: Number(document.getElementById("emailsHindi").value) || 0
-  };
-
-  // Validation
-  if (!payload.month || !payload.year || !payload.entry_type || !payload.region) {
-    msg.textContent = "Please select Month, Year, Type and Region";
-    msg.style.color = "red";
-    return;
-  }
-
-  fetch("/emails/save", {
+  apiFetch("/notings/save", {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
     },
     body: JSON.stringify(payload)
   })
-    .then(res => res.json())
     .then(data => {
-      if (!data.success) {
-        msg.textContent = data.message || "Save failed";
-        msg.style.color = "red";
-        return;
-      }
-
-      msg.textContent = "Saved successfully";
-      msg.style.color = "green";
+      setMessage(msg, data.message || "Success", "green");
+      document.getElementById("saveNotingsBtn").disabled = true;
     })
     .catch(err => {
-      console.error("Save emails error:", err);
-      msg.textContent = "Server error";
-      msg.style.color = "red";
+      setMessage(msg, err.message || "Error", "red");
     });
+
 });
 
 
-// Dashboard Filter Apply
+// ===============================
+// SAVE EMAILS
+// ===============================
+document.getElementById("saveEmailsBtn")?.addEventListener("click", () => {
+
+  const msg = document.getElementById("emailsMsg");
+  if (!msg) return;
+
+  const payload = getEmailsPayload();
+
+  if (!payload.month || !payload.year || !payload.entry_type || !payload.region) {
+    setMessage(msg, "Please fill all fields", "red");
+    return;
+  }
+
+  apiFetch("/emails/save", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(payload)
+  })
+    .then(data => {
+      setMessage(msg, data.message || "Saved successfully", "green");
+    })
+    .catch(err => {
+      setMessage(msg, err.message || "Error", "red");
+    });
+
+});
+
+
+// ===============================
+// DASHBOARD FILTER
+// ===============================
 document.getElementById("dashFilterBtn")?.addEventListener("click", () => {
+
   const month = document.getElementById("dashMonth").value;
   const year = document.getElementById("dashYear").value;
-
-  console.log("Selected:", month, year);
 
   if (!month || !year) {
     alert("Select Month and Year");
@@ -816,48 +864,20 @@ document.getElementById("dashFilterBtn")?.addEventListener("click", () => {
   loadDashboard(month, year);
 });
 
-// Dashboard Filter Clear
+
 document.getElementById("dashClearBtn")?.addEventListener("click", () => {
   document.getElementById("dashMonth").value = "";
   document.getElementById("dashYear").value = "";
   document.getElementById("dashFilterLabel").textContent = "";
-  loadDashboard(); // back to global
+  loadDashboard();
 });
 
+  })();
 
-    async function checkNotingsStatus() {
-      const month = document.getElementById("notingsMonth").value;
-      const year = document.getElementById("notingsYear").value;
-      const entry_type = document.getElementById("entryType").value;
 
-      if (!month || !year || !entry_type) return;
 
-      try {
-        const res = await fetch(`/notings/check?month=${month}&year=${year}&entry_type=${entry_type}`);
-        const data = await res.json();
 
-        const btn = document.getElementById("saveNotingsBtn");
-        const msg = document.getElementById("notingsMsg");
 
-        if (data.exists) {
-          btn.disabled = true;
-
-          if (data.status === "confirmed") {
-            msg.textContent = "Already confirmed by admin";
-            msg.style.color = "green";
-          } else {
-            msg.textContent = "Already submitted. Waiting for admin approval";
-            msg.style.color = "orange";
-          }
-        } else {
-          btn.disabled = false;
-          msg.textContent = "";
-        }
-
-      } catch (err) {
-        console.error("Check status error:", err);
-      }
-    }
 
 
 
