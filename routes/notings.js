@@ -49,7 +49,7 @@ router.post("/notings/save", requireLogin, (req, res) => {
                 });
             }
         }
-        // ✅ ADMIN EDIT MODE
+        // ADMIN EDIT MODE
         if (id && userRole === "admin") {
             const updateSql = `
                 UPDATE notings_records
@@ -149,6 +149,37 @@ router.post("/notings/save", requireLogin, (req, res) => {
     });
 
     // =========================
+    // GET SINGLE NOTING (ADMIN EDIT)
+    // =========================
+    router.get("/notings/:id", requireLogin, (req, res) => {
+        const { id } = req.params;
+
+        const sql = `
+            SELECT 
+                id,
+                month,
+                year,
+                entry_type,
+                notings_hindi_pages,
+                notings_english_pages,
+                eoffice_comments,
+                status
+            FROM notings_records
+            WHERE id = ?
+        `;
+
+        db.query(sql, [id], (err, rows) => {
+            if (err || !rows.length) {
+                return res.status(404).json({ message: "Not found" });
+            }
+
+            res.json(rows[0]);
+        });
+    });
+
+
+
+    // =========================
     // ADMIN: GET ALL NOTINGS
     // =========================
     router.get("/admin/notings", requireLogin, (req, res) => {
@@ -213,22 +244,7 @@ router.post("/notings/save", requireLogin, (req, res) => {
             res.json({ success: true });
         });
     });
-    // =========================
-    // GET SINGLE NOTING (ADMIN EDIT)
-    // =========================
-    router.get("/notings/:id", requireLogin, (req, res) => {
-        const { id } = req.params;
 
-        const sql = `SELECT * FROM notings_records WHERE id = ?`;
-
-        db.query(sql, [id], (err, rows) => {
-            if (err || !rows.length) {
-                return res.status(404).json({ message: "Not found" });
-            }
-
-            res.json(rows[0]);
-        });
-    });
 
 
 module.exports = router;

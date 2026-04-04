@@ -645,7 +645,8 @@ document.addEventListener("click", function (e) {
     const id = notingBtn.dataset.id;
 
     const frame = document.getElementById("formFrame");
-    frame.src = `/notings?id=${id}`;
+    window.location.href = `/dashboard.html?page=notings&id=${id}`;
+    
 
     document.getElementById("iframeContainer").style.display = "block";
 

@@ -389,6 +389,13 @@ async function loadGroups(selectId, defaultText = "All Groups") {
               : "Notings – Monthly Report";
           }
           setTimeout(checkNotingsStatus, 100);
+          // ✅ PREFILL EDIT MODE
+          const params = new URLSearchParams(window.location.search);
+          const editId = params.get("id");
+
+          if (editId) {
+            loadNotingForEdit(editId);
+          }
 
     return;
   }
@@ -482,6 +489,39 @@ if (et) {
       english: Number(document.getElementById("notingsEnglish").value) || 0,
       eoffice: Number(document.getElementById("notingsEoffice").value) || 0
     };
+  }
+
+  // ===============================
+  // PREFILL NOTING (EDIT)
+  // ===============================
+  async function loadNotingForEdit(id) {
+    try {
+      const res = await fetch(`/notings/${id}`, {
+        credentials: "same-origin"
+      });
+
+      if (!res.ok) throw new Error("Failed to fetch noting");
+
+      const data = await res.json();
+
+      // Fill form
+      document.getElementById("notingsMonth").value = data.month;
+      document.getElementById("notingsYear").value = data.year;
+      document.getElementById("entryType").value = data.entry_type;
+      document.getElementById("notingsHindi").value = data.notings_hindi_pages;
+      document.getElementById("notingsEnglish").value = data.notings_english_pages;
+      document.getElementById("notingsEoffice").value = data.eoffice_comments;
+
+      // Change button text
+      const btn = document.getElementById("saveNotingsBtn");
+      btn.textContent = "Update";
+
+      // Store edit id
+      btn.dataset.editId = id;
+
+    } catch (err) {
+      console.error("Prefill error:", err);
+    }
   }
 
   
@@ -656,7 +696,14 @@ if (et) {
       }
     });
 
-    loadPage("dashboard");
+    const params = new URLSearchParams(window.location.search);
+    const pageFromURL = params.get("page");
+
+    if (pageFromURL) {
+      loadPage(pageFromURL);
+    } else {
+      loadPage("dashboard");
+    }
 
     document.addEventListener("click", async (e) => {
       const row = e.target.closest(".record-row");
@@ -793,7 +840,14 @@ document.getElementById("saveNotingsBtn")?.addEventListener("click", () => {
   const msg = document.getElementById("notingsMsg");
   if (!msg) return;
 
+  const btn = document.getElementById("saveNotingsBtn");
+  const editId = btn.dataset.editId;
+
   const payload = getNotingsPayload();
+
+  if (editId) {
+    payload.id = editId; 
+  }
   if (!validateNotings(payload, msg)) return;
 
   apiFetch("/notings/save", {
