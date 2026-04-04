@@ -158,19 +158,27 @@ router.post("/notings/save", requireLogin, (req, res) => {
 
         const { month, year, group } = req.query;
 
-        //  DO NOT RETURN ALL DATA
-        if (!month || !year || !group) {
-            return res.json([]); // safe: no filter = no data
-        }
+    if (!month || !year) {
+        return res.json([]);
+    }
 
-        const sql = `
+        let sql = `
             SELECT *
             FROM notings_records
-            WHERE month = ? AND year = ? AND group_name = ?
-            ORDER BY id DESC
+            WHERE month = ? AND year = ? 
         `;
 
-        db.query(sql, [month, year, group], (err, rows) => {
+        const params = [month, year];
+
+            //  Apply group filter ONLY if selected
+            if (group) {
+                sql += " AND group_name = ?";
+                params.push(group);
+            }
+
+            sql += " ORDER BY id DESC";
+
+        db.query(sql, params, (err, rows) => {
             if (err) {
                 console.error("Fetch notings error:", err);
                 return res.status(500).json({ message: "DB error" });

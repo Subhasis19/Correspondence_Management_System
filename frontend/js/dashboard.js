@@ -43,33 +43,33 @@
     /* ---------------------------
      LOAD REPORT GROUPS
   --------------------------- */
-  async function loadReportGroups() {
-    const select = document.getElementById("reportGroup");
-    if (!select) return;
+async function loadGroups(selectId, defaultText = "All Groups") {
+  const select = document.getElementById(selectId);
+  if (!select) return;
 
-    // reset dropdown, keep default
-    select.innerHTML = `<option value="">All Groups</option>`;
+  // Reset dropdown
+  select.innerHTML = `<option value="">${defaultText}</option>`;
 
-    try {
-      const res = await fetch("/admin/report/groups", {
-        credentials: "same-origin"
-      });
+  try {
+    const res = await fetch("/admin/report/groups", {
+      credentials: "same-origin"
+    });
 
-      if (!res.ok) throw new Error("Failed to load groups");
+    if (!res.ok) throw new Error("Failed to load groups");
 
-      const groups = await res.json();
+    const groups = await res.json();
 
-      groups.forEach(group => {
-        const opt = document.createElement("option");
-        opt.value = group;
-        opt.textContent = group;
-        select.appendChild(opt);
-      });
+    groups.forEach(group => {
+      const opt = document.createElement("option");
+      opt.value = group;
+      opt.textContent = group;
+      select.appendChild(opt);
+    });
 
-    } catch (err) {
-      console.error("loadReportGroups:", err);
-    }
+  } catch (err) {
+    console.error("loadGroups error:", err);
   }
+}
 
 
   /* ---------------------------
@@ -574,7 +574,8 @@ if (et) {
     }
   }
 
-   loadReportGroups();
+    loadGroups("reportGroup", "All Groups");
+    loadGroups("adminNotingsGroup", "All Groups");
    
   populateYearDropdown("notingsYear");
   populateYearDropdown("emailsYear");
