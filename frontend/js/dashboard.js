@@ -40,6 +40,58 @@
     });
   }
 
+  let initialNotingsEditId = new URLSearchParams(window.location.search).get("id");
+
+  function getDefaultNotingsTitle() {
+    return window.currentUserGroup
+      ? `Notings – Monthly Report (${window.currentUserGroup})`
+      : "Notings – Monthly Report";
+  }
+
+  function resetNotingsForm() {
+    document.getElementById("notingsMonth").value = "";
+    document.getElementById("notingsYear").value = "";
+    document.getElementById("entryType").value = "";
+    document.getElementById("notingsHindi").value = 0;
+    document.getElementById("notingsEnglish").value = 0;
+    document.getElementById("notingsEoffice").value = 0;
+
+    const msg = document.getElementById("notingsMsg");
+    if (msg) {
+      msg.textContent = "";
+      msg.style.color = "#777";
+    }
+
+    const btn = document.getElementById("saveNotingsBtn");
+    if (btn) {
+      btn.textContent = "Save";
+      btn.disabled = false;
+      delete btn.dataset.editId;
+    }
+
+    const title = document.getElementById("notingsTitle");
+    if (title) {
+      title.textContent = getDefaultNotingsTitle();
+    }
+  }
+
+  function syncDashboardUrl(page, extraParams = {}) {
+    const url = new URL(window.location.href);
+
+    url.searchParams.set("page", page);
+    url.searchParams.delete("id");
+
+    Object.entries(extraParams).forEach(([key, value]) => {
+      if (value === null || value === undefined || value === "") {
+        url.searchParams.delete(key);
+      } else {
+        url.searchParams.set(key, value);
+      }
+    });
+
+    window.history.replaceState({}, "", url);
+  }
+
     /* ---------------------------
      LOAD REPORT GROUPS
   --------------------------- */
@@ -315,6 +367,7 @@ async function loadGroups(selectId, defaultText = "All Groups") {
 
    function goBackToDashboard() {
       if (formFrame) formFrame.src = "";
+      syncDashboardUrl("dashboard");
       loadPage("dashboard");
     }
 
@@ -372,30 +425,18 @@ async function loadGroups(selectId, defaultText = "All Groups") {
     }
 
     if (page === "notings") {
-        
         document.getElementById("notingsView").style.display = "block";
         setActiveMenuItem("notings");
-        document.getElementById("notingsHindi").value = 0;
-        document.getElementById("notingsEnglish").value = 0;
-        document.getElementById("notingsEoffice").value = 0;
-        document.getElementById("notingsMsg").textContent = "";
+        resetNotingsForm();
+        setTimeout(checkNotingsStatus, 100);
 
-        document.getElementById("entryType").value = "";
-
-        const nt = document.getElementById("notingsTitle");
-          if (nt) {
-            nt.textContent = window.currentUserGroup
-              ? `Notings – Monthly Report (${window.currentUserGroup})`
-              : "Notings – Monthly Report";
-          }
-          setTimeout(checkNotingsStatus, 100);
-          // ✅ PREFILL EDIT MODE
-          const params = new URLSearchParams(window.location.search);
-          const editId = params.get("id");
-
-          if (editId) {
-            loadNotingForEdit(editId);
-          }
+        if (initialNotingsEditId && window.currentUserRole === "admin") {
+          const editId = initialNotingsEditId;
+          initialNotingsEditId = null;
+          loadNotingForEdit(editId);
+        } else {
+          initialNotingsEditId = null;
+        }
 
     return;
   }
@@ -494,46 +535,24 @@ if (et) {
   // ===============================
   // PREFILL NOTING (EDIT)
   // ===============================
-  async function loadNotingForEdit(id) {
-    try {
-      const res = await fetch(`/notings/${id}`, {
-        credentials: "same-origin"
-      });
-
-      if (!res.ok) throw new Error("Failed to fetch noting");
-
-      const data = await res.json();
-
-      // Fill form
-      document.getElementById("notingsMonth").value = data.month;
-      document.getElementById("notingsYear").value = data.year;
-      document.getElementById("entryType").value = data.entry_type;
-      document.getElementById("notingsHindi").value = data.notings_hindi_pages;
-      document.getElementById("notingsEnglish").value = data.notings_english_pages;
-      document.getElementById("notingsEoffice").value = data.eoffice_comments;
-
-      // Change button text
-      const btn = document.getElementById("saveNotingsBtn");
-      btn.textContent = "Update";
-
-      // Store edit id
-      btn.dataset.editId = id;
-
-    } catch (err) {
-      console.error("Prefill error:", err);
-    }
-  }
-
-  
-    async function checkNotingsStatus() {
+  async function checkNotingsStatus() {
       const month = document.getElementById("notingsMonth").value;
       const year = document.getElementById("notingsYear").value;
       const entry_type = document.getElementById("entryType").value;
 
       if (!month || !year || !entry_type) return;
 
+      const editId = document.getElementById("saveNotingsBtn")?.dataset.editId;
+      const isAdminEdit = Boolean(editId && window.currentUserRole === "admin");
+      const baseUrl = isAdminEdit ? "/admin/notings/check" : "/notings/check";
+      let url = `${baseUrl}?month=${month}&year=${year}&entry_type=${encodeURIComponent(entry_type)}`;
+
+      if (isAdminEdit) {
+        url += `&id=${encodeURIComponent(editId)}`;
+      }
+
       try {
-        const data = await apiFetch(`/notings/check?month=${month}&year=${year}&entry_type=${entry_type}`);
+        const data = await apiFetch(url);
 
         const btn = document.getElementById("saveNotingsBtn");
         const msg = document.getElementById("notingsMsg");
@@ -542,26 +561,62 @@ if (et) {
           btn.disabled = true;
 
           if (data.status === "confirmed") {
-       setMessage(msg, data.message || "Saved successfully", "green");          
-      } else {
-         setMessage(msg, "Already submitted. Waiting for admin approval", "orange");       
-        }
+            setMessage(msg, data.message || "This record is already confirmed and cannot be modified.", "green");
+          } else {
+            setMessage(
+              msg,
+              data.message || "Already submitted. Waiting for admin approval",
+              "orange"
+            );
+          }
         } else {
           btn.disabled = false;
-          msg.textContent = "";
+          setMessage(msg, "", "#777");
         }
+      } catch (err) {
+        console.error("Check status error:", err);
+        setMessage(document.getElementById("notingsMsg"), "Failed to check status", "red");
+      }
+  }
 
-          } catch (err) {
-      console.error("Check status error:", err);
-      setMessage(
-        document.getElementById("notingsMsg"),
-        "Failed to check status",
-        "red"
-      );
-    }
-    }
+  async function loadNotingForEdit(id) {
+    try {
+      const res = await fetch(`/admin/notings/${id}`, {
+        credentials: "same-origin"
+      });
 
-    
+      if (!res.ok) throw new Error("Failed to fetch noting");
+
+      const data = await res.json();
+
+      document.getElementById("notingsMonth").value = data.month;
+      document.getElementById("notingsYear").value = data.year;
+      document.getElementById("entryType").value = data.entry_type;
+      document.getElementById("notingsHindi").value = data.notings_hindi_pages;
+      document.getElementById("notingsEnglish").value = data.notings_english_pages;
+      document.getElementById("notingsEoffice").value = data.eoffice_comments;
+
+      const btn = document.getElementById("saveNotingsBtn");
+      btn.textContent = "Update";
+      btn.dataset.editId = id;
+      btn.disabled = false;
+
+      const title = document.getElementById("notingsTitle");
+      if (title) {
+        title.textContent = data.group_name
+          ? `Notings – Edit Submission (${data.group_name})`
+          : "Notings – Edit Submission";
+      }
+
+      if (typeof checkNotingsStatus === "function") {
+        checkNotingsStatus();
+      }
+    } catch (err) {
+      console.error("Prefill error:", err);
+    }
+  }
+
+
   // ===============================
   // VALIDATE NOTINGS
   // ===============================
@@ -603,6 +658,7 @@ if (et) {
     const user = session.user;
 
      window.currentUserGroup = user.group || "";
+     window.currentUserRole = user.role || "";
 
     document.getElementById("adminName").textContent = user.name;
     document.getElementById("welcomeName").textContent =   user.group ? `${user.name} (${user.group})` : user.name;
@@ -628,6 +684,7 @@ if (et) {
   document.querySelectorAll(".menu-item").forEach((it) => {
     it.addEventListener("click", (e) => {
       e.preventDefault();
+      syncDashboardUrl(it.dataset.page);
       loadPage(it.dataset.page);
     });
   });
@@ -844,14 +901,14 @@ document.getElementById("saveNotingsBtn")?.addEventListener("click", () => {
   const editId = btn.dataset.editId;
 
   const payload = getNotingsPayload();
-
-  if (editId) {
-    payload.id = editId; 
-  }
+  const isAdminEdit = Boolean(editId && window.currentUserRole === "admin");
   if (!validateNotings(payload, msg)) return;
 
-  apiFetch("/notings/save", {
-    method: "POST",
+  const requestUrl = isAdminEdit ? `/admin/notings/${encodeURIComponent(editId)}` : "/notings/save";
+  const requestMethod = isAdminEdit ? "PATCH" : "POST";
+
+  apiFetch(requestUrl, {
+    method: requestMethod,
     headers: {
       "Content-Type": "application/json"
     },

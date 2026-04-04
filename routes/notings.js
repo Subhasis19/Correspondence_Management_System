@@ -1,47 +1,68 @@
 const express = require("express");
 const router = express.Router();
 const { pool: db } = require("../db");
-const { requireLogin } = require("../middlewares/authMiddleware");
+const { requireLogin, requireAdmin } = require("../middlewares/authMiddleware");
+
+function dbQuery(sql, params = []) {
+    return new Promise((resolve, reject) => {
+        db.query(sql, params, (err, rows) => {
+            if (err) {
+                reject(err);
+                return;
+            }
+            resolve(rows);
+        });
+    });
+}
+
+function getNotingsPayload(body) {
+    return {
+        month: Number(body.month),
+        year: Number(body.year),
+        entryType: body.entry_type,
+        hindi: Number(body.hindi) || 0,
+        english: Number(body.english) || 0,
+        eoffice: Number(body.eoffice) || 0,
+    };
+}
+
+function hasRequiredFields({ month, year, entryType }) {
+    return Boolean(month && year && entryType);
+}
 
 // =========================
 // NOTINGS: SAVE MONTHLY DATA
 // =========================
-router.post("/notings/save", requireLogin, (req, res) => {
-    const { id } = req.body;
+router.post("/notings/save", requireLogin, async (req, res) => {
     const groupName = req.session.user.group;
-    const userRole = req.session.user.role; 
+    const userRole = req.session.user.role;
+    const payload = getNotingsPayload(req.body);
 
-    const { month, year, entry_type, hindi, english, eoffice } = req.body;
-
-    if (!month || !year || !entry_type) {
+    if (!hasRequiredFields(payload)) {
         return res.status(400).json({
             success: false,
             message: "Month, Year and Entry Type are required",
         });
     }
 
-    // CHECK IF ALREADY EXISTS
-    const checkSql = `
-        SELECT id, status FROM notings_records
-        WHERE group_name = ? AND month = ? AND year = ? AND entry_type = ?
-    `;
+    try {
+        const existingRows = await dbQuery(
+            `
+                SELECT id, status
+                FROM notings_records
+                WHERE group_name = ? AND month = ? AND year = ? AND entry_type = ?
+            `,
+            [groupName, payload.month, payload.year, payload.entryType]
+        );
 
-    db.query(checkSql, [groupName, month, year, entry_type], (err, rows) => {
-        if (err) {
-            console.error("Check error:", err);
-            return res.status(500).json({ success: false, message: "DB error" });
-        }
-
-        if (rows.length > 0) {
-            // If already confirmed → no one can edit
-            if (rows[0].status === "confirmed") {
+        if (existingRows.length > 0) {
+            if (existingRows[0].status === "confirmed") {
                 return res.status(400).json({
                     success: false,
                     message: "Already confirmed. Cannot modify.",
                 });
             }
 
-            // If user → block
             if (userRole !== "admin") {
                 return res.status(400).json({
                     success: false,
@@ -49,202 +70,349 @@ router.post("/notings/save", requireLogin, (req, res) => {
                 });
             }
         }
-        // ADMIN EDIT MODE
-        if (id && userRole === "admin") {
-            const updateSql = `
-                UPDATE notings_records
-                SET notings_hindi_pages = ?,
-                    notings_english_pages = ?,
-                    eoffice_comments = ?
-                WHERE id = ?
-            `;
 
-            return db.query(updateSql, [
-                Number(hindi) || 0,
-                Number(english) || 0,
-                Number(eoffice) || 0,
-                id
-            ], (err) => {
-                if (err) {
-                    return res.status(500).json({ success: false });
-                }
+        await dbQuery(
+            `
+                INSERT INTO notings_records
+                (group_name, month, year, entry_type, notings_hindi_pages, notings_english_pages, eoffice_comments, status)
+                VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')
+                ON DUPLICATE KEY UPDATE
+                    notings_hindi_pages = VALUES(notings_hindi_pages),
+                    notings_english_pages = VALUES(notings_english_pages),
+                    eoffice_comments = VALUES(eoffice_comments)
+            `,
+            [
+                groupName,
+                payload.month,
+                payload.year,
+                payload.entryType,
+                payload.hindi,
+                payload.english,
+                payload.eoffice,
+            ]
+        );
 
-                res.json({ success: true, message: "Updated successfully" });
-            });
-        }
-
-        // INSERT OR ADMIN UPDATE
-        const sql = `
-            INSERT INTO notings_records
-            (group_name, month, year, entry_type, notings_hindi_pages, notings_english_pages, eoffice_comments , status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')
-            ON DUPLICATE KEY UPDATE
-                notings_hindi_pages = VALUES(notings_hindi_pages),
-                notings_english_pages = VALUES(notings_english_pages),
-                eoffice_comments = VALUES(eoffice_comments)
-        `;
-
-        const params = [
-            groupName,
-            Number(month),
-            Number(year),
-            entry_type,
-            Number(hindi) || 0,
-            Number(english) || 0,
-            Number(eoffice) || 0,
-        ];
-
-        db.query(sql, params, (err) => {
-            if (err) {
-                console.error("Notings save error:", err);
-                return res.status(500).json({
-                    success: false,
-                    message: "Database error",
-                });
-            }
-
-            res.json({
-                success: true,
-                message: userRole === "admin"
-                    ? "Updated successfully"
-                    : "Submitted successfully",
-            });
+        res.json({
+            success: true,
+            message: userRole === "admin" ? "Updated successfully" : "Submitted successfully",
         });
-    });
+    } catch (err) {
+        console.error("Notings save error:", err);
+        res.status(500).json({
+            success: false,
+            message: "Database error",
+        });
+    }
 });
 
+// =========================
+// CHECK NOTINGS STATUS
+// =========================
+router.get("/notings/check", requireLogin, async (req, res) => {
+    const groupName = req.session.user.group;
+    const payload = getNotingsPayload(req.query);
 
+    if (!hasRequiredFields(payload)) {
+        return res.json({ exists: false });
+    }
 
-    // =========================
-    // CHECK NOTINGS STATUS
-    // =========================
-    router.get("/notings/check", requireLogin, (req, res) => {
-        const groupName = req.session.user.group;
-        const { month, year, entry_type } = req.query;
+    try {
+        const rows = await dbQuery(
+            `
+                SELECT id, status
+                FROM notings_records
+                WHERE group_name = ? AND month = ? AND year = ? AND entry_type = ?
+            `,
+            [groupName, payload.month, payload.year, payload.entryType]
+        );
 
-        if (!month || !year || !entry_type) {
+        if (rows.length === 0) {
             return res.json({ exists: false });
         }
 
-        const sql = `
-            SELECT id, status FROM notings_records
-            WHERE group_name = ? AND month = ? AND year = ? AND entry_type = ?
-        `;
+        res.json({
+            exists: true,
+            status: rows[0].status,
+        });
+    } catch (err) {
+        console.error("Check status error:", err);
+        res.json({ exists: false });
+    }
+});
 
-        db.query(sql, [groupName, month, year, entry_type], (err, rows) => {
-            if (err) {
-                console.error("Check status error:", err);
-                return res.json({ exists: false });
-            }
+// =========================
+// ADMIN: CHECK SINGLE EDIT TARGET
+// =========================
+router.get("/admin/notings/check", requireAdmin, async (req, res) => {
+    const editId = Number(req.query.id);
+    const payload = getNotingsPayload(req.query);
 
-            if (rows.length === 0) {
-                return res.json({ exists: false });
-            }
+    if (!editId || !hasRequiredFields(payload)) {
+        return res.json({ exists: false });
+    }
 
-            res.json({
+    try {
+        const currentRows = await dbQuery(
+            `
+                SELECT id, group_name, status
+                FROM notings_records
+                WHERE id = ?
+            `,
+            [editId]
+        );
+
+        if (currentRows.length === 0) {
+            return res.status(404).json({
                 exists: true,
-                status: rows[0].status
+                message: "Noting record not found.",
             });
-        });
-    });
-
-    // =========================
-    // GET SINGLE NOTING (ADMIN EDIT)
-    // =========================
-    router.get("/notings/:id", requireLogin, (req, res) => {
-        const { id } = req.params;
-
-        const sql = `
-            SELECT 
-                id,
-                month,
-                year,
-                entry_type,
-                notings_hindi_pages,
-                notings_english_pages,
-                eoffice_comments,
-                status
-            FROM notings_records
-            WHERE id = ?
-        `;
-
-        db.query(sql, [id], (err, rows) => {
-            if (err || !rows.length) {
-                return res.status(404).json({ message: "Not found" });
-            }
-
-            res.json(rows[0]);
-        });
-    });
-
-
-
-    // =========================
-    // ADMIN: GET ALL NOTINGS
-    // =========================
-    router.get("/admin/notings", requireLogin, (req, res) => {
-        if (req.session.user.role !== "admin") {
-            return res.status(403).json({ message: "Unauthorized" });
         }
 
-        const { month, year, group } = req.query;
+        const current = currentRows[0];
+
+        if (current.status === "confirmed") {
+            return res.json({
+                exists: true,
+                status: current.status,
+                message: "This record is already confirmed and cannot be modified.",
+            });
+        }
+
+        const duplicateRows = await dbQuery(
+            `
+                SELECT id, status
+                FROM notings_records
+                WHERE group_name = ? AND month = ? AND year = ? AND entry_type = ? AND id <> ?
+            `,
+            [current.group_name, payload.month, payload.year, payload.entryType, editId]
+        );
+
+        if (duplicateRows.length > 0) {
+            return res.json({
+                exists: true,
+                status: duplicateRows[0].status,
+                message: "Another submission already exists for this group, month, year and entry type.",
+            });
+        }
+
+        res.json({ exists: false });
+    } catch (err) {
+        console.error("Admin notings check error:", err);
+        res.status(500).json({
+            exists: true,
+            message: "Failed to check noting status.",
+        });
+    }
+});
+
+// =========================
+// ADMIN: GET ALL NOTINGS
+// =========================
+router.get("/admin/notings", requireAdmin, async (req, res) => {
+    const { month, year, group } = req.query;
 
     if (!month || !year) {
         return res.json([]);
     }
 
+    try {
         let sql = `
             SELECT *
             FROM notings_records
-            WHERE month = ? AND year = ? 
+            WHERE month = ? AND year = ?
         `;
 
         const params = [month, year];
 
-            //  Apply group filter ONLY if selected
-            if (group) {
-                sql += " AND group_name = ?";
-                params.push(group);
-            }
-
-            sql += " ORDER BY id DESC";
-
-        db.query(sql, params, (err, rows) => {
-            if (err) {
-                console.error("Fetch notings error:", err);
-                return res.status(500).json({ message: "DB error" });
-            }
-
-            res.json(rows);
-        });
-    });
-
-    // =========================
-    // ADMIN: CONFIRM NOTINGS
-    // =========================
-    router.post("/admin/notings/confirm", requireLogin, (req, res) => {
-        if (req.session.user.role !== "admin") {
-            return res.status(403).json({ success: false });
+        if (group) {
+            sql += " AND group_name = ?";
+            params.push(group);
         }
 
-        const { id } = req.body;
+        sql += " ORDER BY id DESC";
 
-        const sql = `
-            UPDATE notings_records
-            SET status = 'confirmed'
-            WHERE id = ?
-        `;
+        const rows = await dbQuery(sql, params);
+        res.json(rows);
+    } catch (err) {
+        console.error("Fetch notings error:", err);
+        res.status(500).json({ message: "DB error" });
+    }
+});
 
-        db.query(sql, [id], (err) => {
-            if (err) {
-                console.error("Confirm error:", err);
-                return res.status(500).json({ success: false });
-            }
+// =========================
+// ADMIN: CONFIRM NOTINGS
+// =========================
+router.post("/admin/notings/confirm", requireAdmin, async (req, res) => {
+    const id = Number(req.body.id);
 
-            res.json({ success: true });
+    if (!id) {
+        return res.status(400).json({ success: false, message: "Record id is required" });
+    }
+
+    try {
+        const result = await dbQuery(
+            `
+                UPDATE notings_records
+                SET status = 'confirmed'
+                WHERE id = ?
+            `,
+            [id]
+        );
+
+        if (!result.affectedRows) {
+            return res.status(404).json({ success: false, message: "Noting not found" });
+        }
+
+        res.json({ success: true });
+    } catch (err) {
+        console.error("Confirm error:", err);
+        res.status(500).json({ success: false, message: "Database error" });
+    }
+});
+
+// =========================
+// ADMIN: GET SINGLE NOTING
+// =========================
+router.get("/admin/notings/:id", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+
+    if (!id) {
+        return res.status(400).json({ message: "Invalid noting id" });
+    }
+
+    try {
+        const rows = await dbQuery(
+            `
+                SELECT
+                    id,
+                    group_name,
+                    month,
+                    year,
+                    entry_type,
+                    notings_hindi_pages,
+                    notings_english_pages,
+                    eoffice_comments,
+                    status
+                FROM notings_records
+                WHERE id = ?
+            `,
+            [id]
+        );
+
+        if (!rows.length) {
+            return res.status(404).json({ message: "Not found" });
+        }
+
+        res.json(rows[0]);
+    } catch (err) {
+        console.error("Fetch single noting error:", err);
+        res.status(500).json({ message: "Database error" });
+    }
+});
+
+// =========================
+// ADMIN: UPDATE SINGLE NOTING
+// =========================
+router.patch("/admin/notings/:id", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    const payload = getNotingsPayload(req.body);
+
+    if (!id) {
+        return res.status(400).json({
+            success: false,
+            message: "Invalid noting id",
         });
-    });
+    }
 
+    if (!hasRequiredFields(payload)) {
+        return res.status(400).json({
+            success: false,
+            message: "Month, Year and Entry Type are required",
+        });
+    }
 
+    try {
+        const currentRows = await dbQuery(
+            `
+                SELECT id, group_name, status
+                FROM notings_records
+                WHERE id = ?
+            `,
+            [id]
+        );
+
+        if (currentRows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "Noting record not found",
+            });
+        }
+
+        const current = currentRows[0];
+
+        if (current.status === "confirmed") {
+            return res.status(400).json({
+                success: false,
+                message: "Already confirmed. Cannot modify.",
+            });
+        }
+
+        const duplicateRows = await dbQuery(
+            `
+                SELECT id
+                FROM notings_records
+                WHERE group_name = ? AND month = ? AND year = ? AND entry_type = ? AND id <> ?
+            `,
+            [current.group_name, payload.month, payload.year, payload.entryType, id]
+        );
+
+        if (duplicateRows.length > 0) {
+            return res.status(400).json({
+                success: false,
+                message: "Another submission already exists for this group, month, year and entry type.",
+            });
+        }
+
+        const result = await dbQuery(
+            `
+                UPDATE notings_records
+                SET month = ?,
+                    year = ?,
+                    entry_type = ?,
+                    notings_hindi_pages = ?,
+                    notings_english_pages = ?,
+                    eoffice_comments = ?
+                WHERE id = ?
+            `,
+            [
+                payload.month,
+                payload.year,
+                payload.entryType,
+                payload.hindi,
+                payload.english,
+                payload.eoffice,
+                id,
+            ]
+        );
+
+        if (!result.affectedRows) {
+            return res.status(404).json({
+                success: false,
+                message: "Noting record not found",
+            });
+        }
+
+        res.json({
+            success: true,
+            message: "Updated successfully",
+        });
+    } catch (err) {
+        console.error("Admin noting update error:", err);
+        res.status(500).json({
+            success: false,
+            message: "Database error",
+        });
+    }
+});
 
 module.exports = router;

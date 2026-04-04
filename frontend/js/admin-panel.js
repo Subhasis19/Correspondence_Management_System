@@ -643,18 +643,7 @@ document.addEventListener("click", function (e) {
   const notingBtn = e.target.closest(".edit-noting-btn");
   if (notingBtn) {
     const id = notingBtn.dataset.id;
-
-    const frame = document.getElementById("formFrame");
     window.location.href = `/dashboard.html?page=notings&id=${id}`;
-    
-
-    document.getElementById("iframeContainer").style.display = "block";
-
-    document.getElementById("dashboardView").style.display = "none";
-    document.getElementById("adminPanelView").style.display = "none";
-    document.getElementById("notingsView").style.display = "none";
-    document.getElementById("emailsView").style.display = "none";
-
     return;
   }
 
